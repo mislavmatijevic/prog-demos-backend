@@ -6,8 +6,9 @@ type Topic struct {
 }
 
 type Video struct {
-	Id    uint   `json:"id"`
-	Name  string `json:"name"`
-	Link  string `json:"link"`
-	Topic Topic  `json:"topic"`
+	Id         uint   `json:"id"`
+	Name       string `json:"name"`
+	Subtitle   string `json:"subtitle"`
+	Identifier string `json:"identifier"`
+	Topic      Topic  `json:"topic"`
 }
