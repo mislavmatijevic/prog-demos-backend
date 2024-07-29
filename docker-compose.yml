@@ -1,0 +1,45 @@
+services:
+    database:
+        image: postgres:13
+        container_name: database
+        environment:
+            POSTGRES_USER: root
+            POSTGRES_PASSWORD: root
+            POSTGRES_DB: prog_demos
+        volumes:
+            - db_data:/var/lib/postgresql/data
+        networks:
+            - backend-network
+        ports:
+            - '5432:5432'
+        healthcheck:
+            test: ['CMD-SHELL', 'pg_isready']
+            interval: 2s
+            timeout: 5s
+            retries: 5
+
+    backend:
+        build:
+            context: .
+            dockerfile: Dockerfile
+        container_name: backend
+        depends_on:
+            database:
+                condition: service_healthy
+        environment:
+            DB_HOST: database
+            DB_USER: root
+            DB_PASSWORD: root
+            DB_NAME: prog_demos
+            PORT: 8080
+        ports:
+            - '8080:8080'
+        networks:
+            - backend-network
+
+volumes:
+    db_data:
+
+networks:
+    backend-network:
+        driver: bridge
