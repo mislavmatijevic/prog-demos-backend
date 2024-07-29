@@ -14,8 +14,9 @@ func main() {
 	var r *chi.Mux = chi.NewRouter()
 	handlers.Handler(r)
 
-	fmt.Println("I'm rockin' at port 8000!")
-	err := http.ListenAndServe("localhost:8000", r)
+	var port = "8000"
+	fmt.Printf("I'm rockin' at port %s!", port)
+	err := http.ListenAndServe(fmt.Sprintf("localhost:%s", port), r)
 	if err != nil {
 		log.Error(err)
 	}
