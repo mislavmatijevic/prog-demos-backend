@@ -6,17 +6,19 @@ import (
 	"os"
 
 	_ "github.com/lib/pq"
+	log "github.com/sirupsen/logrus"
 )
 
 type Instance struct {
 	db *sql.DB
 }
 
-func (database Instance) Initialize() (err error) {
+func (database Instance) Initialize() error {
 	dbHost := os.Getenv("DB_HOST")
 	dbUser := os.Getenv("DB_USER")
 	dbPassword := os.Getenv("DB_PASSWORD")
 	dbName := os.Getenv("DB_NAME")
+	var err error
 
 	psqlInfo := fmt.Sprintf("host=%s user=%s password=%s dbname=%s sslmode=disable",
 		dbHost, dbUser, dbPassword, dbName)
@@ -28,7 +30,7 @@ func (database Instance) Initialize() (err error) {
 
 	err = database.db.Ping()
 	if err == nil {
-		fmt.Println("Successfully connected to the database!")
+		log.Info("Successfully connected to the database!")
 	}
 
 	return err
