@@ -17,19 +17,13 @@ func main() {
 	var r *chi.Mux = chi.NewRouter()
 	handlers.Handler(r)
 
-	var database database.Instance
-	err := database.Initialize()
-	if err != nil {
-		log.Error(err)
-	}
+	database.Initialize()
 
 	var port = os.Getenv("PORT")
 	listeningAddress := fmt.Sprintf("0.0.0.0:%s", port)
 	log.Infof("I'm rockin' at %s!", listeningAddress)
-	err = http.ListenAndServe(listeningAddress, r)
+	err := http.ListenAndServe(listeningAddress, r)
 	if err != nil {
 		log.Error(err)
 	}
-
-	database.Close()
 }

@@ -1,70 +1,34 @@
--- Create table for topics
-CREATE TABLE topics (
-    id SERIAL PRIMARY KEY,
-    name VARCHAR(100) NOT NULL
-);
+INSERT INTO topics (id, name) VALUES
+    (1, 'Osnove programiranja uz C++')
+ON CONFLICT (id) DO NOTHING;
 
--- Create table for subtopics
-CREATE TABLE subtopics (
-    id SERIAL PRIMARY KEY,
-    id_topic INTEGER NOT NULL REFERENCES topics (id) ON DELETE CASCADE,
-    name VARCHAR(100) NOT NULL,
-    CONSTRAINT fk_id_topic FOREIGN KEY (id_topic) REFERENCES topics (id)
-);
+INSERT INTO subtopics (id, id_topic, name) VALUES
+    (1, 1, 'Osnove jezika C++'),
+    (2, 1, 'C++ Polja'),
+    (3, 1, 'C++ Sortiranja'),
+    (4, 1, 'C++ Slogovi i Unije'),
+    (5, 1, 'C++ Pokazivači i Vezana Lista'),
+    (6, 1, 'C++ Funkcije'),
+    (7, 1, 'C++ Rekurzije'),
+    (8, 1, 'C++ Tekstualne Datoteke'),
+    (9, 1, 'C++ Binarne Datoteke')
+ON CONFLICT (id) DO NOTHING;
 
--- Create index on id_topic in subtopics table for faster lookups
-CREATE INDEX idx_subtopics_id_topic ON subtopics (id_topic);
-
--- Create table for videos
-CREATE TABLE videos (
-    id SERIAL PRIMARY KEY,
-    id_subtopic INTEGER NOT NULL REFERENCES subtopics (id) ON DELETE CASCADE,
-    identifier CHAR(11) NOT NULL,
-    name VARCHAR(255) NOT NULL,
-    CONSTRAINT fk_id_subtopic FOREIGN KEY (id_subtopic) REFERENCES subtopics (id)
-);
-
--- Create unique index on identifier in videos table
-CREATE UNIQUE INDEX idx_videos_identifier ON videos (identifier);
-
--- Create index on id_subtopic in videos table for faster lookups
-CREATE INDEX idx_videos_id_subtopic ON videos (id_subtopic);
-
--- Create table for tasks
-CREATE TABLE tasks (
-    id SERIAL PRIMARY KEY,
-    id_subtopic INTEGER NOT NULL REFERENCES subtopics (id) ON DELETE CASCADE,
-    order_num INTEGER NOT NULL,
-    input VARCHAR(512) NOT NULL,
-    output VARCHAR(512) NOT NULL,
-    input_output_example TEXT,
-    is_final_boss BOOLEAN NOT NULL DEFAULT FALSE,
-    starter_code TEXT,
-    step_1_code TEXT,
-    step_2_code TEXT,
-    step_3_code TEXT,
-    helper_1_text VARCHAR(255),
-    helper_2_text VARCHAR(255),
-    helper_3_text VARCHAR(255),
-    solution_code TEXT,
-    CONSTRAINT fk_id_subtopic FOREIGN KEY (id_subtopic) REFERENCES subtopics (id)
-);
-
--- Create index on id_subtopic in tasks table for faster lookups
-CREATE INDEX idx_tasks_id_subtopic ON tasks (id_subtopic);
-
--- Create table for tests
-CREATE TABLE tests (
-    id SERIAL PRIMARY KEY,
-    id_task INTEGER NOT NULL REFERENCES tasks (id) ON DELETE CASCADE,
-    input VARCHAR(512) NOT NULL,
-    expected_output VARCHAR(512) NOT NULL,
-    CONSTRAINT fk_id_task FOREIGN KEY (id_task) REFERENCES tasks (id)
-);
-
--- Create index on id_task in tests table for faster lookups
-CREATE INDEX idx_tests_id_task ON tests (id_task);
-
--- Ensure order_num is unique within the same subtopic
-ALTER TABLE tasks
-ADD CONSTRAINT unique_order_num_per_subtopic UNIQUE (id_subtopic, order_num);
+INSERT INTO videos (id, id_subtopic, identifier, name) VALUES
+    (1, 1, 'RyL2MjxgVj0', 'Kako Napisati C++ Program'),
+    (2, 1, 'RcFVMaGdSKM', 'C++ Varijable'),
+    (3, 1, 'BqdPEeVPSB0', 'C++ Logika'),
+    (4, 1, '3COiJ6b5sq4', 'C++ Petlje'),
+    (5, 2, 'BSvFewITLv4', 'C++ Polja'),
+    (6, 3, 'NYbzVk5vncM', 'C++ Sortiranja'),
+    (7, 4, 'fTXnvSbAbWE', 'C++ Slogovi i Unije (1/3)'),
+    (8, 4, 'WKoyPZxLOWM', 'C++ Slogovi i Unije (2/3)'),
+    (9, 4, '-iLFn0Ttbbo', 'C++ Slogovi i Unije (3/3)'),
+    (10, 5, 'oN-RparzioU', 'C++ Pokazivači i Vezana Lista (1/3)'),
+    (11, 5, 'JOWopUG_U4I', 'C++ Pokazivači i Vezana Lista (2/3)'),
+    (12, 5, 'F1sNQxkxfbg', 'C++ Pokazivači i Vezana Lista (3/3 dodatno o pokazivačima)'),
+    (13, 6, 'KDI61ExnKZs', 'C++ Funkcije'),
+    (15, 7, '8TI-NIByHR0', 'C++ Rekurzije'),
+    (16, 8, '4k_sr8_v75s', 'C++ Tekstualne Datoteke'),
+    (17, 9, 'SmnwRqHMLuw', 'C++ Binarne Datoteke')
+ON CONFLICT (id) DO NOTHING;
