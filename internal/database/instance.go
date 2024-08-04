@@ -38,15 +38,3 @@ func Initialize() {
 		log.Warningf("Failed to do auto migration. Reason: %s", err)
 	}
 }
-
-func GetAllVideosPerTopics() []Topic {
-	var topics []Topic
-
-	result := Instance.db.Model(&Topic{}).Preload("Subtopics.Videos").Find(&topics)
-
-	if result.Error != nil {
-		log.Error("Error fetching videos: ", result.Error)
-	}
-
-	return topics
-}
