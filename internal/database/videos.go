@@ -16,10 +16,10 @@ func GetAllVideosPerTopics() []Topic {
 	return topics
 }
 
-func GetSingleVideo(id int) *Video {
+func GetSingleVideo(videoId int) *Video {
 	var video Video
 
-	result := Instance.db.First(&video, id)
+	result := Instance.db.First(&video, videoId)
 
 	if result.Error != nil {
 		log.Error("Error fetching video: ", result.Error)

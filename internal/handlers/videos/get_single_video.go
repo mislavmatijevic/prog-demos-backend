@@ -16,7 +16,7 @@ type videoResponse = struct {
 }
 
 func GetSingleVideo(w http.ResponseWriter, r *http.Request) {
-	var originalParamId = chi.URLParam(r, "id")
+	var originalParamId = chi.URLParam(r, "videoId")
 	videoId, err := strconv.Atoi(originalParamId)
 
 	if err != nil {
