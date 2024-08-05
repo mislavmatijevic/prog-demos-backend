@@ -7,6 +7,7 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	health "github.com/mislavmatijevic/prog-demos-backend/internal/handlers/health"
+	"github.com/mislavmatijevic/prog-demos-backend/internal/handlers/tasks"
 	videos "github.com/mislavmatijevic/prog-demos-backend/internal/handlers/videos"
 )
 
@@ -16,6 +17,8 @@ func Handler(r *chi.Mux) {
 	r.Use(chimiddle.StripSlashes)
 	log.Debug("Setting up /videos handler...")
 	videos.HandleVideos(r)
+	log.Debug("Setting up /tasks handler...")
+	tasks.HandleTasks(r)
 	log.Debug("Setting up /health handler...")
 	health.HandleHealth(r)
 }
