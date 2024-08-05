@@ -15,3 +15,16 @@ func GetAllTasksPerTopic() []Topic {
 
 	return topics
 }
+
+func GetSingleFullTasks(taskId int) *FullTask {
+	var task FullTask
+
+	result := Instance.db.First(&task, taskId)
+
+	if result.Error != nil {
+		log.Error("Error fetching task: ", result.Error)
+		return nil
+	}
+
+	return &task
+}
