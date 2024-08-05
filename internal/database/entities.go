@@ -35,7 +35,7 @@ func (BasicTask) TableName() string {
 
 type FullTask struct {
 	ID                 int       `gorm:"primaryKey" json:"id"`
-	SubtopicID         int       `gorm:"not null;column:id_subtopic"`
+	SubtopicID         int       `gorm:"not null;column:id_subtopic" json:"id_subtopic"`
 	OrderNum           int       `gorm:"not null" json:"order_num"`
 	Input              string    `gorm:"size:512;not null" json:"input"`
 	Output             string    `gorm:"size:512;not null" json:"output"`
