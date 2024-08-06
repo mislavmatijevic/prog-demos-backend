@@ -3,9 +3,10 @@ package tasks
 import (
 	"encoding/json"
 	"net/http"
+	"os"
 
 	api "github.com/mislavmatijevic/prog-demos-backend/internal/handlers/errors"
-	"github.com/sirupsen/logrus"
+	log "github.com/sirupsen/logrus"
 )
 
 type taskExecutionRequest = struct {
@@ -30,7 +31,6 @@ func ExecuteTask(w http.ResponseWriter, r *http.Request) {
 	}
 
 	readableOutput := string(outputBytes)
-	logrus.Info(readableOutput)
 
 	res := taskExecutionResponse{Success: true, Message: string(readableOutput)}
 
@@ -54,11 +54,27 @@ func getRequestBody(r *http.Request, w http.ResponseWriter) (*taskExecutionReque
 }
 
 func compileCppToJs(cppCode string) ([]byte, error) {
-	var outputBytes []byte = []byte(cppCode)
-	// cmd := exec.Command("docker")
-	// outputBytes, err := cmd.Output()
-	// if err != nil {
-	// 	return nil, err
-	// }
-	return outputBytes, nil
+	err := createTempCppFile(cppCode)
+	if err != nil {
+		return nil, err
+	}
+
+	return []byte("ok"), nil
+}
+
+func createTempCppFile(fileContents string) error {
+	path, _ := os.MkdirTemp("", "temp_cpp_solutions")
+	f, err := os.CreateTemp(path, "solution_*.cpp")
+	if err != nil {
+		log.Error("Failed to create temp cpp file!\n", err)
+		return err
+	}
+
+	_, err = f.Write([]byte(fileContents))
+	if err != nil {
+		log.Error("Failed to insert data in the temp cpp file ("+fileContents+")\n", err)
+		return err
+	}
+
+	return nil
 }
