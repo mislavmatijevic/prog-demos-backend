@@ -72,7 +72,7 @@ func compileCppToJs(cppCode string) ([]byte, error) {
 }
 
 func createTempCppFile(fileContents string) (*os.File, error) {
-	createdTempPath, _ := os.MkdirTemp("", "temp_cpp_solutions")
+	createdTempPath, _ := os.MkdirTemp("/var/temp_solutions/", "temp_cpp_solutions")
 	createdTempFile, err := os.CreateTemp(createdTempPath, "solution_*.cpp")
 	if err != nil {
 		log.Error("Failed to create temp cpp file!\n", err)
@@ -108,10 +108,9 @@ func useEmscriptenConversion(tempCppFile *os.File) (javascript []byte, err error
 	var mappedUsers string = strings.Split(string(idU), "\n")[0] + ":" + strings.Split(string(idG), "\n")[0]
 
 	pureFileName, _ := filepath.Abs(tempCppFile.Name())
-	tempFilePath := filepath.Dir(tempCppFile.Name())
 
 	var dockerEmscriptenArguments = dockerPath + " run --rm " +
-		"-v " + tempFilePath + ":" + tempFilePath + " " +
+		"-v prog-demos-backend_solutions:/var/temp_solutions/" + " " +
 		"-u " + mappedUsers + " " +
 		"emscripten/emsdk:3.1.64 emcc " +
 		pureFileName + " -o " + pureFileName + ".js"
