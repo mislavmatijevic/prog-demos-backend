@@ -1,9 +1,13 @@
 package tasks
 
 import (
+	"bytes"
 	"encoding/json"
 	"net/http"
 	"os"
+	"os/exec"
+	"path/filepath"
+	"strings"
 
 	api "github.com/mislavmatijevic/prog-demos-backend/internal/handlers/errors"
 	log "github.com/sirupsen/logrus"
@@ -54,27 +58,79 @@ func getRequestBody(r *http.Request, w http.ResponseWriter) (*taskExecutionReque
 }
 
 func compileCppToJs(cppCode string) ([]byte, error) {
-	err := createTempCppFile(cppCode)
+	tempFile, err := createTempCppFile(cppCode)
 	if err != nil {
 		return nil, err
 	}
 
-	return []byte("ok"), nil
+	jsCode, err := useEmscriptenConversion(tempFile)
+	if err != nil {
+		return nil, err
+	}
+
+	return jsCode, nil
 }
 
-func createTempCppFile(fileContents string) error {
-	path, _ := os.MkdirTemp("", "temp_cpp_solutions")
-	f, err := os.CreateTemp(path, "solution_*.cpp")
+func createTempCppFile(fileContents string) (*os.File, error) {
+	createdTempPath, _ := os.MkdirTemp("", "temp_cpp_solutions")
+	createdTempFile, err := os.CreateTemp(createdTempPath, "solution_*.cpp")
 	if err != nil {
 		log.Error("Failed to create temp cpp file!\n", err)
-		return err
+		return nil, err
 	}
 
-	_, err = f.Write([]byte(fileContents))
+	_, err = createdTempFile.Write([]byte(fileContents))
 	if err != nil {
 		log.Error("Failed to insert data in the temp cpp file ("+fileContents+")\n", err)
-		return err
+		return nil, err
 	}
 
-	return nil
+	return createdTempFile, nil
+}
+
+func useEmscriptenConversion(tempCppFile *os.File) (javascript []byte, err error) {
+	var cmd *exec.Cmd
+
+	dockerPath, err := exec.LookPath("docker")
+	if err != nil {
+		return nil, err
+	}
+	idPath, err := exec.LookPath("id")
+	if err != nil {
+		return nil, err
+	}
+
+	cmd = exec.Command(idPath, "-u")
+	idU, _ := cmd.Output()
+	cmd = exec.Command(idPath, "-g")
+	idG, _ := cmd.Output()
+
+	var mappedUsers string = strings.Split(string(idU), "\n")[0] + ":" + strings.Split(string(idG), "\n")[0]
+
+	pureFileName, _ := filepath.Abs(tempCppFile.Name())
+	tempFilePath := filepath.Dir(tempCppFile.Name())
+
+	var dockerEmscriptenArguments = dockerPath + " run --rm " +
+		"-v " + tempFilePath + ":" + tempFilePath + " " +
+		"-u " + mappedUsers + " " +
+		"emscripten/emsdk:3.1.64 emcc " +
+		pureFileName + " -o " + pureFileName + ".js"
+
+	cmd = exec.Command("bash", "-c", dockerEmscriptenArguments)
+	var stdError bytes.Buffer
+	cmd.Stderr = &stdError
+	_, err = cmd.Output()
+	if err != nil {
+		log.Error("Docker reported the following error: "+err.Error(), ", with standard output saying: "+stdError.String())
+		return nil, err
+	}
+
+	outputFileName := tempCppFile.Name() + ".js"
+	javascriptContents, err := os.ReadFile(outputFileName)
+	if err != nil {
+		log.Error("Couldn't read javascript file at: " + outputFileName)
+		return nil, err
+	}
+
+	return javascriptContents, nil
 }
