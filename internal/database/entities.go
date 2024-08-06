@@ -42,15 +42,15 @@ type FullTask struct {
 	InputOutputExample string    `gorm:"type:text" json:"input_output_example"`
 	IsFinalBoss        bool      `gorm:"not null;default:false" json:"is_final_boss"`
 	StarterCode        string    `gorm:"type:text" json:"starter_code"`
-	Step1Code          string    `gorm:"type:text" json:"step1_code"`
-	Step2Code          string    `gorm:"type:text" json:"step2_code"`
-	Step3Code          string    `gorm:"type:text" json:"step3_code"`
-	Helper1Text        string    `gorm:"size:255" json:"helper1_text"`
-	Helper2Text        string    `gorm:"size:255" json:"helper2_text"`
-	Helper3Text        string    `gorm:"size:255" json:"helper3_text"`
+	Step1Code          string    `gorm:"type:text" json:"step1_code,omitempty"`
+	Step2Code          string    `gorm:"type:text" json:"step2_code,omitempty"`
+	Step3Code          string    `gorm:"type:text" json:"step3_code,omitempty"`
+	Helper1Text        string    `gorm:"size:255" json:"helper1_text,omitempty"`
+	Helper2Text        string    `gorm:"size:255" json:"helper2_text,omitempty"`
+	Helper3Text        string    `gorm:"size:255" json:"helper3_text,omitempty"`
 	SolutionCode       string    `gorm:"type:text" json:"solution_code"`
 	Subtopic           *Subtopic `gorm:"foreignKey:SubtopicID" json:"subtopic"`
-	Tests              []Test    `gorm:"foreignKey:IDTask" json:"tests"`
+	Tests              []Test    `gorm:"foreignKey:IDTask" json:"-"`
 }
 
 func (FullTask) TableName() string {
