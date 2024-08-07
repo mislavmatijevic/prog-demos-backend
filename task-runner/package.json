@@ -1,0 +1,13 @@
+{
+  "name": "prog-demos-task-runner",
+  "version": "1.0.0",
+  "description": "Runs CPP compiled to WASM and uses tests to evaulate solutions.",
+  "main": "task-runner.js",
+  "type": "commonjs",
+  "author": "Mislav Matijević",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.19.2",
+    "isolated-vm": "^5.0.1"
+  }
+}

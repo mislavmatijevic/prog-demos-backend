@@ -3,6 +3,7 @@ package tasks
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"os"
 	"os/exec"
@@ -19,7 +20,13 @@ type taskExecutionRequest = struct {
 
 type taskExecutionResponse = struct {
 	Success bool   `json:"success"`
-	Message string `json:"message"`
+	Outputs string `json:"outputs,omitempty"`
+	Errors  string `json:"errors,omitempty"`
+}
+
+type CompileResponse struct {
+	Outputs string `json:"outputs"`
+	Errors  string `json:"errors"`
 }
 
 func ExecuteTask(w http.ResponseWriter, r *http.Request) {
@@ -28,15 +35,19 @@ func ExecuteTask(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	outputBytes, err := compileCppToJs(requestBody.SolutionCode)
+	tempFileName, err := compileCppToJs(requestBody.SolutionCode)
 	if err != nil {
 		api.InternalErrorHandler(w)
 		return
 	}
 
-	readableOutput := string(outputBytes)
+	response, err := executeCompiledCodeInInsolate(tempFileName)
+	if err != nil {
+		api.InternalErrorHandler(w)
+		return
+	}
 
-	res := taskExecutionResponse{Success: true, Message: string(readableOutput)}
+	res := taskExecutionResponse{Success: true, Outputs: response.Outputs, Errors: response.Errors}
 
 	w.Header().Add("content-type", "application/json")
 	json.NewEncoder(w).Encode(res)
@@ -57,18 +68,18 @@ func getRequestBody(r *http.Request, w http.ResponseWriter) (*taskExecutionReque
 	return &requestBody, false
 }
 
-func compileCppToJs(cppCode string) ([]byte, error) {
-	tempFile, err := createTempCppFile(cppCode)
+func compileCppToJs(cppCode string) (tempCppFileNameWithoutExt *os.File, err error) {
+	tempCppSourceFile, err := createTempCppFile(cppCode)
 	if err != nil {
 		return nil, err
 	}
 
-	jsCode, err := useEmscriptenConversion(tempFile)
+	err = useEmscriptenConversion(tempCppSourceFile)
 	if err != nil {
 		return nil, err
 	}
 
-	return jsCode, nil
+	return tempCppSourceFile, nil
 }
 
 func createTempCppFile(fileContents string) (*os.File, error) {
@@ -88,16 +99,16 @@ func createTempCppFile(fileContents string) (*os.File, error) {
 	return createdTempFile, nil
 }
 
-func useEmscriptenConversion(tempCppFile *os.File) (javascript []byte, err error) {
+func useEmscriptenConversion(tempCppFile *os.File) (err error) {
 	var cmd *exec.Cmd
 
 	dockerPath, err := exec.LookPath("docker")
 	if err != nil {
-		return nil, err
+		return err
 	}
 	idPath, err := exec.LookPath("id")
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	cmd = exec.Command(idPath, "-u")
@@ -109,11 +120,11 @@ func useEmscriptenConversion(tempCppFile *os.File) (javascript []byte, err error
 
 	pureFileName, _ := filepath.Abs(tempCppFile.Name())
 
-	var dockerEmscriptenArguments = dockerPath + " run --rm " +
-		"-v prog-demos-backend_solutions:/var/temp_solutions/" + " " +
+	var dockerEmscriptenArguments = dockerPath + " run --rm --memory=100m " +
+		"-v prog-demos-backend_solutions:/var/temp_solutions/ " +
 		"-u " + mappedUsers + " " +
-		"emscripten/emsdk:3.1.64 emcc " +
-		pureFileName + " -o " + pureFileName + ".js"
+		"emscripten/emsdk:3.1.64 " +
+		"emcc " + pureFileName + " -s ENVIRONMENT=shell -o " + pureFileName + ".js"
 
 	cmd = exec.Command("bash", "-c", dockerEmscriptenArguments)
 	var stdError bytes.Buffer
@@ -121,15 +132,39 @@ func useEmscriptenConversion(tempCppFile *os.File) (javascript []byte, err error
 	_, err = cmd.Output()
 	if err != nil {
 		log.Error("Docker reported the following error: "+err.Error(), ", with standard output saying: "+stdError.String())
-		return nil, err
+		return err
 	}
 
-	outputFileName := tempCppFile.Name() + ".js"
-	javascriptContents, err := os.ReadFile(outputFileName)
+	return nil
+}
+
+func executeCompiledCodeInInsolate(tempFile *os.File) (*CompileResponse, error) {
+	executionPayload := map[string]string{
+		"jsFileName":   fmt.Sprintf("%s.js", tempFile.Name()),
+		"wasmFileName": fmt.Sprintf("%s.wasm", tempFile.Name()),
+		"tests":        "3 7-4 5",
+	}
+
+	payloadBytes, err := json.Marshal(executionPayload)
 	if err != nil {
-		log.Error("Couldn't read javascript file at: " + outputFileName)
+		log.Error("Failed to marshal execution payload", err)
 		return nil, err
 	}
 
-	return javascriptContents, nil
+	var taskRunnerUrl = os.Getenv("TASK-RUNNER-URL")
+	resp, err := http.Post(taskRunnerUrl, "application/json", bytes.NewBuffer(payloadBytes))
+	if err != nil {
+		log.Error("Failed to send request to Node.js service", err)
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	var compileRes CompileResponse
+	err = json.NewDecoder(resp.Body).Decode(&compileRes)
+	if err != nil {
+		log.Error("Failed to decode response from Node.js service", err)
+		return nil, err
+	}
+
+	return &compileRes, nil
 }

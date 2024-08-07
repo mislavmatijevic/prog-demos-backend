@@ -34,11 +34,28 @@ services:
             DB_PASSWORD: root
             DB_NAME: prog_demos
             PORT: 8080
+            TASK-RUNNER-URL: http://task-runner:3000/execute
         volumes:
             - /var/run/docker.sock:/var/run/docker.sock
             - solutions:/var/temp_solutions/
         ports:
             - '8080:8080'
+        networks:
+            - backend-network
+
+    task-runner:
+        build:
+            context: .
+            dockerfile: ./Docker/task-runner.Dockerfile
+        container_name: task-runner
+        mem_limit: 1024m
+        cpu_count: 2
+        environment:
+            PORT: 3000
+        volumes:
+            - solutions:/var/temp_solutions/
+        expose:
+            - 3000
         networks:
             - backend-network
 
