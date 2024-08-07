@@ -28,3 +28,16 @@ func GetSingleFullTasks(taskId int) *FullTask {
 
 	return &task
 }
+
+func GetTestsForTask(taskId int) []Test {
+	var tests []Test = make([]Test, 0)
+
+	result := Instance.db.Where("id_task=?", taskId).Find(&Test{}).Scan(&tests)
+
+	if result.Error != nil {
+		log.Error("Error fetching task: ", result.Error)
+		return nil
+	}
+
+	return tests
+}

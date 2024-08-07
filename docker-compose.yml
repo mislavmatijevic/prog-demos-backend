@@ -34,6 +34,10 @@ services:
             DB_PASSWORD: root
             DB_NAME: prog_demos
             PORT: 8080
+            TASKS_VOLUME_NAME: prog-demos-backend_tasks
+        volumes:
+            - /var/run/docker.sock:/var/run/docker.sock
+            - tasks:/var/temp_tasks/
         ports:
             - '8080:8080'
         networks:
@@ -41,6 +45,7 @@ services:
 
 volumes:
     db_data:
+    tasks:
 
 networks:
     backend-network:
