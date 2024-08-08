@@ -7,12 +7,12 @@ import (
 	"time"
 
 	"github.com/go-chi/jwtauth"
-	"github.com/lestrrat-go/jwx/jwt"
 	"github.com/mislavmatijevic/prog-demos-backend/internal/database"
 	"github.com/mislavmatijevic/prog-demos-backend/internal/utils"
 )
 
 var authToken *jwtauth.JWTAuth
+var accessTokenDuration time.Duration
 var RefreshTokenDuration time.Duration
 
 func Initialize() {
@@ -20,10 +20,10 @@ func Initialize() {
 	var JWT_ACCESS_DURATION_MINUTES, _ = strconv.Atoi(os.Getenv("JWT_ACCESS_DURATION_MINUTES"))
 	var REFRESH_TOKEN_DURATION_DAYS, _ = strconv.Atoi(os.Getenv("REFRESH_TOKEN_DURATION_DAYS"))
 
-	var accessTokenDuration = time.Duration(JWT_ACCESS_DURATION_MINUTES) * time.Minute
-	authToken = jwtauth.New("HS256", []byte(JWT_SECRET_KEY), jwt.WithAcceptableSkew(accessTokenDuration))
-
+	accessTokenDuration = time.Duration(JWT_ACCESS_DURATION_MINUTES) * time.Minute
 	RefreshTokenDuration = time.Duration(REFRESH_TOKEN_DURATION_DAYS) * time.Hour * 24
+
+	authToken = jwtauth.New("HS256", []byte(JWT_SECRET_KEY), nil)
 }
 
 func UseAuthenticator() func(http.Handler) http.Handler {
@@ -36,6 +36,8 @@ func UseVerifier() func(http.Handler) http.Handler {
 
 func GenerateAccessToken(user *database.User) (string, error) {
 	claims := map[string]interface{}{"user_id": user.ID, "email": user.Email, "username": user.Username}
+	jwtauth.SetIssuedNow(claims)
+	jwtauth.SetExpiryIn(claims, accessTokenDuration)
 	_, tokenString, err := authToken.Encode(claims)
 	return tokenString, err
 }
