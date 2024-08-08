@@ -15,7 +15,7 @@ import (
 
 	"github.com/go-chi/chi"
 	"github.com/mislavmatijevic/prog-demos-backend/internal/database"
-	api "github.com/mislavmatijevic/prog-demos-backend/internal/handlers/errors"
+	"github.com/mislavmatijevic/prog-demos-backend/internal/handlers/api"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -65,22 +65,21 @@ func ExecuteTask(w http.ResponseWriter, r *http.Request) {
 		cppFile, err := storeTempFiles(requestBody.SolutionCode, testInput)
 		var tempDirPath = filepath.Dir(cppFile.Name())
 		if err != nil {
-			log.Error(err)
-			handleTestExecutionFail(w, tempDirPath)
+			handleTestExecutionFail(w, tempDirPath, err)
 			return
 		}
 
 		err = runFileInIsolatedDockerContainer(cppFile)
 		if err != nil {
 			log.Error(err)
-			handleTestExecutionFail(w, tempDirPath)
+			handleTestExecutionFail(w, tempDirPath, err)
 			return
 		}
 
 		actualOutputs, err := getOutputs(tempDirPath)
 		if err != nil {
 			log.Error(err)
-			handleTestExecutionFail(w, tempDirPath)
+			handleTestExecutionFail(w, tempDirPath, err)
 			return
 		}
 
@@ -90,7 +89,7 @@ func ExecuteTask(w http.ResponseWriter, r *http.Request) {
 			hashMatches, err := checkHashMatch(test, tempDirPath)
 			if err != nil {
 				log.Error(err)
-				handleTestExecutionFail(w, tempDirPath)
+				handleTestExecutionFail(w, tempDirPath, err)
 				return
 			} else if !hashMatches {
 				res = taskExecutionResponse{
@@ -128,8 +127,8 @@ func ExecuteTask(w http.ResponseWriter, r *http.Request) {
 	sendResponse(w, res)
 }
 
-func handleTestExecutionFail(w http.ResponseWriter, tempDirPath string) {
-	api.InternalErrorHandler(w)
+func handleTestExecutionFail(w http.ResponseWriter, tempDirPath string, err error) {
+	api.InternalErrorHandler(w, err)
 	os.RemoveAll(tempDirPath)
 }
 

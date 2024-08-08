@@ -1,8 +1,10 @@
-package errors
+package api
 
 import (
 	"encoding/json"
 	"net/http"
+
+	log "github.com/sirupsen/logrus"
 )
 
 type Error struct {
@@ -28,12 +30,14 @@ func writerError(w http.ResponseWriter, message string, code int) {
 
 var (
 	RequestErrorHandlerGenericMsg = func(w http.ResponseWriter, err error) {
-		writerError(w, err.Error(), http.StatusBadRequest)
+		log.Error(err)
+		writerError(w, "Request invalid.", http.StatusBadRequest)
 	}
-	RequestErrorHandlerCustomMsg = func(w http.ResponseWriter, err string) {
-		writerError(w, err, http.StatusBadRequest)
+	RequestErrorHandlerCustomMsg = func(w http.ResponseWriter, errorMessage string) {
+		writerError(w, errorMessage, http.StatusBadRequest)
 	}
-	InternalErrorHandler = func(w http.ResponseWriter) {
+	InternalErrorHandler = func(w http.ResponseWriter, err error) {
+		log.Error(err)
 		writerError(w, "An Unexpected Error Occurred.", http.StatusInternalServerError)
 	}
 )

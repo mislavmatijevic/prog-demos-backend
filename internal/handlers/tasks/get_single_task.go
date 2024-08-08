@@ -8,7 +8,7 @@ import (
 
 	"github.com/go-chi/chi"
 	"github.com/mislavmatijevic/prog-demos-backend/internal/database"
-	"github.com/mislavmatijevic/prog-demos-backend/internal/handlers/errors"
+	"github.com/mislavmatijevic/prog-demos-backend/internal/handlers/api"
 )
 
 type taskResponse = struct {
@@ -20,14 +20,14 @@ func GetSingleTask(w http.ResponseWriter, r *http.Request) {
 	TaskId, err := strconv.Atoi(originalParamId)
 
 	if err != nil {
-		errors.RequestErrorHandlerGenericMsg(w, err)
+		api.RequestErrorHandlerGenericMsg(w, err)
 		return
 	}
 
 	Task := database.GetSingleFullTasks(TaskId)
 
 	if Task == nil {
-		errors.RequestErrorHandlerCustomMsg(w, fmt.Sprintf("Task with id %s not found!", originalParamId))
+		api.RequestErrorHandlerCustomMsg(w, fmt.Sprintf("Task with id %s not found!", originalParamId))
 		return
 	}
 

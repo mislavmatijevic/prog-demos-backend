@@ -8,7 +8,7 @@ import (
 
 	"github.com/go-chi/chi"
 	"github.com/mislavmatijevic/prog-demos-backend/internal/database"
-	"github.com/mislavmatijevic/prog-demos-backend/internal/handlers/errors"
+	"github.com/mislavmatijevic/prog-demos-backend/internal/handlers/api"
 )
 
 type videoResponse = struct {
@@ -20,14 +20,14 @@ func GetSingleVideo(w http.ResponseWriter, r *http.Request) {
 	videoId, err := strconv.Atoi(originalParamId)
 
 	if err != nil {
-		errors.RequestErrorHandlerGenericMsg(w, err)
+		api.RequestErrorHandlerGenericMsg(w, err)
 		return
 	}
 
 	video := database.GetSingleVideo(videoId)
 
 	if video == nil {
-		errors.RequestErrorHandlerCustomMsg(w, fmt.Sprintf("Video with id %s not found!", originalParamId))
+		api.RequestErrorHandlerCustomMsg(w, fmt.Sprintf("Video with id %s not found!", originalParamId))
 		return
 	}
 
