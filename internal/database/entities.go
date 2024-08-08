@@ -79,3 +79,10 @@ type User struct {
 	DateRegistered  time.Time `gorm:"not null" json:"-"`
 	UserType        string    `gorm:"not null;default:basic" json:"-"`
 }
+
+type RefreshToken struct {
+	ID         int       `gorm:"primaryKey" json:"-"`
+	UserID     int       `gorm:"not null;column:id_user" json:"-"`
+	Value      string    `gorm:"not null" json:"refresh_token"`
+	Expiration time.Time `gorm:"not null" json:"-"`
+}

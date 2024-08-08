@@ -3,6 +3,7 @@ package auth
 import (
 	"encoding/json"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/mislavmatijevic/prog-demos-backend/internal/database"
@@ -11,7 +12,7 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-type UserRequestBody struct {
+type UserRegisterBody struct {
 	Email    string `json:"email"`
 	Username string `json:"username"`
 	Password string `json:"password"`
@@ -22,7 +23,7 @@ type Response struct {
 }
 
 func RegisterUser(w http.ResponseWriter, r *http.Request) {
-	var userReqBody UserRequestBody
+	var userReqBody UserRegisterBody
 	if err := json.NewDecoder(r.Body).Decode(&userReqBody); err != nil {
 		api.RequestErrorHandlerGenericMsg(w, err)
 		return
@@ -43,12 +44,13 @@ func RegisterUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	response := Response{
+	res := Response{
 		NewId: newUserId,
 	}
 
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(response)
+	w.WriteHeader(http.StatusCreated)
+	w.Header().Add("content-type", "application/json")
+	json.NewEncoder(w).Encode(res)
 }
 
 func getHashPassword(password string) (string, error) {

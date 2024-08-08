@@ -30,7 +30,9 @@ func writerError(w http.ResponseWriter, message string, code int) {
 
 var (
 	RequestErrorHandlerGenericMsg = func(w http.ResponseWriter, err error) {
-		log.Error(err)
+		if err != nil {
+			log.Error(err)
+		}
 		writerError(w, "Request invalid.", http.StatusBadRequest)
 	}
 	RequestErrorHandlerCustomMsg = func(w http.ResponseWriter, errorMessage string) {
