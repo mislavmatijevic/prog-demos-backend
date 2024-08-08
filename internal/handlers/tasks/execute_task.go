@@ -171,7 +171,7 @@ func getRequestBody(r *http.Request, w http.ResponseWriter) (*taskExecutionReque
 	return &requestBody, false
 }
 
-// Stores temp CPP source code file and "input.txt" file which serves as stdin mock.
+// Stores temp CPP source code file and "stdin.txt" file which serves as stdin mock.
 // If it fails, the function deletes whatever it created.
 // Returns: new CPP file
 func storeTempFiles(cppCode string, inputs string) (*os.File, error) {
@@ -190,7 +190,7 @@ func storeTempFiles(cppCode string, inputs string) (*os.File, error) {
 
 	var fullPathToNewTempDir = filepath.Dir(createdTempCppFile.Name())
 
-	createdTempInputsFile, err := os.Create(fullPathToNewTempDir + "/input.txt")
+	createdTempInputsFile, err := os.Create(fullPathToNewTempDir + "/stdin.txt")
 	if err != nil {
 		log.Error("Failed to create temp inputs file!", err)
 		os.Remove(createdTempCppFile.Name())
