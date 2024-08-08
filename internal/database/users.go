@@ -24,9 +24,17 @@ func RegisterNewUser(userInfo User) (int, error) {
 }
 
 func GetUserByEmail(email string) *User {
+	return getUserByCondition("email = ?", email)
+}
+
+func GetUserByUsername(username string) *User {
+	return getUserByCondition("username = ?", username)
+}
+
+func getUserByCondition(query interface{}, args ...interface{}) *User {
 	var foundUser User
 
-	var result = Instance.db.Where("email = @Email", sql.Named("Email", email)).Find(&foundUser)
+	var result = Instance.db.Where(query, args).Find(&foundUser)
 
 	if result.Error != nil {
 		log.Error("Error fetching user: ", result.Error)

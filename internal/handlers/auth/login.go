@@ -12,8 +12,8 @@ import (
 )
 
 type UserLoginBody struct {
-	Email    string `json:"email"`
-	Password string `json:"password"`
+	Identifier string `json:"identifier"`
+	Password   string `json:"password"`
 }
 
 type LoginSuccessResponse struct {
@@ -58,11 +58,16 @@ func LoginUser(w http.ResponseWriter, r *http.Request) {
 }
 
 func isValidLoginBody(loginBody UserLoginBody) bool {
-	return strings.Trim(loginBody.Email, " ") != "" && strings.Trim(loginBody.Password, " ") != ""
+	return strings.Trim(loginBody.Identifier, " ") != "" && strings.Trim(loginBody.Password, " ") != ""
 }
 
 func getValidUser(loginBody UserLoginBody) (isUserOk bool, foundUser *database.User) {
-	foundUser = database.GetUserByEmail(loginBody.Email)
+	if strings.Contains(loginBody.Identifier, "@") {
+		foundUser = database.GetUserByEmail(loginBody.Identifier)
+	} else {
+		foundUser = database.GetUserByUsername(loginBody.Identifier)
+	}
+
 	isUserOk = foundUser != nil && isPasswordCorrect(foundUser.Password, loginBody.Password) && foundUser.IsActivated
 	return isUserOk, foundUser
 }
