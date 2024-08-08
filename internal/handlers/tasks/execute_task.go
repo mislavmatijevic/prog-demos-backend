@@ -1,6 +1,7 @@
 package tasks
 
 import (
+	"crypto/sha256"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -8,6 +9,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -22,8 +24,9 @@ type taskExecutionRequest = struct {
 }
 
 type testDataMismatch = struct {
-	TestInput   string `json:"test_input"`
-	WrongOutput string `json:"wrong_output"`
+	TestInput      string `json:"test_input"`
+	Output         string `json:"output,omitempty"`
+	ExpectedOutput string `json:"expected_output,omitempty"`
 }
 
 type taskExecutionResponse = struct {
@@ -56,40 +59,64 @@ func ExecuteTask(w http.ResponseWriter, r *http.Request) {
 	var res taskExecutionResponse
 
 	for _, test := range tests {
+		omitOutputsCheck := false
 		testInput := test.Input
 
 		cppFile, err := storeTempFiles(requestBody.SolutionCode, testInput)
 		var tempDirPath = filepath.Dir(cppFile.Name())
 		if err != nil {
-			api.InternalErrorHandler(w)
-			os.RemoveAll(tempDirPath)
+			log.Error(err)
+			handleTestExecutionFail(w, tempDirPath)
 			return
 		}
 
 		err = runFileInIsolatedDockerContainer(cppFile)
 		if err != nil {
-			api.InternalErrorHandler(w)
-			os.RemoveAll(tempDirPath)
+			log.Error(err)
+			handleTestExecutionFail(w, tempDirPath)
 			return
 		}
 
 		actualOutputs, err := getOutputs(tempDirPath)
 		if err != nil {
-			api.InternalErrorHandler(w)
-			os.RemoveAll(tempDirPath)
+			log.Error(err)
+			handleTestExecutionFail(w, tempDirPath)
 			return
 		}
-		// TODO read artefacts
+
+		var hasArtefacts bool = len(test.ArtefactSHA256) != 0
+
+		if hasArtefacts {
+			hashMatches, err := checkHashMatch(test, tempDirPath)
+			if err != nil {
+				log.Error(err)
+				handleTestExecutionFail(w, tempDirPath)
+				return
+			} else if !hashMatches {
+				res = taskExecutionResponse{
+					Success:      false,
+					Message:      "Artefact files did not contain expected contents.",
+					ReasonFailed: &testDataMismatch{TestInput: testInput},
+				}
+				sendResponse(w, res)
+				omitOutputsCheck = true
+			}
+		}
 
 		os.RemoveAll(tempDirPath)
+
+		if omitOutputsCheck {
+			return
+		}
 
 		if actualOutputs != test.ExpectedOutput {
 			res = taskExecutionResponse{
 				Success: false,
 				Message: "Program did not output expected test data.",
 				ReasonFailed: &testDataMismatch{
-					TestInput:   testInput,
-					WrongOutput: actualOutputs,
+					TestInput:      testInput,
+					Output:         actualOutputs,
+					ExpectedOutput: test.ExpectedOutput,
 				},
 			}
 			sendResponse(w, res)
@@ -99,6 +126,24 @@ func ExecuteTask(w http.ResponseWriter, r *http.Request) {
 
 	res = taskExecutionResponse{Success: true, Message: "Test data matches output!", ReasonFailed: nil}
 	sendResponse(w, res)
+}
+
+func handleTestExecutionFail(w http.ResponseWriter, tempDirPath string) {
+	api.InternalErrorHandler(w)
+	os.RemoveAll(tempDirPath)
+}
+
+func checkHashMatch(test database.Test, tempDirPath string) (hashMatches bool, err error) {
+	actualSha256, err := calculateOutputArtefactsHash(tempDirPath)
+	if err != nil {
+		return false, err
+	}
+
+	if actualSha256 != test.ArtefactSHA256 {
+		return false, nil
+	}
+
+	return true, nil
 }
 
 func sendResponse(w http.ResponseWriter, res taskExecutionResponse) {
@@ -125,7 +170,7 @@ func getRequestBody(r *http.Request, w http.ResponseWriter) (*taskExecutionReque
 // If it fails, the function deletes whatever it created.
 // Returns: new CPP file
 func storeTempFiles(cppCode string, inputs string) (*os.File, error) {
-	createdTempPath, _ := os.MkdirTemp("/var/temp_tasks/", "temp_cpp_solutions")
+	createdTempPath, _ := os.MkdirTemp("/var/temp_tasks/", "temp_cpp_solutions_*")
 
 	createdTempCppFile, err := os.CreateTemp(createdTempPath, "solution_*.cpp")
 	if err != nil {
@@ -240,4 +285,45 @@ func getOutputs(tempDirPath string) (string, error) {
 	var stringOutput = string(bytes)
 	stringOutput = strings.TrimFunc(stringOutput, func(r rune) bool { return r == '\n' || r == ' ' })
 	return stringOutput, err
+}
+
+func calculateOutputArtefactsHash(tempDirPath string) (string, error) {
+	var rawContents, err = readOutputFilesFromDir(tempDirPath)
+	if err != nil {
+		return "", err
+	}
+
+	h := sha256.New()
+	h.Write(rawContents)
+	var hashedContents string = fmt.Sprintf("%x", h.Sum(nil))
+
+	return hashedContents, err
+}
+
+func readOutputFilesFromDir(tempDirPath string) ([]byte, error) {
+	artefactsFilePath := filepath.Join(tempDirPath, "artefacts.txt")
+	bytes, errMain := os.ReadFile(artefactsFilePath)
+	var stringOutput = string(bytes)
+	var fileNames = strings.Split(stringOutput, "\n")
+	sort.Strings(fileNames)
+
+	var allBytes []byte = make([]byte, 0)
+
+	for _, relativeFileName := range fileNames {
+		if len(relativeFileName) == 0 {
+			continue
+		}
+
+		var actualFileName = filepath.Base(relativeFileName)
+		fullFilePath := filepath.Join(tempDirPath, actualFileName)
+
+		currentFileBytes, err := os.ReadFile(fullFilePath)
+		if err != nil {
+			errMain = err
+			break
+		}
+		allBytes = append(allBytes, currentFileBytes...)
+	}
+
+	return allBytes, errMain
 }

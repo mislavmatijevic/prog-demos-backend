@@ -63,4 +63,5 @@ type Test struct {
 	Input          string   `gorm:"size:512;not null" json:"input"`
 	ExpectedOutput string   `gorm:"size:512;not null" json:"expected_output"`
 	Task           FullTask `gorm:"foreignKey:IDTask" json:"task"`
+	ArtefactSHA256 string   `gorm:"type:char(64)" json:"-"`
 }
