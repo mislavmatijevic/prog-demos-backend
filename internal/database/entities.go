@@ -1,5 +1,7 @@
 package database
 
+import "time"
+
 type Topic struct {
 	ID        int         `gorm:"primaryKey" json:"id"`
 	Name      string      `gorm:"size:100;not null" json:"name"`
@@ -64,4 +66,15 @@ type Test struct {
 	ExpectedOutput string   `gorm:"size:512;not null" json:"expected_output"`
 	Task           FullTask `gorm:"foreignKey:IDTask" json:"task"`
 	ArtefactSHA256 string   `gorm:"type:char(64)" json:"-"`
+}
+
+type User struct {
+	ID              int       `gorm:"primaryKey" json:"id"`
+	Username        string    `gorm:"not null" json:"username"`
+	Email           string    `gorm:"not null" json:"email"`
+	Password        string    `gorm:"not null" json:"-"`
+	IsActivated     bool      `gorm:"not null;default:false" json:"-"`
+	ActivationToken string    `gorm:"type:char(128);not null;default:false" json:"-"`
+	RefreshToken    string    `gorm:"type:char(512)" json:"-"`
+	DateRegistered  time.Time `gorm:"not null" json:"-"`
 }
