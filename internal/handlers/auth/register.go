@@ -68,5 +68,6 @@ func createUser(username, email, hashPassword string) database.User {
 		IsActivated:     false,
 		ActivationToken: utils.RandomString(128),
 		DateRegistered:  time.Now(),
+		UserType:        "basic",
 	}
 }
