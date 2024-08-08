@@ -34,7 +34,7 @@ func GetUserByUsername(username string) *User {
 func getUserByCondition(query interface{}, args ...interface{}) *User {
 	var foundUser User
 
-	var result = Instance.db.Where(query, args).Find(&foundUser)
+	var result = Instance.db.Where(query, args).First(&foundUser)
 
 	if result.Error != nil {
 		log.Error("Error fetching user: ", result.Error)
@@ -44,7 +44,20 @@ func getUserByCondition(query interface{}, args ...interface{}) *User {
 	return &foundUser
 }
 
-func AssignRefreshTokenToUser(user User) error {
+func SaveUser(user User) error {
 	result := Instance.db.Save(user)
 	return result.Error
+}
+
+func SetUserActivated(activationToken string) (*User, error) {
+	user := getUserByCondition("activation_token = ?", activationToken)
+	if user == nil {
+		return nil, errors.New("token does not exist")
+	}
+
+	user.IsActivated = true
+	user.ActivationToken = ""
+
+	err := SaveUser(*user)
+	return user, err
 }

@@ -44,6 +44,6 @@ func GenerateAccessToken(user *database.User) (string, error) {
 
 func GenerateRefreshToken(user *database.User) (string, error) {
 	user.RefreshToken = utils.RandomString(512)
-	err := database.AssignRefreshTokenToUser(*user)
+	err := database.SaveUser(*user)
 	return user.RefreshToken, err
 }
