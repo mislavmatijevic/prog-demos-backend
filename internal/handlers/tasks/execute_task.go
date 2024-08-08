@@ -36,7 +36,7 @@ func ExecuteTask(w http.ResponseWriter, r *http.Request) {
 
 	inputs, expectedOutputs, err := getTestsForTask(taskId)
 	if err != nil || expectedOutputs == "" {
-		res := taskExecutionResponse{Success: false, Message: "Ovaj zadatak nema testove."}
+		res := taskExecutionResponse{Success: false, Message: "Can't test this task."}
 		w.Header().Add("content-type", "application/json")
 		json.NewEncoder(w).Encode(res)
 		return
