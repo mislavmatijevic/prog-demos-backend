@@ -35,7 +35,7 @@ func UseVerifier() func(http.Handler) http.Handler {
 }
 
 func GenerateAccessToken(user *database.User) (string, error) {
-	claims := map[string]interface{}{"user_id": user.ID, "email": user.Email, "username": user.Username}
+	claims := map[string]interface{}{"user_id": user.ID, "email": user.Email, "username": user.Username, "type": user.UserType}
 	jwtauth.SetIssuedNow(claims)
 	jwtauth.SetExpiryIn(claims, accessTokenDuration)
 	_, tokenString, err := authToken.Encode(claims)

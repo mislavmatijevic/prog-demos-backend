@@ -73,11 +73,11 @@ type User struct {
 	Username        string    `gorm:"not null" json:"username"`
 	Email           string    `gorm:"not null" json:"email"`
 	Password        string    `gorm:"not null" json:"-"`
+	UserType        string    `gorm:"not null;default:basic" json:"-"`
 	IsActivated     bool      `gorm:"not null;default:false" json:"-"`
 	ActivationToken string    `gorm:"type:char(128);not null;default:false" json:"-"`
 	RefreshToken    string    `gorm:"type:char(512)" json:"-"`
 	DateRegistered  time.Time `gorm:"not null" json:"-"`
-	UserType        string    `gorm:"not null;default:basic" json:"-"`
 }
 
 type RefreshToken struct {
