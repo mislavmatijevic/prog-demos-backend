@@ -45,4 +45,13 @@ var (
 	InternalErrorHandlerCustomMsg = func(w http.ResponseWriter, errorMessage string) {
 		writerError(w, errorMessage, http.StatusInternalServerError)
 	}
+	AuthorizationMissingGenericMsg = func(w http.ResponseWriter) {
+		writerError(w, "Valid authorization header missing.", http.StatusUnauthorized)
+	}
+	AuthorizationExpiredGenericMsg = func(w http.ResponseWriter) {
+		writerError(w, "Authorization token expired.", http.StatusForbidden)
+	}
+	AuthorizationInvalidGenericMsg = func(w http.ResponseWriter) {
+		writerError(w, "Authorization token is invalid.", http.StatusForbidden)
+	}
 )

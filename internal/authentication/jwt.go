@@ -8,6 +8,7 @@ import (
 
 	"github.com/go-chi/jwtauth"
 	"github.com/mislavmatijevic/prog-demos-backend/internal/database"
+	"github.com/mislavmatijevic/prog-demos-backend/internal/handlers/api"
 	"github.com/mislavmatijevic/prog-demos-backend/internal/utils"
 )
 
@@ -26,12 +27,26 @@ func Initialize() {
 	authToken = jwtauth.New("HS256", []byte(JWT_SECRET_KEY), nil)
 }
 
-func UseAuthenticator() func(http.Handler) http.Handler {
-	return jwtauth.Authenticator
-}
+func RequireAccessToken(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, err := jwtauth.VerifyRequest(authToken, r, jwtauth.TokenFromHeader)
 
-func UseVerifier() func(http.Handler) http.Handler {
-	return jwtauth.Verifier(authToken)
+		if err != nil {
+			switch err {
+			case jwtauth.ErrNoTokenFound:
+				api.AuthorizationMissingGenericMsg(w)
+				return
+			case jwtauth.ErrUnauthorized:
+				api.AuthorizationInvalidGenericMsg(w)
+				return
+			case jwtauth.ErrExpired:
+				api.AuthorizationExpiredGenericMsg(w)
+				return
+			}
+		}
+
+		next.ServeHTTP(w, r)
+	})
 }
 
 func GenerateAccessToken(user *database.User) (string, error) {

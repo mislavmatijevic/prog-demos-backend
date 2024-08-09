@@ -10,11 +10,10 @@ func HandleTasks(r *chi.Mux) {
 		router.Get("/", GetAllTasksPerTopics)
 		router.Get("/{taskId}", GetSingleTask)
 
-		router.Group(func(r chi.Router) {
-			r.Use(authentication.UseAuthenticator())
-			r.Use(authentication.UseVerifier())
+		router.Group(func(protectedRouter chi.Router) {
+			protectedRouter.Use(authentication.RequireAccessToken)
 
-			router.Post("/{taskId}/run", ExecuteTask)
+			protectedRouter.Post("/{taskId}/run", ExecuteTask)
 		})
 	})
 }
