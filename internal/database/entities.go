@@ -76,13 +76,13 @@ type User struct {
 	UserType        string    `gorm:"not null;default:basic" json:"-"`
 	IsActivated     bool      `gorm:"not null;default:false" json:"-"`
 	ActivationToken string    `gorm:"type:char(128);not null;default:false" json:"-"`
-	RefreshToken    string    `gorm:"type:char(512)" json:"-"`
 	DateRegistered  time.Time `gorm:"not null" json:"-"`
 }
 
 type RefreshToken struct {
 	ID         int       `gorm:"primaryKey" json:"-"`
-	UserID     int       `gorm:"not null;column:id_user" json:"-"`
-	Value      string    `gorm:"not null" json:"refresh_token"`
-	Expiration time.Time `gorm:"not null" json:"-"`
+	OwnerID    int       `gorm:"not null;column:id_user" json:"-"`
+	Value      string    `gorm:"type:char(512)" json:"refresh_token"`
+	Expiration time.Time `gorm:"not null" json:"expires_at"`
+	Owner      *User     `gorm:"foreignKey:OwnerID" json:"-"`
 }

@@ -14,7 +14,14 @@ import (
 
 var authToken *jwtauth.JWTAuth
 var accessTokenDuration time.Duration
-var RefreshTokenDuration time.Duration
+var refreshTokenDuration time.Duration
+
+const REFRESH_TOKEN_SIZE int = 512
+
+type AuthTokenPair struct {
+	AccessToken  string                `json:"access_token"`
+	RefreshToken database.RefreshToken `json:"refresh_token"`
+}
 
 func Initialize() {
 	var JWT_SECRET_KEY = os.Getenv("JWT_SECRET_KEY")
@@ -22,7 +29,7 @@ func Initialize() {
 	var REFRESH_TOKEN_DURATION_DAYS, _ = strconv.Atoi(os.Getenv("REFRESH_TOKEN_DURATION_DAYS"))
 
 	accessTokenDuration = time.Duration(JWT_ACCESS_DURATION_MINUTES) * time.Minute
-	RefreshTokenDuration = time.Duration(REFRESH_TOKEN_DURATION_DAYS) * time.Hour * 24
+	refreshTokenDuration = time.Duration(REFRESH_TOKEN_DURATION_DAYS) * 24 * time.Hour
 
 	authToken = jwtauth.New("HS256", []byte(JWT_SECRET_KEY), nil)
 }
@@ -49,16 +56,40 @@ func RequireAccessToken(next http.Handler) http.Handler {
 	})
 }
 
-func GenerateAccessToken(user *database.User) (string, error) {
+func GenerateNewTokenPair(user *database.User) (*AuthTokenPair, error) {
+	accessToken, err := generateNewAccessToken(user)
+	if err != nil {
+		return nil, err
+	}
+
+	refreshToken, err := persistNewRefreshTokenForUser(user)
+	if err != nil {
+		return nil, err
+	}
+
+	var tokenPair = AuthTokenPair{
+		AccessToken:  accessToken,
+		RefreshToken: *refreshToken,
+	}
+
+	return &tokenPair, err
+}
+
+func ValidateRefreshTokenFormat(refreshTokenValue string) bool {
+	return utils.IsValidRandomString(refreshTokenValue, REFRESH_TOKEN_SIZE)
+}
+
+func generateNewAccessToken(user *database.User) (string, error) {
 	claims := map[string]interface{}{"user_id": user.ID, "email": user.Email, "username": user.Username, "type": user.UserType}
 	jwtauth.SetIssuedNow(claims)
 	jwtauth.SetExpiryIn(claims, accessTokenDuration)
-	_, tokenString, err := authToken.Encode(claims)
-	return tokenString, err
+	_, accessToken, err := authToken.Encode(claims)
+	return accessToken, err
 }
 
-func GenerateRefreshToken(user *database.User) (string, error) {
-	user.RefreshToken = utils.RandomString(512)
-	err := database.SaveUser(*user)
-	return user.RefreshToken, err
+func persistNewRefreshTokenForUser(user *database.User) (*database.RefreshToken, error) {
+	var refreshTokenValue string = utils.RandomString(REFRESH_TOKEN_SIZE)
+	refreshTokenExpiresAt := time.Now().Add(refreshTokenDuration)
+	refreshToken, err := database.UpdateRefreshTokenForUser(refreshTokenValue, user, refreshTokenExpiresAt)
+	return refreshToken, err
 }

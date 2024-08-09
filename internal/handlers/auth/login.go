@@ -16,11 +16,6 @@ type UserLoginBody struct {
 	Password   string `json:"password"`
 }
 
-type LoginSuccessResponse struct {
-	AccessToken  string `json:"access_token"`
-	RefreshToken string `json:"refresh_token"`
-}
-
 func LoginUser(w http.ResponseWriter, r *http.Request) {
 	var loginBody UserLoginBody
 	err := json.NewDecoder(r.Body).Decode(&loginBody)
@@ -35,21 +30,10 @@ func LoginUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	accessTokenString, err := authentication.GenerateAccessToken(user)
+	res, err := authentication.GenerateNewTokenPair(user)
 	if err != nil {
 		api.InternalErrorHandlerGenericMsg(w, err)
 		return
-	}
-
-	refreshTokenString, err := authentication.GenerateRefreshToken(user)
-	if err != nil {
-		api.InternalErrorHandlerGenericMsg(w, err)
-		return
-	}
-
-	var res = LoginSuccessResponse{
-		AccessToken:  accessTokenString,
-		RefreshToken: refreshTokenString,
 	}
 
 	w.WriteHeader(http.StatusOK)

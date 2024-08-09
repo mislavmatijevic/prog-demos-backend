@@ -3,7 +3,10 @@ package utils
 import (
 	"crypto/rand"
 	"math/big"
+	"regexp"
 )
+
+var validRefreshTokenRegex = regexp.MustCompile(`^[a-zA-Z0-9]+$`)
 
 func RandomString(n int) string {
 	const letters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
@@ -13,4 +16,8 @@ func RandomString(n int) string {
 		result[i] = letters[num.Int64()]
 	}
 	return string(result)
+}
+
+func IsValidRandomString(value string, n int) bool {
+	return validRefreshTokenRegex.MatchString(value) && len(value) == n
 }
