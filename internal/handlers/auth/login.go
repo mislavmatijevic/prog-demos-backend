@@ -37,13 +37,13 @@ func LoginUser(w http.ResponseWriter, r *http.Request) {
 
 	accessTokenString, err := authentication.GenerateAccessToken(user)
 	if err != nil {
-		api.InternalErrorHandler(w, err)
+		api.InternalErrorHandlerGenericMsg(w, err)
 		return
 	}
 
 	refreshTokenString, err := authentication.GenerateRefreshToken(user)
 	if err != nil {
-		api.InternalErrorHandler(w, err)
+		api.InternalErrorHandlerGenericMsg(w, err)
 		return
 	}
 

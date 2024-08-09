@@ -128,7 +128,7 @@ func ExecuteTask(w http.ResponseWriter, r *http.Request) {
 }
 
 func handleTestExecutionFail(w http.ResponseWriter, tempDirPath string, err error) {
-	api.InternalErrorHandler(w, err)
+	api.InternalErrorHandlerGenericMsg(w, err)
 	os.RemoveAll(tempDirPath)
 }
 

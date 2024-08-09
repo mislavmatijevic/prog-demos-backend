@@ -7,7 +7,7 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-func RegisterNewUser(userInfo User) (int, error) {
+func RegisterNewUser(userInfo User) (*User, error) {
 	var alreadyExistingUser User
 
 	Instance.db.Where("username = @Username OR email = @Email",
@@ -16,11 +16,11 @@ func RegisterNewUser(userInfo User) (int, error) {
 	).Find(&alreadyExistingUser)
 
 	if alreadyExistingUser.ID != 0 {
-		return -1, errors.New("User already exists")
+		return nil, errors.New("User already exists")
 	}
 
 	Instance.db.Create(&userInfo)
-	return userInfo.ID, nil
+	return &userInfo, nil
 }
 
 func GetUserByEmail(email string) *User {
@@ -60,4 +60,9 @@ func SetUserActivated(activationToken string) (*User, error) {
 
 	err := SaveUser(*user)
 	return user, err
+}
+
+func DeleteUser(user *User) error {
+	result := Instance.db.Delete(user)
+	return result.Error
 }

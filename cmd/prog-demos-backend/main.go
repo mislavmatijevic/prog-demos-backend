@@ -12,6 +12,7 @@ import (
 	"github.com/mislavmatijevic/prog-demos-backend/internal/authentication"
 	"github.com/mislavmatijevic/prog-demos-backend/internal/database"
 	"github.com/mislavmatijevic/prog-demos-backend/internal/handlers"
+	"github.com/mislavmatijevic/prog-demos-backend/internal/mailing"
 )
 
 func main() {
@@ -29,6 +30,7 @@ func main() {
 	}
 
 	authentication.Initialize()
+	mailing.Initialize()
 
 	var port = os.Getenv("PORT")
 	listeningAddress := fmt.Sprintf("0.0.0.0:%s", port)

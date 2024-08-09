@@ -9,7 +9,9 @@ import (
 
 	"github.com/mislavmatijevic/prog-demos-backend/internal/database"
 	"github.com/mislavmatijevic/prog-demos-backend/internal/handlers/api"
+	"github.com/mislavmatijevic/prog-demos-backend/internal/mailing"
 	"github.com/mislavmatijevic/prog-demos-backend/internal/utils"
+	log "github.com/sirupsen/logrus"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -39,20 +41,28 @@ func RegisterUser(w http.ResponseWriter, r *http.Request) {
 
 	hashPassword, err := getHashPassword(userReqBody.Password)
 	if err != nil {
-		api.InternalErrorHandler(w, err)
+		api.InternalErrorHandlerGenericMsg(w, err)
 		return
 	}
 
 	var user database.User = createUser(username, email, hashPassword)
 
-	newUserId, err := database.RegisterNewUser(user)
+	newUser, err := database.RegisterNewUser(user)
 	if err != nil {
 		api.RequestErrorHandlerCustomMsg(w, err.Error())
 		return
 	}
 
+	err = mailing.SendRegistrationMail(*newUser)
+	if err != nil {
+		log.Errorf("Error sending mail: %v", err)
+		database.DeleteUser(newUser)
+		api.InternalErrorHandlerCustomMsg(w, "Failed to send registration mail, rollbacked registration.")
+		return
+	}
+
 	res := Response{
-		NewId: newUserId,
+		NewId: newUser.ID,
 	}
 
 	w.WriteHeader(http.StatusCreated)

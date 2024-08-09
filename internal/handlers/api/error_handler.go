@@ -38,8 +38,11 @@ var (
 	RequestErrorHandlerCustomMsg = func(w http.ResponseWriter, errorMessage string) {
 		writerError(w, errorMessage, http.StatusBadRequest)
 	}
-	InternalErrorHandler = func(w http.ResponseWriter, err error) {
+	InternalErrorHandlerGenericMsg = func(w http.ResponseWriter, err error) {
 		log.Error(err)
 		writerError(w, "An Unexpected Error Occurred.", http.StatusInternalServerError)
+	}
+	InternalErrorHandlerCustomMsg = func(w http.ResponseWriter, errorMessage string) {
+		writerError(w, errorMessage, http.StatusInternalServerError)
 	}
 )
