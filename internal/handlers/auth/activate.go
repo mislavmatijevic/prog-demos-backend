@@ -11,7 +11,7 @@ import (
 )
 
 type ActivationBody struct {
-	AtivationToken string `json:"activation_token"`
+	ActivationToken string `json:"activation_token"`
 }
 
 type ActivationResponse struct {
@@ -21,14 +21,14 @@ type ActivationResponse struct {
 
 func ActivateUser(w http.ResponseWriter, r *http.Request) {
 	var loginBody ActivationBody
-	if err := json.NewDecoder(r.Body).Decode(&loginBody); err != nil && strings.Trim(loginBody.AtivationToken, " ") != "" {
+	if err := json.NewDecoder(r.Body).Decode(&loginBody); err != nil && strings.Trim(loginBody.ActivationToken, " ") != "" {
 		api.RequestErrorHandlerGenericMsg(w, err)
 		return
 	}
 
 	var res ActivationResponse
 
-	user, err := database.SetUserActivated(loginBody.AtivationToken)
+	user, err := database.SetUserActivated(loginBody.ActivationToken)
 	if err != nil {
 		res.Success = false
 		res.Message = fmt.Sprintf("Failed to activate the user: %s", err)
