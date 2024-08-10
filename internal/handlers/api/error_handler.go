@@ -54,4 +54,7 @@ var (
 	AuthorizationInvalidGenericMsg = func(w http.ResponseWriter) {
 		writerError(w, "Authorization token is invalid.", http.StatusForbidden)
 	}
+	TooEarlyErrorHandlerCustomMsg = func(w http.ResponseWriter, errorMessage string) {
+		writerError(w, errorMessage, http.StatusTooEarly)
+	}
 )

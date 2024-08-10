@@ -12,8 +12,10 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/go-chi/chi"
+	"github.com/mislavmatijevic/prog-demos-backend/internal/authentication"
 	"github.com/mislavmatijevic/prog-demos-backend/internal/database"
 	"github.com/mislavmatijevic/prog-demos-backend/internal/handlers/api"
 	log "github.com/sirupsen/logrus"
@@ -41,6 +43,12 @@ func ExecuteTask(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	solutionCode := strings.Trim(requestBody.SolutionCode, " ")
+	if len(solutionCode) == 0 {
+		api.RequestErrorHandlerCustomMsg(w, "Request body does not contain solution code.")
+		return
+	}
+
 	var originalParamId = chi.URLParam(r, "taskId")
 	taskId, err := strconv.Atoi(originalParamId)
 	if err != nil {
@@ -48,11 +56,29 @@ func ExecuteTask(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	userId, err := authentication.GetUserIdFromToken(r)
+	if err != nil || userId == 0 {
+		api.InternalErrorHandlerCustomMsg(w, "Couldn't get user from JWT token.")
+		return
+	}
+
+	alreadyHasRunningTask := checkUserHasRunningTasks(userId)
+	if alreadyHasRunningTask {
+		api.TooEarlyErrorHandlerCustomMsg(w, "Previously submitted task still in progress!")
+		return
+	}
+
+	taskExecution, err := markTaskExecutionStartForUserId(taskId, userId, solutionCode)
+	if err != nil {
+		api.InternalErrorHandlerGenericMsg(w, err)
+		return
+	}
+
 	var tests []database.Test = database.GetTestsForTask(taskId)
 	if len(tests) == 0 {
 		res := taskExecutionResponse{Success: false, Message: "Can't test this task."}
-		w.Header().Add("content-type", "application/json")
-		json.NewEncoder(w).Encode(res)
+		sendResponse(w, res)
+		setTaskExecutionStatusFailed(taskExecution)
 		return
 	}
 
@@ -65,21 +91,21 @@ func ExecuteTask(w http.ResponseWriter, r *http.Request) {
 		cppFile, err := storeTempFiles(requestBody.SolutionCode, testInput)
 		var tempDirPath = filepath.Dir(cppFile.Name())
 		if err != nil {
-			handleTestExecutionFail(w, tempDirPath, err)
+			handleTestExecutionFail(w, tempDirPath, err, taskExecution)
 			return
 		}
 
 		err = runFileInIsolatedDockerContainer(cppFile)
 		if err != nil {
 			log.Error(err)
-			handleTestExecutionFail(w, tempDirPath, err)
+			handleTestExecutionFail(w, tempDirPath, err, taskExecution)
 			return
 		}
 
 		actualOutputs, err := getOutputs(tempDirPath)
 		if err != nil {
 			log.Error(err)
-			handleTestExecutionFail(w, tempDirPath, err)
+			handleTestExecutionFail(w, tempDirPath, err, taskExecution)
 			return
 		}
 
@@ -89,7 +115,7 @@ func ExecuteTask(w http.ResponseWriter, r *http.Request) {
 			hashMatches, err := checkHashMatch(test, tempDirPath)
 			if err != nil {
 				log.Error(err)
-				handleTestExecutionFail(w, tempDirPath, err)
+				handleTestExecutionFail(w, tempDirPath, err, taskExecution)
 				return
 			} else if !hashMatches {
 				res = taskExecutionResponse{
@@ -98,6 +124,7 @@ func ExecuteTask(w http.ResponseWriter, r *http.Request) {
 					ReasonFailed: &testDataMismatch{TestInput: testInput},
 				}
 				sendResponse(w, res)
+				setTaskExecutionStatusFailed(taskExecution)
 				omitOutputsCheck = true
 			}
 		}
@@ -119,17 +146,54 @@ func ExecuteTask(w http.ResponseWriter, r *http.Request) {
 				},
 			}
 			sendResponse(w, res)
+			setTaskExecutionStatusFailed(taskExecution)
 			return
 		}
 	}
 
 	res = taskExecutionResponse{Success: true, Message: "Test data matches output!", ReasonFailed: nil}
 	sendResponse(w, res)
+	setTaskExecutionStatusSucceeded(taskExecution)
 }
 
-func handleTestExecutionFail(w http.ResponseWriter, tempDirPath string, err error) {
+func setTaskExecutionStatusFailed(taskExecution *database.TaskExecution) {
+	taskExecution.WasSuccessful = false
+	saveFinishedTaskExecution(taskExecution)
+}
+
+func setTaskExecutionStatusSucceeded(taskExecution *database.TaskExecution) {
+	taskExecution.WasSuccessful = true
+	saveFinishedTaskExecution(taskExecution)
+}
+
+func saveFinishedTaskExecution(taskExecution *database.TaskExecution) {
+	taskExecution.IsFinished = true
+	taskExecution.FinishedAt = time.Now()
+	database.SaveTaskExecution(*taskExecution)
+}
+
+func markTaskExecutionStartForUserId(taskId, userId int, code string) (*database.TaskExecution, error) {
+	var taskExecution database.TaskExecution = database.TaskExecution{
+		InitiatorID:   userId,
+		TaskID:        taskId,
+		StartedAt:     time.Now(),
+		IsFinished:    false,
+		SubmittedCode: code,
+		WasSuccessful: false,
+	}
+
+	return database.SaveTaskExecution(taskExecution)
+}
+
+func checkUserHasRunningTasks(userId int) bool {
+	currentlyRunningTaskExecution := database.GetRunningTaskExecutionForUserId(userId)
+	return currentlyRunningTaskExecution != nil
+}
+
+func handleTestExecutionFail(w http.ResponseWriter, tempDirPath string, err error, taskExecution *database.TaskExecution) {
 	api.InternalErrorHandlerGenericMsg(w, err)
 	os.RemoveAll(tempDirPath)
+	setTaskExecutionStatusFailed(taskExecution)
 }
 
 func checkHashMatch(test database.Test, tempDirPath string) (hashMatches bool, err error) {
@@ -170,15 +234,8 @@ func getRequestBody(r *http.Request, w http.ResponseWriter) (*taskExecutionReque
 // Returns: new CPP file
 func storeTempFiles(cppCode string, inputs string) (*os.File, error) {
 	createdTempPath, _ := os.MkdirTemp("/var/temp_tasks/", "temp_cpp_solutions_*")
-
-	createdTempCppFile, err := os.CreateTemp(createdTempPath, "solution_*.cpp")
+	createdTempCppFile, err := createTempCppFile(createdTempPath, cppCode)
 	if err != nil {
-		log.Error("Failed to create temp cpp file!", err)
-		return nil, err
-	}
-	err = fillFileWithData(createdTempCppFile, cppCode)
-	if err != nil {
-		os.Remove(createdTempCppFile.Name())
 		return nil, err
 	}
 
@@ -194,6 +251,24 @@ func storeTempFiles(cppCode string, inputs string) (*os.File, error) {
 	if err != nil {
 		os.Remove(createdTempCppFile.Name())
 		os.Remove(createdTempInputsFile.Name())
+		return nil, err
+	}
+
+	return createdTempCppFile, nil
+}
+
+// No file gets created if I fail.
+func createTempCppFile(path string, code string) (*os.File, error) {
+	createdTempCppFile, err := os.CreateTemp(path, "solution_*.cpp")
+
+	if err != nil {
+		log.Error("Failed to create temp cpp file!", err)
+		return nil, err
+	}
+
+	err = fillFileWithData(createdTempCppFile, code)
+	if err != nil {
+		os.Remove(createdTempCppFile.Name())
 		return nil, err
 	}
 

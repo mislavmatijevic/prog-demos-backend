@@ -32,7 +32,7 @@ func Initialize() {
 		log.Panicf("GORM failed to connect to the database! %s", err.Error())
 	}
 
-	err = Instance.db.AutoMigrate(&Topic{}, &Subtopic{}, &Video{}, &FullTask{}, &Test{}, &User{}, &RefreshToken{})
+	err = Instance.db.AutoMigrate(&Topic{}, &Subtopic{}, &Video{}, &FullTask{}, &Test{}, &User{}, &RefreshToken{}, &TaskExecution{})
 
 	if err != nil {
 		log.Warningf("Failed to do auto migration. Reason: %s", err)

@@ -86,3 +86,16 @@ type RefreshToken struct {
 	Expiration time.Time `gorm:"not null" json:"expires_at"`
 	Owner      *User     `gorm:"foreignKey:OwnerID" json:"-"`
 }
+
+type TaskExecution struct {
+	ID            int       `gorm:"primaryKey" json:"-"`
+	InitiatorID   int       `gorm:"not null;column:id_user" json:"-"`
+	TaskID        int       `gorm:"not null;column:id_task" json:"-"`
+	IsFinished    bool      `gorm:"not null;default:false" json:"-"`
+	StartedAt     time.Time `gorm:"not null" json:"-"`
+	FinishedAt    time.Time `gorm:"null;default:null" json:"-"`
+	SubmittedCode string    `gorm:"type:text" json:"solution_code"`
+	WasSuccessful bool      `gorm:"not null;default:false" json:"-"`
+	Initiator     *User     `gorm:"foreignKey:InitiatorID" json:"-"`
+	Task          *FullTask `gorm:"foreignKey:TaskID" json:"-"`
+}
