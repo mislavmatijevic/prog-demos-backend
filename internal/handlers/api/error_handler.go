@@ -57,4 +57,7 @@ var (
 	TooEarlyErrorHandlerCustomMsg = func(w http.ResponseWriter, errorMessage string) {
 		writerError(w, errorMessage, http.StatusTooEarly)
 	}
+	NotFoundHandlerCustomMsg = func(w http.ResponseWriter, errorMessage string) {
+		writerError(w, errorMessage, http.StatusNotFound)
+	}
 )

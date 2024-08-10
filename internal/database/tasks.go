@@ -29,6 +29,12 @@ func GetSingleFullTasks(taskId int) *FullTask {
 	return &task
 }
 
+func CheckTaskExists(taskId int) bool {
+	var task BasicTask
+	Instance.db.Find(&task, taskId)
+	return task.ID != 0
+}
+
 func GetTestsForTask(taskId int) []Test {
 	var tests []Test = make([]Test, 0)
 

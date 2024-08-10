@@ -27,7 +27,7 @@ func GetSingleVideo(w http.ResponseWriter, r *http.Request) {
 	video := database.GetSingleVideo(videoId)
 
 	if video == nil {
-		api.RequestErrorHandlerCustomMsg(w, fmt.Sprintf("Video with id %s not found!", originalParamId))
+		api.NotFoundHandlerCustomMsg(w, fmt.Sprintf("Video with id %s not found!", originalParamId))
 		return
 	}
 

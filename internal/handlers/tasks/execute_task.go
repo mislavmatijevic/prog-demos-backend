@@ -76,6 +76,10 @@ func ExecuteTask(w http.ResponseWriter, r *http.Request) {
 		api.RequestErrorHandlerGenericMsg(w, err)
 		return
 	}
+	if !database.CheckTaskExists(taskId) {
+		api.NotFoundHandlerCustomMsg(w, fmt.Sprintf("Task with id %v not found.", taskId))
+		return
+	}
 
 	userId, err := authentication.GetUserIdFromToken(r)
 	if err != nil || userId == 0 {

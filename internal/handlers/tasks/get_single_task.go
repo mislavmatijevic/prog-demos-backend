@@ -27,7 +27,7 @@ func GetSingleTask(w http.ResponseWriter, r *http.Request) {
 	Task := database.GetSingleFullTasks(TaskId)
 
 	if Task == nil {
-		api.RequestErrorHandlerCustomMsg(w, fmt.Sprintf("Task with id %s not found!", originalParamId))
+		api.NotFoundHandlerCustomMsg(w, fmt.Sprintf("Task with id %s not found!", originalParamId))
 		return
 	}
 
