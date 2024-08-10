@@ -21,20 +21,41 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+type ExecutionErrorCode int
+
+const (
+	EXEC_ERR_CODE_NO_TESTS ExecutionErrorCode = iota + 1
+	EXEC_ERR_ARTEFACT_CONTENT_MISMATCH
+	EXEC_ERR_TEST_FAILED
+)
+
+func (execErrCode ExecutionErrorCode) String() string {
+	return [...]string{
+		"Can't test this task.",
+		"Artefact files did not contain expected contents.",
+		"Program did not output expected test data.",
+	}[execErrCode-1]
+}
+
+func (execErrCode ExecutionErrorCode) EnumIndex() int {
+	return int(execErrCode)
+}
+
 type taskExecutionRequest = struct {
 	SolutionCode string `json:"solution_code"`
 }
 
-type testDataMismatch = struct {
-	TestInput      string `json:"test_input"`
+type testDataMismatchReason = struct {
+	TestInput      string `json:"test_input,omitempty"`
 	Output         string `json:"output,omitempty"`
 	ExpectedOutput string `json:"expected_output,omitempty"`
 }
 
 type taskExecutionResponse = struct {
-	Success      bool              `json:"success"`
-	Message      string            `json:"message"`
-	ReasonFailed *testDataMismatch `json:"reason,omitempty"`
+	Success      bool        `json:"success"`
+	Message      string      `json:"message"`
+	ErrorCode    int         `json:"error_code"`
+	ReasonFailed interface{} `json:"reason,omitempty"`
 }
 
 func ExecuteTask(w http.ResponseWriter, r *http.Request) {
@@ -90,8 +111,7 @@ func ExecuteTask(w http.ResponseWriter, r *http.Request) {
 
 	var tests []database.Test = database.GetTestsForTask(taskId)
 	if len(tests) == 0 {
-		res := taskExecutionResponse{Success: false, Message: "Can't test this task."}
-		sendResponse(w, res)
+		sendTaskExecutionFailedResponse(w, EXEC_ERR_CODE_NO_TESTS, nil)
 		setTaskExecutionStatusFailed(taskExecution)
 		return
 	}
@@ -132,12 +152,7 @@ func ExecuteTask(w http.ResponseWriter, r *http.Request) {
 				handleTestExecutionFail(w, tempDirPath, err, taskExecution)
 				return
 			} else if !hashMatches {
-				res = taskExecutionResponse{
-					Success:      false,
-					Message:      "Artefact files did not contain expected contents.",
-					ReasonFailed: &testDataMismatch{TestInput: testInput},
-				}
-				sendResponse(w, res)
+				sendTaskExecutionFailedResponse(w, EXEC_ERR_ARTEFACT_CONTENT_MISMATCH, testDataMismatchReason{TestInput: testInput})
 				setTaskExecutionStatusFailed(taskExecution)
 				omitOutputsCheck = true
 			}
@@ -150,22 +165,17 @@ func ExecuteTask(w http.ResponseWriter, r *http.Request) {
 		}
 
 		if actualOutputs != test.ExpectedOutput {
-			res = taskExecutionResponse{
-				Success: false,
-				Message: "Program did not output expected test data.",
-				ReasonFailed: &testDataMismatch{
-					TestInput:      testInput,
-					Output:         actualOutputs,
-					ExpectedOutput: test.ExpectedOutput,
-				},
-			}
-			sendResponse(w, res)
+			sendTaskExecutionFailedResponse(w, EXEC_ERR_TEST_FAILED, testDataMismatchReason{
+				TestInput:      testInput,
+				Output:         actualOutputs,
+				ExpectedOutput: test.ExpectedOutput,
+			})
 			setTaskExecutionStatusFailed(taskExecution)
 			return
 		}
 	}
 
-	res = taskExecutionResponse{Success: true, Message: "Test data matches output!", ReasonFailed: nil}
+	res = taskExecutionResponse{Success: true, Message: "Test data matches output!"}
 	sendResponse(w, res)
 	setTaskExecutionStatusSucceeded(taskExecution)
 }
@@ -174,6 +184,19 @@ func checkIsValidSolutionCode(cppFile *os.File) bool {
 	cmd := exec.Command("g++", "-fsyntax-only", cppFile.Name())
 	_, err := cmd.CombinedOutput()
 	return err == nil
+}
+
+func markTaskExecutionStartForUserId(taskId, userId int, code string) (*database.TaskExecution, error) {
+	var taskExecution database.TaskExecution = database.TaskExecution{
+		InitiatorID:   userId,
+		TaskID:        taskId,
+		StartedAt:     time.Now(),
+		IsFinished:    false,
+		SubmittedCode: code,
+		WasSuccessful: false,
+	}
+
+	return database.SaveTaskExecution(taskExecution)
 }
 
 func setTaskExecutionStatusFailed(taskExecution *database.TaskExecution) {
@@ -192,22 +215,14 @@ func saveFinishedTaskExecution(taskExecution *database.TaskExecution) {
 	database.SaveTaskExecution(*taskExecution)
 }
 
-func markTaskExecutionStartForUserId(taskId, userId int, code string) (*database.TaskExecution, error) {
-	var taskExecution database.TaskExecution = database.TaskExecution{
-		InitiatorID:   userId,
-		TaskID:        taskId,
-		StartedAt:     time.Now(),
-		IsFinished:    false,
-		SubmittedCode: code,
-		WasSuccessful: false,
-	}
-
-	return database.SaveTaskExecution(taskExecution)
-}
-
 func checkUserHasRunningTasks(userId int) bool {
 	currentlyRunningTaskExecution := database.GetRunningTaskExecutionForUserId(userId)
 	return currentlyRunningTaskExecution != nil
+}
+
+func sendTaskExecutionFailedResponse(w http.ResponseWriter, execErrCode ExecutionErrorCode, reasonFailed interface{}) {
+	res := taskExecutionResponse{Success: false, ErrorCode: execErrCode.EnumIndex(), Message: execErrCode.String(), ReasonFailed: reasonFailed}
+	sendResponse(w, res)
 }
 
 func handleTestExecutionFail(w http.ResponseWriter, tempDirPath string, err error, taskExecution *database.TaskExecution) {
