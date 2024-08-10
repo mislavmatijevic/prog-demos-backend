@@ -1,6 +1,8 @@
 package authentication
 
 import (
+	"context"
+	"fmt"
 	"net/http"
 	"os"
 	"strconv"
@@ -36,7 +38,7 @@ func Initialize() {
 
 func RequireAccessToken(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		_, err := jwtauth.VerifyRequest(authToken, r, jwtauth.TokenFromHeader)
+		token, err := jwtauth.VerifyRequest(authToken, r, jwtauth.TokenFromHeader)
 
 		if err != nil {
 			switch err {
@@ -52,7 +54,8 @@ func RequireAccessToken(next http.Handler) http.Handler {
 			}
 		}
 
-		next.ServeHTTP(w, r)
+		var contextWithToken = context.WithValue(r.Context(), jwtauth.TokenCtxKey, token)
+		next.ServeHTTP(w, r.WithContext(contextWithToken))
 	})
 }
 
@@ -77,6 +80,18 @@ func GenerateNewTokenPair(user *database.User) (*AuthTokenPair, error) {
 
 func ValidateRefreshTokenFormat(refreshTokenValue string) bool {
 	return utils.IsValidRandomString(refreshTokenValue, REFRESH_TOKEN_SIZE)
+}
+
+func GetUserIdFromToken(r *http.Request) (int, error) {
+	var userId int
+
+	_, claims, err := jwtauth.FromContext(r.Context())
+	if err == nil {
+		var userIdClaim = fmt.Sprintf("%v", claims["user_id"])
+		userId, err = strconv.Atoi(userIdClaim)
+	}
+
+	return userId, err
 }
 
 func generateNewAccessToken(user *database.User) (string, error) {
