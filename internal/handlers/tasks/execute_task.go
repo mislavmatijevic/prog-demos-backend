@@ -74,6 +74,20 @@ func ExecuteTask(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	cppFileForSyntaxChecking, err := createTempCppFile("", requestBody.SolutionCode)
+	if err != nil {
+		api.RequestErrorHandlerGenericMsg(w, err)
+		setTaskExecutionStatusFailed(taskExecution)
+		return
+	} else if !checkIsValidSolutionCode(cppFileForSyntaxChecking) {
+		api.RequestErrorHandlerCustomMsg(w, "Code is not valid C++.")
+		os.Remove(cppFileForSyntaxChecking.Name())
+		setTaskExecutionStatusFailed(taskExecution)
+		return
+	} else {
+		os.Remove(cppFileForSyntaxChecking.Name())
+	}
+
 	var tests []database.Test = database.GetTestsForTask(taskId)
 	if len(tests) == 0 {
 		res := taskExecutionResponse{Success: false, Message: "Can't test this task."}
@@ -154,6 +168,12 @@ func ExecuteTask(w http.ResponseWriter, r *http.Request) {
 	res = taskExecutionResponse{Success: true, Message: "Test data matches output!", ReasonFailed: nil}
 	sendResponse(w, res)
 	setTaskExecutionStatusSucceeded(taskExecution)
+}
+
+func checkIsValidSolutionCode(cppFile *os.File) bool {
+	cmd := exec.Command("g++", "-fsyntax-only", cppFile.Name())
+	_, err := cmd.CombinedOutput()
+	return err == nil
 }
 
 func setTaskExecutionStatusFailed(taskExecution *database.TaskExecution) {
