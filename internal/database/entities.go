@@ -28,7 +28,7 @@ type Video struct {
 type BasicTask struct {
 	ID         int `gorm:"primaryKey" json:"id"`
 	SubtopicID int `gorm:"not null;column:id_subtopic" json:"-"`
-	OrderNum   int `gorm:"not null" json:"order_num"`
+	OrderNum   int `gorm:"not null" json:"orderNum"`
 }
 
 func (BasicTask) TableName() string {
@@ -37,20 +37,20 @@ func (BasicTask) TableName() string {
 
 type FullTask struct {
 	ID                 int       `gorm:"primaryKey" json:"id"`
-	SubtopicID         int       `gorm:"not null;column:id_subtopic" json:"id_subtopic"`
-	OrderNum           int       `gorm:"not null" json:"order_num"`
+	SubtopicID         int       `gorm:"not null;column:id_subtopic" json:"idSubtopic"`
+	OrderNum           int       `gorm:"not null" json:"orderNum"`
 	Input              string    `gorm:"size:512;not null" json:"input"`
 	Output             string    `gorm:"size:512;not null" json:"output"`
-	InputOutputExample string    `gorm:"type:text" json:"input_output_example"`
-	IsFinalBoss        bool      `gorm:"not null;default:false" json:"is_final_boss"`
-	StarterCode        string    `gorm:"type:text" json:"starter_code"`
-	Step1Code          string    `gorm:"type:text" json:"step1_code,omitempty"`
-	Step2Code          string    `gorm:"type:text" json:"step2_code,omitempty"`
-	Step3Code          string    `gorm:"type:text" json:"step3_code,omitempty"`
-	Helper1Text        string    `gorm:"size:255" json:"helper1_text,omitempty"`
-	Helper2Text        string    `gorm:"size:255" json:"helper2_text,omitempty"`
-	Helper3Text        string    `gorm:"size:255" json:"helper3_text,omitempty"`
-	SolutionCode       string    `gorm:"type:text" json:"solution_code"`
+	InputOutputExample string    `gorm:"type:text" json:"inputOutputExample"`
+	IsFinalBoss        bool      `gorm:"not null;default:false" json:"isFinalBoss"`
+	StarterCode        string    `gorm:"type:text" json:"starterCode"`
+	Step1Code          string    `gorm:"type:text" json:"step1Code,omitempty"`
+	Step2Code          string    `gorm:"type:text" json:"step2Code,omitempty"`
+	Step3Code          string    `gorm:"type:text" json:"step3Code,omitempty"`
+	Helper1Text        string    `gorm:"size:255" json:"helper1Text,omitempty"`
+	Helper2Text        string    `gorm:"size:255" json:"helper2Text,omitempty"`
+	Helper3Text        string    `gorm:"size:255" json:"helper3Text,omitempty"`
+	SolutionCode       string    `gorm:"type:text" json:"solutionCode"`
 	Subtopic           *Subtopic `gorm:"foreignKey:SubtopicID" json:"subtopic"`
 	Tests              []Test    `gorm:"foreignKey:IDTask" json:"-"`
 }
@@ -61,9 +61,9 @@ func (FullTask) TableName() string {
 
 type Test struct {
 	ID             int      `gorm:"primaryKey" json:"id"`
-	IDTask         int      `gorm:"not null" json:"id_task"`
+	IDTask         int      `gorm:"not null" json:"idTask"`
 	Input          string   `gorm:"size:512;not null" json:"input"`
-	ExpectedOutput string   `gorm:"size:512;not null" json:"expected_output"`
+	ExpectedOutput string   `gorm:"size:512;not null" json:"expectedOutput"`
 	Task           FullTask `gorm:"foreignKey:IDTask" json:"task"`
 	ArtefactSHA256 string   `gorm:"type:char(64)" json:"-"`
 }
@@ -82,8 +82,8 @@ type User struct {
 type RefreshToken struct {
 	ID         int       `gorm:"primaryKey" json:"-"`
 	OwnerID    int       `gorm:"not null;column:id_user" json:"-"`
-	Value      string    `gorm:"type:char(512)" json:"refresh_token"`
-	Expiration time.Time `gorm:"not null" json:"expires_at"`
+	Value      string    `gorm:"type:char(512)" json:"refreshToken"`
+	Expiration time.Time `gorm:"not null" json:"expiresAt"`
 	Owner      *User     `gorm:"foreignKey:OwnerID" json:"-"`
 }
 
@@ -94,7 +94,7 @@ type TaskExecution struct {
 	IsFinished    bool      `gorm:"not null;default:false" json:"-"`
 	StartedAt     time.Time `gorm:"not null" json:"-"`
 	FinishedAt    time.Time `gorm:"null;default:null" json:"-"`
-	SubmittedCode string    `gorm:"type:text" json:"solution_code"`
+	SubmittedCode string    `gorm:"type:text" json:"solutionCode"`
 	WasSuccessful bool      `gorm:"not null;default:false" json:"-"`
 	Initiator     *User     `gorm:"foreignKey:InitiatorID" json:"-"`
 	Task          *FullTask `gorm:"foreignKey:TaskID" json:"-"`
