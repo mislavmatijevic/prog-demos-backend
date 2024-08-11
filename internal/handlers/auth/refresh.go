@@ -8,7 +8,6 @@ import (
 	"github.com/mislavmatijevic/prog-demos-backend/internal/authentication"
 	"github.com/mislavmatijevic/prog-demos-backend/internal/database"
 	"github.com/mislavmatijevic/prog-demos-backend/internal/handlers/api"
-	"github.com/sirupsen/logrus"
 )
 
 type RefreshRequest struct {
@@ -49,7 +48,6 @@ func RefreshAccess(w http.ResponseWriter, r *http.Request) {
 
 func findValidRefreshToken(refreshTokenValue string) (user *database.RefreshToken, isValid bool) {
 	refreshToken := database.GetRefreshTokenWithUser(refreshTokenValue)
-	logrus.Info(refreshToken)
 
 	if refreshToken == nil || refreshToken.Owner == nil {
 		return nil, false
