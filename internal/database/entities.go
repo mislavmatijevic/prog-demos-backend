@@ -82,7 +82,7 @@ type User struct {
 type RefreshToken struct {
 	ID         int       `gorm:"primaryKey" json:"-"`
 	OwnerID    int       `gorm:"not null;column:id_user" json:"-"`
-	Value      string    `gorm:"type:char(512)" json:"refreshToken"`
+	Value      string    `gorm:"type:char(512)" json:"value"`
 	Expiration time.Time `gorm:"not null" json:"expiresAt"`
 	Owner      *User     `gorm:"foreignKey:OwnerID" json:"-"`
 }
