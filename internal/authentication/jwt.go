@@ -94,6 +94,10 @@ func GetUserIdFromToken(r *http.Request) (int, error) {
 	return userId, err
 }
 
+func RemoveRefreshToken(refreshTokenValue string) bool {
+	return database.DeleteRefreshTokenWithValue(refreshTokenValue)
+}
+
 func generateNewAccessToken(user *database.User) (string, error) {
 	claims := map[string]interface{}{"user_id": user.ID, "email": user.Email, "username": user.Username, "type": user.UserType}
 	jwtauth.SetIssuedNow(claims)

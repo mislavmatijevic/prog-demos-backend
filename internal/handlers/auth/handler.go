@@ -8,5 +8,6 @@ func HandleAuth(r *chi.Mux) {
 		router.Post("/register", RegisterUser)
 		router.Post("/activate", ActivateUser)
 		router.Post("/refresh", RefreshAccess)
+		router.Post("/logout", LogoutUser)
 	})
 }
