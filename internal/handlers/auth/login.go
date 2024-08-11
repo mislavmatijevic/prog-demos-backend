@@ -11,13 +11,18 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-type UserLoginBody struct {
+type LoginBody struct {
 	Identifier string `json:"identifier"`
 	Password   string `json:"password"`
 }
 
+type LoginResponse struct {
+	UserInfo database.User                `json:"user"`
+	Tokens   authentication.AuthTokenPair `json:"tokens"`
+}
+
 func LoginUser(w http.ResponseWriter, r *http.Request) {
-	var loginBody UserLoginBody
+	var loginBody LoginBody
 	err := json.NewDecoder(r.Body).Decode(&loginBody)
 	if err != nil || !isValidLoginBody(loginBody) {
 		api.RequestErrorHandlerGenericMsg(w, err)
@@ -30,10 +35,15 @@ func LoginUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	res, err := authentication.GenerateNewTokenPair(user)
+	newTokenPair, err := authentication.GenerateNewTokenPair(user)
 	if err != nil {
 		api.InternalErrorHandlerGenericMsg(w, err)
 		return
+	}
+
+	res := LoginResponse{
+		UserInfo: *user,
+		Tokens:   *newTokenPair,
 	}
 
 	w.WriteHeader(http.StatusOK)
@@ -41,11 +51,11 @@ func LoginUser(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(res)
 }
 
-func isValidLoginBody(loginBody UserLoginBody) bool {
+func isValidLoginBody(loginBody LoginBody) bool {
 	return strings.Trim(loginBody.Identifier, " ") != "" && strings.Trim(loginBody.Password, " ") != ""
 }
 
-func getValidUser(loginBody UserLoginBody) (isUserOk bool, foundUser *database.User) {
+func getValidUser(loginBody LoginBody) (isUserOk bool, foundUser *database.User) {
 	if strings.Contains(loginBody.Identifier, "@") {
 		foundUser = database.GetUserByEmail(loginBody.Identifier)
 	} else {
