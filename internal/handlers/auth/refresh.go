@@ -12,7 +12,7 @@ import (
 )
 
 type RefreshRequest struct {
-	RefreshToken string `json:"refresh_token"`
+	RefreshToken string `json:"refreshToken"`
 }
 
 func RefreshAccess(w http.ResponseWriter, r *http.Request) {

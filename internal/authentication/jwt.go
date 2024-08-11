@@ -21,8 +21,8 @@ var refreshTokenDuration time.Duration
 const REFRESH_TOKEN_SIZE int = 512
 
 type AuthTokenPair struct {
-	AccessToken  string                `json:"access_token"`
-	RefreshToken database.RefreshToken `json:"refresh_token"`
+	AccessToken  string                `json:"accessToken"`
+	RefreshToken database.RefreshToken `json:"refreshToken"`
 }
 
 func Initialize() {

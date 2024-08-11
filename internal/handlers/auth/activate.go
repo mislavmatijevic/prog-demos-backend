@@ -11,7 +11,7 @@ import (
 )
 
 type ActivationBody struct {
-	ActivationToken string `json:"activation_token"`
+	ActivationToken string `json:"activationToken"`
 }
 
 type ActivationResponse struct {

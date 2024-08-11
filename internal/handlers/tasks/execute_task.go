@@ -47,19 +47,19 @@ func (execErrCode ExecutionErrorCode) EnumIndex() int {
 }
 
 type taskExecutionRequest = struct {
-	SolutionCode string `json:"solution_code"`
+	SolutionCode string `json:"solutionCode"`
 }
 
 type testDataMismatchReason = struct {
-	TestInput      string `json:"test_input,omitempty"`
+	TestInput      string `json:"testInput,omitempty"`
 	Output         string `json:"output,omitempty"`
-	ExpectedOutput string `json:"expected_output,omitempty"`
+	ExpectedOutput string `json:"expectedOutput,omitempty"`
 }
 
 type taskExecutionResponse = struct {
 	Success      bool        `json:"success"`
 	Message      string      `json:"message"`
-	ErrorCode    int         `json:"error_code"`
+	ErrorCode    int         `json:"errorCode"`
 	ReasonFailed interface{} `json:"reason,omitempty"`
 }
 

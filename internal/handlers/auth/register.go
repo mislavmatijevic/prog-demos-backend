@@ -22,7 +22,7 @@ type UserRegisterBody struct {
 }
 
 type Response struct {
-	NewId int `json:"new_id"`
+	NewId int `json:"newId"`
 }
 
 func RegisterUser(w http.ResponseWriter, r *http.Request) {
