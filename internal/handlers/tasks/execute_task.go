@@ -1,6 +1,7 @@
 package tasks
 
 import (
+	"context"
 	"crypto/sha256"
 	"encoding/json"
 	"errors"
@@ -27,13 +28,17 @@ const (
 	EXEC_ERR_CODE_NO_TESTS ExecutionErrorCode = iota + 1
 	EXEC_ERR_ARTEFACT_CONTENT_MISMATCH
 	EXEC_ERR_TEST_FAILED
+	EXEC_ERR_TIMEOUT
 )
+
+const CONTAINER_TIMEOUT_MARK = "timeout"
 
 func (execErrCode ExecutionErrorCode) String() string {
 	return [...]string{
 		"Can't test this task.",
 		"Artefact files did not contain expected contents.",
 		"Program did not output expected test data.",
+		"Execution took too long.",
 	}[execErrCode-1]
 }
 
@@ -129,21 +134,23 @@ func ExecuteTask(w http.ResponseWriter, r *http.Request) {
 		cppFile, err := storeTempFiles(requestBody.SolutionCode, testInput)
 		var tempDirPath = filepath.Dir(cppFile.Name())
 		if err != nil {
-			handleTestExecutionFail(w, tempDirPath, err, taskExecution)
+			handleTestExecutionInternalFail(w, tempDirPath, err, taskExecution)
 			return
 		}
 
-		err = runFileInIsolatedDockerContainer(cppFile)
+		ctx, cancel := context.WithTimeout(r.Context(), 10*time.Second)
+		defer cancel()
+
+		err = runFileInIsolatedDockerContainerTask(ctx, cppFile)
 		if err != nil {
-			log.Error(err)
-			handleTestExecutionFail(w, tempDirPath, err, taskExecution)
+			handleDockerContainerFail(err, w, taskExecution, tempDirPath)
 			return
 		}
 
 		actualOutputs, err := getOutputs(tempDirPath)
 		if err != nil {
 			log.Error(err)
-			handleTestExecutionFail(w, tempDirPath, err, taskExecution)
+			handleTestExecutionInternalFail(w, tempDirPath, err, taskExecution)
 			return
 		}
 
@@ -153,7 +160,7 @@ func ExecuteTask(w http.ResponseWriter, r *http.Request) {
 			hashMatches, err := checkHashMatch(test, tempDirPath)
 			if err != nil {
 				log.Error(err)
-				handleTestExecutionFail(w, tempDirPath, err, taskExecution)
+				handleTestExecutionInternalFail(w, tempDirPath, err, taskExecution)
 				return
 			} else if !hashMatches {
 				sendTaskExecutionFailedResponse(w, EXEC_ERR_ARTEFACT_CONTENT_MISMATCH, testDataMismatchReason{TestInput: testInput})
@@ -229,7 +236,7 @@ func sendTaskExecutionFailedResponse(w http.ResponseWriter, execErrCode Executio
 	sendResponse(w, res)
 }
 
-func handleTestExecutionFail(w http.ResponseWriter, tempDirPath string, err error, taskExecution *database.TaskExecution) {
+func handleTestExecutionInternalFail(w http.ResponseWriter, tempDirPath string, err error, taskExecution *database.TaskExecution) {
 	api.InternalErrorHandlerGenericMsg(w, err)
 	os.RemoveAll(tempDirPath)
 	setTaskExecutionStatusFailed(taskExecution)
@@ -322,41 +329,32 @@ func fillFileWithData(tempFile *os.File, inputs string) error {
 	return err
 }
 
-func runFileInIsolatedDockerContainer(cppFile *os.File) error {
-	err := runDockerRunnerImage(cppFile.Name())
+func runFileInIsolatedDockerContainerTask(context context.Context, cppFile *os.File) error {
+	errChan := make(chan error, 1)
+	sourceCodePath := cppFile.Name()
 
-	if err != nil {
-		if err.Error() == "image not built" {
-			log.Warn("Image wasn't built!")
-			buildErr := buildRunnerImage()
-			if buildErr != nil {
-				log.Errorf("Failed to build Docker container: %s", err)
-				return err
-			}
+	go func() {
+		errChan <- runDockerRunnerImage(sourceCodePath, true)
+	}()
 
-			err = runDockerRunnerImage(cppFile.Name())
-		}
+	select {
+	case <-context.Done():
+		var containerName = filepath.Base(filepath.Dir(sourceCodePath))
 
+		err := removeRunningDockerContainer(containerName)
 		if err != nil {
-			log.Errorf("Failed to run Docker container: %v", err)
-			return err
+			log.Error(err)
 		}
-	}
 
-	return nil
-}
-
-func buildRunnerImage() error {
-	log.Info("Building task-runner image.")
-	dockerPath, err := exec.LookPath("docker")
-	if err != nil {
+		return errors.New(CONTAINER_TIMEOUT_MARK)
+	case err := <-errChan:
+		log.Errorf("Failed to run Docker container: %v", err)
 		return err
 	}
-	cmd := exec.Command("bash", "-c", dockerPath+" build -t task-runner:latest -f ./task-runner.Dockerfile .")
-	return cmd.Run()
 }
 
-func runDockerRunnerImage(fullFilePath string) error {
+// Names the new container after the temp parent folder in which the CPP file is stored.
+func runDockerRunnerImage(fullFilePath string, allowBuildingImageIfNotFound bool) error {
 	var sourceCodePath = filepath.Dir(fullFilePath)
 	var parentFolderName = filepath.Base(sourceCodePath)
 	var sourceFileName = filepath.Base(fullFilePath)
@@ -367,15 +365,17 @@ func runDockerRunnerImage(fullFilePath string) error {
 	}
 
 	var volumeName = os.Getenv("TASKS_VOLUME_NAME")
+	var containerName = parentFolderName
 
 	var dockerRunArguments = fmt.Sprintf(
 		"%s run --rm "+
+			"--name %s "+
 			"-v %s:/var/temp_tasks/ "+
 			"--memory 30m --cpus 0.15 "+
 			"--security-opt no-new-privileges --network none "+
 			"-e SOURCE_CODE_FOLDER=%s "+
 			"-e SOURCE_FILE_NAME=%s "+
-			"task-runner:latest", dockerPath, volumeName, parentFolderName, sourceFileName,
+			"task-runner:latest", dockerPath, containerName, volumeName, parentFolderName, sourceFileName,
 	)
 
 	cmd := exec.Command("bash", "-c", dockerRunArguments)
@@ -384,13 +384,58 @@ func runDockerRunnerImage(fullFilePath string) error {
 	var stringOutput = string(output)
 	if stringOutput != "" {
 		if strings.Contains(stringOutput, "Unable to find image 'task-runner:latest'") {
-			return errors.New("image not built")
+			if allowBuildingImageIfNotFound {
+				buildRunnerImage(dockerPath)
+				return runDockerRunnerImage(fullFilePath, false)
+			} else {
+				log.Errorf("Failed to build Docker container: %s", err)
+			}
 		} else {
 			log.Warningf("Suspicious output from task-runner container: %s", stringOutput)
 		}
 	}
 
 	return err
+}
+
+func buildRunnerImage(dockerPath string) error {
+	cmd := exec.Command("bash", "-c", dockerPath+" build -t task-runner:latest -f ./task-runner.Dockerfile .")
+	return cmd.Run()
+}
+
+func handleDockerContainerFail(err error, w http.ResponseWriter, taskExecution *database.TaskExecution, tempDirPath string) {
+	switch err.Error() {
+	case CONTAINER_TIMEOUT_MARK:
+		{
+			sendTaskExecutionFailedResponse(w, EXEC_ERR_TIMEOUT, nil)
+			setTaskExecutionStatusFailed(taskExecution)
+		}
+	default:
+		{
+			log.Error(err)
+			handleTestExecutionInternalFail(w, tempDirPath, err, taskExecution)
+		}
+	}
+}
+
+func removeRunningDockerContainer(containerName string) error {
+	dockerPath, err := exec.LookPath("docker")
+	if err != nil {
+		return err
+	}
+
+	cmd := exec.Command("bash", "-c", fmt.Sprintf(dockerPath+" rm --force "+containerName))
+	output, err := cmd.CombinedOutput()
+	var stringOutputs = string(output)
+	if stringOutputs != containerName {
+		if err == nil {
+			return fmt.Errorf("container %s could not be stopped: %s", containerName, stringOutputs)
+		} else {
+			return fmt.Errorf(fmt.Sprintf("Container %s could not be stopped: error:%v, output:%s", containerName, err, stringOutputs))
+		}
+	}
+
+	return nil
 }
 
 func getOutputs(tempDirPath string) (string, error) {
