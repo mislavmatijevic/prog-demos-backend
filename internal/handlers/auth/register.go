@@ -15,14 +15,38 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+type RegistrationErrorCode int
+
+const (
+	EXEC_ERR_INFO_INVALID RegistrationErrorCode = iota + 1
+	EXEC_ERR_USERNAME_TAKEN
+)
+
+func (execErrCode RegistrationErrorCode) String() string {
+	return [...]string{
+		"Given information is not valid for registration.",
+		"Username or email already taken.",
+	}[execErrCode-1]
+}
+
+func (execErrCode RegistrationErrorCode) EnumIndex() int {
+	return int(execErrCode)
+}
+
 type UserRegisterBody struct {
 	Email    string `json:"email"`
 	Username string `json:"username"`
 	Password string `json:"password"`
 }
 
-type Response struct {
+type successResponse struct {
 	NewId int `json:"newId"`
+}
+
+type errorResponse = struct {
+	Success   bool   `json:"success"`
+	Message   string `json:"message"`
+	ErrorCode int    `json:"errorCode"`
 }
 
 func RegisterUser(w http.ResponseWriter, r *http.Request) {
@@ -35,7 +59,7 @@ func RegisterUser(w http.ResponseWriter, r *http.Request) {
 	username, email := strings.Trim(userReqBody.Username, " "), strings.Trim(userReqBody.Email, " ")
 	var infoIsValid bool = checkIfUserInfoValid(username, email, userReqBody.Password)
 	if !infoIsValid {
-		api.RequestErrorHandlerCustomMsg(w, "User information is not valid for registration.")
+		respondForErrorCode(w, EXEC_ERR_INFO_INVALID)
 		return
 	}
 
@@ -49,7 +73,11 @@ func RegisterUser(w http.ResponseWriter, r *http.Request) {
 
 	newUser, err := database.RegisterNewUser(user)
 	if err != nil {
-		api.RequestErrorHandlerCustomMsg(w, err.Error())
+		if err.Error() == "user already exists" {
+			respondForErrorCode(w, EXEC_ERR_USERNAME_TAKEN)
+		} else {
+			api.RequestErrorHandlerCustomMsg(w, err.Error())
+		}
 		return
 	}
 
@@ -61,13 +89,22 @@ func RegisterUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	res := Response{
+	res := successResponse{
 		NewId: newUser.ID,
 	}
 
 	w.WriteHeader(http.StatusCreated)
-	w.Header().Add("content-type", "application/json")
-	json.NewEncoder(w).Encode(res)
+	writeRequest(w, res)
+}
+
+func respondForErrorCode(w http.ResponseWriter, errorCode RegistrationErrorCode) {
+	var res = errorResponse{
+		Success:   false,
+		Message:   errorCode.String(),
+		ErrorCode: errorCode.EnumIndex(),
+	}
+	w.WriteHeader(http.StatusBadRequest)
+	writeRequest(w, res)
 }
 
 func getHashPassword(password string) (string, error) {
@@ -103,4 +140,9 @@ func createUser(username, email, hashPassword string) database.User {
 		DateRegistered:  time.Now(),
 		UserType:        "basic",
 	}
+}
+
+func writeRequest(w http.ResponseWriter, res any) {
+	w.Header().Add("content-type", "application/json")
+	json.NewEncoder(w).Encode(res)
 }

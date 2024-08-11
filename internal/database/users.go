@@ -16,7 +16,7 @@ func RegisterNewUser(userInfo User) (*User, error) {
 	).Find(&alreadyExistingUser)
 
 	if alreadyExistingUser.ID != 0 {
-		return nil, errors.New("User already exists")
+		return nil, errors.New("user already exists")
 	}
 
 	Instance.db.Create(&userInfo)
