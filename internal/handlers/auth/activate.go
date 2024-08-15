@@ -4,10 +4,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"strings"
 
 	"github.com/mislavmatijevic/prog-demos-backend/internal/database"
 	"github.com/mislavmatijevic/prog-demos-backend/internal/handlers/api"
+	"github.com/mislavmatijevic/prog-demos-backend/internal/utils"
 )
 
 type ActivationBody struct {
@@ -21,15 +21,21 @@ type ActivationResponse struct {
 }
 
 func ActivateUser(w http.ResponseWriter, r *http.Request) {
-	var loginBody ActivationBody
-	if err := json.NewDecoder(r.Body).Decode(&loginBody); err != nil && strings.Trim(loginBody.ActivationToken, " ") != "" {
+	var activationBody ActivationBody
+	if err := json.NewDecoder(r.Body).Decode(&activationBody); err != nil {
 		api.RequestErrorHandlerGenericMsg(w, err)
+		return
+	}
+
+	hasValue, trimmedToken := utils.GetTrimmedStringWithValue(activationBody.ActivationToken)
+	if !hasValue {
+		api.RequestErrorHandlerCustomMsg(w, "Activation token not procured.")
 		return
 	}
 
 	var res ActivationResponse
 
-	user, err := database.SetUserActivated(loginBody.ActivationToken)
+	user, err := database.SetUserActivated(trimmedToken)
 	if err != nil {
 		res.Success = false
 		res.Message = fmt.Sprintf("Failed to activate the user: %s", err)

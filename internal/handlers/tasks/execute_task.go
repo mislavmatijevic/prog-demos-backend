@@ -19,6 +19,7 @@ import (
 	"github.com/mislavmatijevic/prog-demos-backend/internal/authentication"
 	"github.com/mislavmatijevic/prog-demos-backend/internal/database"
 	"github.com/mislavmatijevic/prog-demos-backend/internal/handlers/api"
+	"github.com/mislavmatijevic/prog-demos-backend/internal/utils"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -69,8 +70,8 @@ func ExecuteTask(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	solutionCode := strings.Trim(requestBody.SolutionCode, " ")
-	if len(solutionCode) == 0 {
+	solutionCodeHasValue, solutionCode := utils.GetTrimmedStringWithValue(requestBody.SolutionCode)
+	if !solutionCodeHasValue {
 		api.RequestErrorHandlerCustomMsg(w, "Request body does not contain solution code.")
 		return
 	}
@@ -104,7 +105,7 @@ func ExecuteTask(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	cppFileForSyntaxChecking, err := createTempCppFile("", requestBody.SolutionCode)
+	cppFileForSyntaxChecking, err := createTempCppFile("", solutionCode)
 	if err != nil {
 		api.RequestErrorHandlerGenericMsg(w, err)
 		setTaskExecutionStatusFailed(taskExecution)
@@ -131,7 +132,7 @@ func ExecuteTask(w http.ResponseWriter, r *http.Request) {
 		omitOutputsCheck := false
 		testInput := test.Input
 
-		cppFile, err := storeTempFiles(requestBody.SolutionCode, testInput)
+		cppFile, err := storeTempFiles(solutionCode, testInput)
 		var tempDirPath = filepath.Dir(cppFile.Name())
 		if err != nil {
 			handleTestExecutionInternalFail(w, tempDirPath, err, taskExecution)

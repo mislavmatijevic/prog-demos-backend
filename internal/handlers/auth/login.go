@@ -8,6 +8,7 @@ import (
 	"github.com/mislavmatijevic/prog-demos-backend/internal/authentication"
 	"github.com/mislavmatijevic/prog-demos-backend/internal/database"
 	"github.com/mislavmatijevic/prog-demos-backend/internal/handlers/api"
+	"github.com/mislavmatijevic/prog-demos-backend/internal/utils"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -24,12 +25,18 @@ type LoginResponse struct {
 func LoginUser(w http.ResponseWriter, r *http.Request) {
 	var loginBody LoginBody
 	err := json.NewDecoder(r.Body).Decode(&loginBody)
-	if err != nil || !isValidLoginBody(loginBody) {
+	if err != nil {
 		api.RequestErrorHandlerGenericMsg(w, err)
 		return
 	}
 
-	loginAllowed, user := getValidUser(loginBody)
+	isIdentifierSet, trimmedIdentifier := utils.GetTrimmedStringWithValue(loginBody.Identifier)
+	if !isIdentifierSet || len(loginBody.Password) == 0 {
+		api.RequestErrorHandlerCustomMsg(w, "Login attributes not correctly set!")
+		return
+	}
+
+	loginAllowed, user := getValidUser(trimmedIdentifier, loginBody.Password)
 	if !loginAllowed {
 		api.RequestErrorHandlerCustomMsg(w, "Couldn't log in.")
 		return
@@ -51,18 +58,14 @@ func LoginUser(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(res)
 }
 
-func isValidLoginBody(loginBody LoginBody) bool {
-	return strings.Trim(loginBody.Identifier, " ") != "" && strings.Trim(loginBody.Password, " ") != ""
-}
-
-func getValidUser(loginBody LoginBody) (isUserOk bool, foundUser *database.User) {
-	if strings.Contains(loginBody.Identifier, "@") {
-		foundUser = database.GetUserByEmail(loginBody.Identifier)
+func getValidUser(identifier string, password string) (isUserOk bool, foundUser *database.User) {
+	if strings.Contains(identifier, "@") {
+		foundUser = database.GetUserByEmail(identifier)
 	} else {
-		foundUser = database.GetUserByUsername(loginBody.Identifier)
+		foundUser = database.GetUserByUsername(identifier)
 	}
 
-	isUserOk = foundUser != nil && isPasswordCorrect(foundUser.Password, loginBody.Password) && foundUser.IsActivated
+	isUserOk = foundUser != nil && isPasswordCorrect(foundUser.Password, password) && foundUser.IsActivated
 	return isUserOk, foundUser
 }
 
