@@ -9,8 +9,15 @@ import (
 )
 
 var client *mail.Client
+var isMailingInitialized = false
 
 func Initialize() {
+	var PROD = os.Getenv("PROD")
+	if PROD != "1" {
+		log.Info("Did not detect PROD flag, skipping mailing...")
+		return
+	}
+
 	var SMTP_URL = os.Getenv("SMTP_URL")
 	var SMTP_PORT, _ = strconv.Atoi(os.Getenv("SMTP_PORT"))
 	var SMTP_USERNAME = os.Getenv("SMTP_USERNAME")
@@ -25,7 +32,9 @@ func Initialize() {
 		mail.WithPassword(SMTP_PASSWORD),
 	)
 
-	if err != nil {
+	if err == nil {
+		isMailingInitialized = true
+	} else {
 		log.Fatalf("Failed to initialize mail service: %v", err)
 	}
 }
