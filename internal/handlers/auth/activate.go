@@ -15,8 +15,9 @@ type ActivationBody struct {
 }
 
 type ActivationResponse struct {
-	Success bool   `json:"success"`
-	Message string `json:"message"`
+	Success  bool   `json:"success"`
+	Message  string `json:"message"`
+	Username string `json:"username,omitempty"`
 }
 
 func ActivateUser(w http.ResponseWriter, r *http.Request) {
@@ -36,6 +37,7 @@ func ActivateUser(w http.ResponseWriter, r *http.Request) {
 	} else {
 		res.Success = true
 		res.Message = fmt.Sprintf("User %s activated", user.Username)
+		res.Username = user.Username
 		w.WriteHeader(http.StatusOK)
 	}
 
