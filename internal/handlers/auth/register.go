@@ -3,7 +3,6 @@ package auth
 import (
 	"encoding/json"
 	"net/http"
-	"regexp"
 	"strings"
 	"time"
 
@@ -119,15 +118,10 @@ func getHashPassword(password string) (string, error) {
 func checkIfUserInfoValid(username, email, password string) bool {
 	var usernameAtLeast2Characters = len(username) >= 2
 	var emailAtLeast4Characters = len(email) >= 4
-	var isEmailValid = isEmailValid(email)
+	var isEmailValid = utils.IsEmailValid(email)
 	var usernameDoesNotContainAt = !strings.Contains(username, "@")
 	var passwordAtLeast8Chars = len(password) >= 8
 	return usernameAtLeast2Characters && emailAtLeast4Characters && isEmailValid && usernameDoesNotContainAt && passwordAtLeast8Chars
-}
-
-func isEmailValid(e string) bool {
-	emailRegex := regexp.MustCompile(`^[a-z0-9._%+\-]+@[a-z0-9.\-]+\.[a-z]{2,4}$`)
-	return emailRegex.MatchString(e)
 }
 
 func createUser(username, email, hashPassword string) database.User {
