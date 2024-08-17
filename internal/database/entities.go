@@ -69,14 +69,16 @@ type Test struct {
 }
 
 type User struct {
-	ID              int       `gorm:"primaryKey" json:"id"`
-	Username        string    `gorm:"not null" json:"username"`
-	Email           string    `gorm:"not null" json:"email"`
-	Password        string    `gorm:"not null" json:"-"`
-	UserType        string    `gorm:"not null;default:basic" json:"-"`
-	IsActivated     bool      `gorm:"not null;default:false" json:"-"`
-	ActivationToken string    `gorm:"type:char(128);not null;default:false" json:"-"`
-	DateRegistered  time.Time `gorm:"not null" json:"-"`
+	ID                  int       `gorm:"primaryKey" json:"id"`
+	Username            string    `gorm:"not null" json:"username"`
+	Email               string    `gorm:"not null" json:"email"`
+	Password            string    `gorm:"not null" json:"-"`
+	UserType            string    `gorm:"not null;default:basic" json:"-"`
+	IsActivated         bool      `gorm:"not null;default:false" json:"-"`
+	ActivationToken     string    `gorm:"type:char(128);not null" json:"-"`
+	DateRegistered      time.Time `gorm:"not null" json:"-"`
+	PasswordResetToken  string    `gorm:"type:char(128);null;default:null" json:"-"`
+	PasswordResetExpiry time.Time `gorm:"null;default:null" json:"-"`
 }
 
 type RefreshToken struct {

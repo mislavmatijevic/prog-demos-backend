@@ -1,9 +1,13 @@
 package mailing
 
 import (
+	"bytes"
+	"fmt"
+	"html/template"
 	"os"
 	"strconv"
 
+	"github.com/mislavmatijevic/prog-demos-backend/internal/database"
 	log "github.com/sirupsen/logrus"
 	"github.com/wneessen/go-mail"
 )
@@ -37,4 +41,34 @@ func Initialize() {
 	} else {
 		log.Fatalf("Failed to initialize mail service: %v", err)
 	}
+}
+
+func SendMailToUser(user database.User, templateHtmlFilename string, subject string) error {
+	if !isMailingInitialized {
+		log.Infof("Skipping mail with template %s for user %s.", templateHtmlFilename, user.Username)
+		return nil
+	}
+
+	tmpl, err := template.ParseFiles("./internal/mailing/templates/" + templateHtmlFilename)
+	if err != nil {
+		return fmt.Errorf("failed to parse template file '%s' due to error: %v", templateHtmlFilename, err)
+	}
+
+	var body bytes.Buffer
+	if err := tmpl.Execute(&body, user); err != nil {
+		return fmt.Errorf("failed to execute template: %v", err)
+	}
+
+	m := mail.NewMsg()
+	m.From("no-reply@prog_demos.com")
+	m.To(user.Email)
+	m.Subject(subject)
+
+	m.SetBodyString(mail.TypeTextHTML, body.String())
+
+	if err := client.DialAndSend(m); err != nil {
+		return fmt.Errorf("failed to send email: %v", err)
+	}
+
+	return nil
 }
