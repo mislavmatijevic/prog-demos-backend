@@ -65,7 +65,7 @@ type taskExecutionResponse = struct {
 }
 
 func ExecuteTask(w http.ResponseWriter, r *http.Request) {
-	requestBody, err := getRequestBody(r, w)
+	requestBody, err := getRequestBody(r)
 	if err != nil {
 		api.RequestErrorHandlerCustomMsg(w, err.Error())
 		return
@@ -262,7 +262,7 @@ func sendResponse(w http.ResponseWriter, res taskExecutionResponse) {
 	json.NewEncoder(w).Encode(res)
 }
 
-func getRequestBody(r *http.Request, w http.ResponseWriter) (*taskExecutionRequest, error) {
+func getRequestBody(r *http.Request) (*taskExecutionRequest, error) {
 	if r.Body == nil {
 		return nil, errors.New("body is missing task's data")
 	}
