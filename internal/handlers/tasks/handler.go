@@ -15,5 +15,12 @@ func HandleTasks(r *chi.Mux) {
 
 			protectedRouter.Post("/{taskId}/run", ExecuteTask)
 		})
+
+		router.Group(func(adminRouter chi.Router) {
+			adminRouter.Use(authentication.RequireAccessToken)
+			adminRouter.Use(authentication.RequireSpecialType)
+
+			adminRouter.Post("/", CreateTask)
+		})
 	})
 }

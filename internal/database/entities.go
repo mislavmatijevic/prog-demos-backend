@@ -38,7 +38,8 @@ func (BasicTask) TableName() string {
 type FullTask struct {
 	ID                 int       `gorm:"primaryKey" json:"id"`
 	SubtopicID         int       `gorm:"not null;column:id_subtopic" json:"idSubtopic"`
-	OrderNum           int       `gorm:"not null" json:"orderNum"`
+	CreatorID          int       `gorm:"not null;column:id_user" json:"-"`
+	Complexity         int       `gorm:"not null" json:"complexity"`
 	Input              string    `gorm:"size:512;not null" json:"input"`
 	Output             string    `gorm:"size:512;not null" json:"output"`
 	InputOutputExample string    `gorm:"type:text" json:"inputOutputExample"`
@@ -50,9 +51,10 @@ type FullTask struct {
 	Helper1Text        string    `gorm:"size:255" json:"helper1Text,omitempty"`
 	Helper2Text        string    `gorm:"size:255" json:"helper2Text,omitempty"`
 	Helper3Text        string    `gorm:"size:255" json:"helper3Text,omitempty"`
-	SolutionCode       string    `gorm:"type:text" json:"solutionCode"`
+	SolutionCode       string    `gorm:"type:text" json:"solutionCode,omitempty"`
 	Subtopic           *Subtopic `gorm:"foreignKey:SubtopicID" json:"subtopic"`
 	Tests              []Test    `gorm:"foreignKey:IDTask" json:"-"`
+	Creator            *User     `gorm:"foreignKey:CreatorID" json:"creator,omitempty"`
 }
 
 func (FullTask) TableName() string {
@@ -64,8 +66,8 @@ type Test struct {
 	IDTask         int      `gorm:"not null" json:"idTask"`
 	Input          string   `gorm:"size:512;not null" json:"input"`
 	ExpectedOutput string   `gorm:"size:512;not null" json:"expectedOutput"`
-	Task           FullTask `gorm:"foreignKey:IDTask" json:"task"`
 	ArtefactSHA256 string   `gorm:"type:char(64)" json:"-"`
+	Task           FullTask `gorm:"foreignKey:IDTask" json:"task"`
 }
 
 type User struct {
@@ -75,7 +77,7 @@ type User struct {
 	Password            string    `gorm:"not null" json:"-"`
 	UserType            string    `gorm:"not null;default:basic" json:"-"`
 	IsActivated         bool      `gorm:"not null;default:false" json:"-"`
-	ActivationToken     string    `gorm:"type:char(128);not null" json:"-"`
+	ActivationToken     string    `gorm:"type:char(128);null" json:"-"`
 	DateRegistered      time.Time `gorm:"not null" json:"-"`
 	PasswordResetToken  string    `gorm:"type:char(128);null;default:null" json:"-"`
 	PasswordResetExpiry time.Time `gorm:"null;default:null" json:"-"`

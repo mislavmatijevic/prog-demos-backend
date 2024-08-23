@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"slices"
 	"strconv"
 	"time"
 
@@ -17,6 +18,8 @@ import (
 var authToken *jwtauth.JWTAuth
 var accessTokenDuration time.Duration
 var refreshTokenDuration time.Duration
+
+var specialTypes = []string{"creator", "admin"}
 
 const REFRESH_TOKEN_SIZE int = 512
 
@@ -59,6 +62,19 @@ func RequireAccessToken(next http.Handler) http.Handler {
 	})
 }
 
+func RequireSpecialType(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		userType, err := GetUserTypeFromToken(r)
+
+		if err != nil || !slices.Contains(specialTypes, userType) {
+			api.AuthorizationInvalidGenericMsg(w)
+			return
+		}
+
+		next.ServeHTTP(w, r)
+	})
+}
+
 func GenerateNewTokenPair(user *database.User) (*AuthTokenPair, error) {
 	accessToken, err := generateNewAccessToken(user)
 	if err != nil {
@@ -82,20 +98,34 @@ func ValidateRefreshTokenFormat(refreshTokenValue string) bool {
 	return utils.IsValidRandomString(refreshTokenValue, REFRESH_TOKEN_SIZE)
 }
 
-func GetUserIdFromToken(r *http.Request) (int, error) {
-	var userId int
+func RemoveRefreshToken(refreshTokenValue string) bool {
+	return database.DeleteRefreshTokenWithValue(refreshTokenValue)
+}
 
-	_, claims, err := jwtauth.FromContext(r.Context())
-	if err == nil {
-		var userIdClaim = fmt.Sprintf("%v", claims["user_id"])
-		userId, err = strconv.Atoi(userIdClaim)
+func GetUserIdFromToken(r *http.Request) (int, error) {
+	userIdClaim, err := getClaimFromToken("user_id", r)
+	if err != nil {
+		return 0, err
 	}
 
+	userId, err := strconv.Atoi(userIdClaim)
 	return userId, err
 }
 
-func RemoveRefreshToken(refreshTokenValue string) bool {
-	return database.DeleteRefreshTokenWithValue(refreshTokenValue)
+func GetUserTypeFromToken(r *http.Request) (string, error) {
+	return getClaimFromToken("type", r)
+}
+
+func getClaimFromToken(claimKey string, r *http.Request) (string, error) {
+	var tokenClaim string
+
+	_, claims, err := jwtauth.FromContext(r.Context())
+	if err != nil {
+		return "", err
+	}
+
+	tokenClaim = fmt.Sprintf("%v", claims[claimKey])
+	return tokenClaim, err
 }
 
 func generateNewAccessToken(user *database.User) (string, error) {

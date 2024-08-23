@@ -47,3 +47,8 @@ func GetTestsForTask(taskId int) []Test {
 
 	return tests
 }
+
+func SaveTask(task *FullTask) error {
+	result := Instance.db.Save(task)
+	return result.Error
+}
