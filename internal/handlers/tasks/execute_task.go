@@ -65,8 +65,9 @@ type taskExecutionResponse = struct {
 }
 
 func ExecuteTask(w http.ResponseWriter, r *http.Request) {
-	requestBody, failedToGetRequestBody := getRequestBody(r, w)
-	if failedToGetRequestBody {
+	requestBody, err := getRequestBody(r, w)
+	if err != nil {
+		api.RequestErrorHandlerCustomMsg(w, err.Error())
 		return
 	}
 
@@ -261,19 +262,17 @@ func sendResponse(w http.ResponseWriter, res taskExecutionResponse) {
 	json.NewEncoder(w).Encode(res)
 }
 
-func getRequestBody(r *http.Request, w http.ResponseWriter) (*taskExecutionRequest, bool) {
+func getRequestBody(r *http.Request, w http.ResponseWriter) (*taskExecutionRequest, error) {
 	if r.Body == nil {
-		api.RequestErrorHandlerCustomMsg(w, "Body is missing task's data!")
-		return nil, true
+		return nil, errors.New("body is missing task's data")
 	}
 
 	var requestBody taskExecutionRequest
 	err := json.NewDecoder(r.Body).Decode(&requestBody)
 	if err != nil || requestBody.SolutionCode == "" {
-		api.RequestErrorHandlerCustomMsg(w, "Body is not in correct format!")
-		return nil, true
+		return nil, errors.New("body is not in correct format")
 	}
-	return &requestBody, false
+	return &requestBody, nil
 }
 
 // Stores temp CPP source code file and "stdin.txt" file which serves as stdin mock.
