@@ -8,13 +8,17 @@ import (
 )
 
 type videosResponse = struct {
-	Topics []database.Topic `json:"topics"`
+	Success bool             `json:"success"`
+	Topics  []database.Topic `json:"topics"`
 }
 
-func GetPublicVideos(w http.ResponseWriter, r *http.Request) {
+func getPublicVideos(w http.ResponseWriter, r *http.Request) {
 	topics := database.GetAllVideosPerTopics()
 
-	res := videosResponse{Topics: topics}
+	res := videosResponse{
+		Success: true,
+		Topics:  topics,
+	}
 
 	w.Header().Add("content-type", "application/json")
 	json.NewEncoder(w).Encode(res)

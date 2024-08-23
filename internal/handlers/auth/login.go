@@ -12,18 +12,19 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-type LoginBody struct {
+type loginBody struct {
 	Identifier string `json:"identifier"`
 	Password   string `json:"password"`
 }
 
-type LoginResponse struct {
+type loginResponse struct {
+	Success  bool                         `json:"success"`
 	UserInfo database.User                `json:"user"`
 	Tokens   authentication.AuthTokenPair `json:"tokens"`
 }
 
-func LoginUser(w http.ResponseWriter, r *http.Request) {
-	var loginBody LoginBody
+func loginUser(w http.ResponseWriter, r *http.Request) {
+	var loginBody loginBody
 	err := json.NewDecoder(r.Body).Decode(&loginBody)
 	if err != nil {
 		api.RequestErrorHandlerGenericMsg(w, err)
@@ -48,7 +49,8 @@ func LoginUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	res := LoginResponse{
+	res := loginResponse{
+		Success:  true,
 		UserInfo: *user,
 		Tokens:   *newTokenPair,
 	}

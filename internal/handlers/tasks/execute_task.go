@@ -64,7 +64,7 @@ type taskExecutionResponse = struct {
 	ReasonFailed interface{} `json:"reason,omitempty"`
 }
 
-func ExecuteTask(w http.ResponseWriter, r *http.Request) {
+func executeTask(w http.ResponseWriter, r *http.Request) {
 	requestBody, err := getRequestBody(r)
 	if err != nil {
 		api.RequestErrorHandlerCustomMsg(w, err.Error())

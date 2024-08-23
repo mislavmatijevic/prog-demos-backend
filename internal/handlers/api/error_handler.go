@@ -7,18 +7,18 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-type Error struct {
-	Status  string
-	Message string
+type errorResponse struct {
+	Success bool   `json:"success"`
+	Message string `json:"message"`
 }
 
-func (e Error) Error() string {
+func (e errorResponse) Error() string {
 	return e.Message
 }
 
 func writerError(w http.ResponseWriter, message string, code int) {
-	resp := Error{
-		Status:  "failed",
+	resp := errorResponse{
+		Success: false,
 		Message: message,
 	}
 

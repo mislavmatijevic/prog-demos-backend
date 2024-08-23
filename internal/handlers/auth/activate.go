@@ -10,18 +10,18 @@ import (
 	"github.com/mislavmatijevic/prog-demos-backend/internal/utils"
 )
 
-type ActivationBody struct {
+type activationBody struct {
 	ActivationToken string `json:"activationToken"`
 }
 
-type ActivationResponse struct {
+type activationResponse struct {
 	Success  bool   `json:"success"`
 	Message  string `json:"message"`
 	Username string `json:"username,omitempty"`
 }
 
-func ActivateUser(w http.ResponseWriter, r *http.Request) {
-	var activationBody ActivationBody
+func activateUser(w http.ResponseWriter, r *http.Request) {
+	var activationBody activationBody
 	if err := json.NewDecoder(r.Body).Decode(&activationBody); err != nil {
 		api.RequestErrorHandlerGenericMsg(w, err)
 		return
@@ -33,17 +33,21 @@ func ActivateUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var res ActivationResponse
+	var res activationResponse
 
 	user, err := database.SetUserActivated(trimmedToken)
 	if err != nil {
-		res.Success = false
-		res.Message = fmt.Sprintf("Failed to activate the user: %s", err)
+		res = activationResponse{
+			Success: false,
+			Message: fmt.Sprintf("Failed to activate the user: %s", err),
+		}
 		w.WriteHeader(http.StatusForbidden)
 	} else {
-		res.Success = true
-		res.Message = fmt.Sprintf("User %s activated", user.Username)
-		res.Username = user.Username
+		res = activationResponse{
+			Success:  true,
+			Message:  fmt.Sprintf("User %s activated", user.Username),
+			Username: user.Username,
+		}
 		w.WriteHeader(http.StatusOK)
 	}
 

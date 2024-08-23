@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"database/sql"
 	"encoding/json"
 	"net/http"
 	"strings"
@@ -14,32 +15,33 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-type RegistrationErrorCode int
+type registrationErrorCode int
 
 const (
-	EXEC_ERR_INFO_INVALID RegistrationErrorCode = iota + 1
+	EXEC_ERR_INFO_INVALID registrationErrorCode = iota + 1
 	EXEC_ERR_USERNAME_TAKEN
 )
 
-func (execErrCode RegistrationErrorCode) String() string {
+func (execErrCode registrationErrorCode) String() string {
 	return [...]string{
 		"Given information is not valid for registration.",
 		"Username or email already taken.",
 	}[execErrCode-1]
 }
 
-func (execErrCode RegistrationErrorCode) EnumIndex() int {
+func (execErrCode registrationErrorCode) EnumIndex() int {
 	return int(execErrCode)
 }
 
-type UserRegisterBody struct {
+type userRegisterBody struct {
 	Email    string `json:"email"`
 	Username string `json:"username"`
 	Password string `json:"password"`
 }
 
 type successResponse struct {
-	NewId int `json:"newId"`
+	Success bool `json:"success"`
+	NewId   int  `json:"newId"`
 }
 
 type errorResponse = struct {
@@ -48,8 +50,8 @@ type errorResponse = struct {
 	ErrorCode int    `json:"errorCode"`
 }
 
-func RegisterUser(w http.ResponseWriter, r *http.Request) {
-	var userReqBody UserRegisterBody
+func registerUser(w http.ResponseWriter, r *http.Request) {
+	var userReqBody userRegisterBody
 	if err := json.NewDecoder(r.Body).Decode(&userReqBody); err != nil {
 		api.RequestErrorHandlerGenericMsg(w, err)
 		return
@@ -89,14 +91,15 @@ func RegisterUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	res := successResponse{
-		NewId: newUser.ID,
+		Success: true,
+		NewId:   newUser.ID,
 	}
 
 	w.WriteHeader(http.StatusCreated)
 	writeRequest(w, res)
 }
 
-func respondForErrorCode(w http.ResponseWriter, errorCode RegistrationErrorCode) {
+func respondForErrorCode(w http.ResponseWriter, errorCode registrationErrorCode) {
 	var res = errorResponse{
 		Success:   false,
 		Message:   errorCode.String(),

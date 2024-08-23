@@ -1,6 +1,8 @@
 package database
 
-import "time"
+import (
+	"time"
+)
 
 type Topic struct {
 	ID        int         `gorm:"primaryKey" json:"id"`

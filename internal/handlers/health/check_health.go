@@ -5,11 +5,13 @@ import (
 	"net/http"
 )
 
-func Check_Health(w http.ResponseWriter, r *http.Request) {
+func checkHealth(w http.ResponseWriter, r *http.Request) {
 	var healthCheckResponse = struct {
-		Status string
+		Success bool `json:"success"`
+		Status  string
 	}{
-		Status: "Still rockin'!",
+		Success: true,
+		Status:  "Still rockin'!",
 	}
 	w.WriteHeader(200)
 	json.NewEncoder(w).Encode(healthCheckResponse)

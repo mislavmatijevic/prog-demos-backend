@@ -7,20 +7,20 @@ import (
 
 func HandleTasks(r *chi.Mux) {
 	r.Route("/tasks", func(router chi.Router) {
-		router.Get("/", GetAllTasksPerTopics)
-		router.Get("/{taskId}", GetSingleTask)
+		router.Get("/", getAllTasksPerTopics)
+		router.Get("/{taskId}", getSingleTask)
 
 		router.Group(func(protectedRouter chi.Router) {
 			protectedRouter.Use(authentication.RequireAccessToken)
 
-			protectedRouter.Post("/{taskId}/run", ExecuteTask)
+			protectedRouter.Post("/{taskId}/run", executeTask)
 		})
 
 		router.Group(func(adminRouter chi.Router) {
 			adminRouter.Use(authentication.RequireAccessToken)
 			adminRouter.Use(authentication.RequireSpecialType)
 
-			adminRouter.Post("/", CreateTask)
+			adminRouter.Post("/", createTask)
 		})
 	})
 }

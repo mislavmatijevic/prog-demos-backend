@@ -12,10 +12,11 @@ import (
 )
 
 type taskResponse = struct {
-	Task database.FullTask `json:"task"`
+	Success bool              `json:"success"`
+	Task    database.FullTask `json:"task"`
 }
 
-func GetSingleTask(w http.ResponseWriter, r *http.Request) {
+func getSingleTask(w http.ResponseWriter, r *http.Request) {
 	var originalParamId = chi.URLParam(r, "taskId")
 	TaskId, err := strconv.Atoi(originalParamId)
 
@@ -31,7 +32,10 @@ func GetSingleTask(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	res := taskResponse{Task: *Task}
+	res := taskResponse{
+		Success: true,
+		Task:    *Task,
+	}
 
 	w.Header().Add("content-type", "application/json")
 	json.NewEncoder(w).Encode(res)

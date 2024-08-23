@@ -12,10 +12,11 @@ import (
 )
 
 type videoResponse = struct {
-	Video database.Video `json:"video"`
+	Success bool           `json:"success"`
+	Video   database.Video `json:"video"`
 }
 
-func GetSingleVideo(w http.ResponseWriter, r *http.Request) {
+func getSingleVideo(w http.ResponseWriter, r *http.Request) {
 	var originalParamId = chi.URLParam(r, "videoId")
 	videoId, err := strconv.Atoi(originalParamId)
 
@@ -31,7 +32,10 @@ func GetSingleVideo(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	res := videoResponse{Video: *video}
+	res := videoResponse{
+		Success: true,
+		Video:   *video,
+	}
 
 	w.Header().Add("content-type", "application/json")
 	json.NewEncoder(w).Encode(res)

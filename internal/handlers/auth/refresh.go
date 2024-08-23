@@ -10,12 +10,17 @@ import (
 	"github.com/mislavmatijevic/prog-demos-backend/internal/handlers/api"
 )
 
-type RefreshRequest struct {
+type refreshRequest struct {
 	RefreshToken string `json:"refreshToken"`
 }
 
-func RefreshAccess(w http.ResponseWriter, r *http.Request) {
-	var refreshBody RefreshRequest
+type refreshResponse struct {
+	Success bool `json:"success"`
+	*authentication.AuthTokenPair
+}
+
+func refreshAccess(w http.ResponseWriter, r *http.Request) {
+	var refreshBody refreshRequest
 	if err := json.NewDecoder(r.Body).Decode(&refreshBody); err != nil {
 		api.RequestErrorHandlerGenericMsg(w, err)
 		return
@@ -41,7 +46,10 @@ func RefreshAccess(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var res authentication.AuthTokenPair = *newTokenPair
+	var res refreshResponse = refreshResponse{
+		Success:       true,
+		AuthTokenPair: newTokenPair,
+	}
 	w.Header().Add("content-type", "application/json")
 	json.NewEncoder(w).Encode(res)
 }

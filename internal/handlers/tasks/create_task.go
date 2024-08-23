@@ -12,13 +12,13 @@ import (
 	"github.com/mislavmatijevic/prog-demos-backend/internal/utils"
 )
 
-type NewTestDefinition struct {
+type newTestDefinition struct {
 	Input          string `json:"input"`
 	ExpectedOutput string `json:"expectedOutput"`
 	ArtefactSHA256 string `json:"artefactSha256,omitempty"`
 }
 
-type NewTaskRequestBody struct {
+type newTaskRequestBody struct {
 	SubtopicID         int                 `json:"idSubtopic"`
 	Complexity         int                 `json:"complexity"`
 	Input              string              `json:"input"`
@@ -33,16 +33,16 @@ type NewTaskRequestBody struct {
 	Helper2Text        string              `json:"helper2Text,omitempty"`
 	Helper3Text        string              `json:"helper3Text,omitempty"`
 	SolutionCode       string              `json:"solutionCode,omitempty"`
-	Tests              []NewTestDefinition `json:"tests"`
+	Tests              []newTestDefinition `json:"tests"`
 }
 
-type ResponseBody struct {
+type responseBody struct {
 	Success   bool   `json:"success"`
 	Message   string `json:"message"`
 	NewTaskId int    `json:"newTaskId,omitempty"`
 }
 
-func (body NewTaskRequestBody) mapToEntity() (newFullTaskEntity *database.FullTask) {
+func (body newTaskRequestBody) mapToEntity() (newFullTaskEntity *database.FullTask) {
 	return &database.FullTask{
 		SubtopicID:         body.SubtopicID,
 		Complexity:         body.Complexity,
@@ -67,7 +67,7 @@ func (body NewTaskRequestBody) mapToEntity() (newFullTaskEntity *database.FullTa
 
 }
 
-func CreateTask(w http.ResponseWriter, r *http.Request) {
+func createTask(w http.ResponseWriter, r *http.Request) {
 	newTask, err := getNewTaskFromBody(r)
 	if err != nil {
 		api.RequestErrorHandlerCustomMsg(w, err.Error())
@@ -103,15 +103,15 @@ func CreateTask(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Add("content-type", "application/json")
-	json.NewEncoder(w).Encode(ResponseBody{Success: true, Message: fmt.Sprintf("Created new task with ID %v", taskEntity.ID)})
+	json.NewEncoder(w).Encode(responseBody{Success: true, Message: fmt.Sprintf("Created new task with ID %v", taskEntity.ID)})
 }
 
-func getNewTaskFromBody(r *http.Request) (*NewTaskRequestBody, error) {
+func getNewTaskFromBody(r *http.Request) (*newTaskRequestBody, error) {
 	if r.Body == nil {
 		return nil, errors.New("body is missing task's data")
 	}
 
-	var requestBody NewTaskRequestBody
+	var requestBody newTaskRequestBody
 	err := json.NewDecoder(r.Body).Decode(&requestBody)
 	if err != nil || requestBody.SolutionCode == "" {
 		return nil, errors.New("body is not in correct format")
@@ -119,7 +119,7 @@ func getNewTaskFromBody(r *http.Request) (*NewTaskRequestBody, error) {
 	return &requestBody, nil
 }
 
-func validateNewTask(newTask NewTaskRequestBody) error {
+func validateNewTask(newTask newTaskRequestBody) error {
 	hasRequiredPropertiesSet := checkRequiredProperties(newTask)
 	if !hasRequiredPropertiesSet {
 		return errors.New("task is not completely defined")
@@ -128,7 +128,7 @@ func validateNewTask(newTask NewTaskRequestBody) error {
 	return nil
 }
 
-func checkForValidTests(newTask NewTaskRequestBody) error {
+func checkForValidTests(newTask newTaskRequestBody) error {
 	if len(newTask.Tests) > 20 {
 		return errors.New("too many tests")
 	}
@@ -148,7 +148,7 @@ func checkForValidTests(newTask NewTaskRequestBody) error {
 	return nil
 }
 
-func checkRequiredProperties(newTask NewTaskRequestBody) bool {
+func checkRequiredProperties(newTask newTaskRequestBody) bool {
 	var hasOutput bool = false
 	var hasExample bool = false
 	var hasStarterCode bool = false
@@ -181,7 +181,7 @@ func storeTaskInDatabase(taskEntity *database.FullTask) error {
 	return err
 }
 
-func attachTestsToTask(newTestDefinition []NewTestDefinition, taskEntity *database.FullTask) {
+func attachTestsToTask(newTestDefinition []newTestDefinition, taskEntity *database.FullTask) {
 	for _, test := range newTestDefinition {
 		var testEntity = database.Test{
 			Input:          test.Input,

@@ -8,13 +8,17 @@ import (
 )
 
 type tasksResponse = struct {
-	Topics []database.Topic `json:"topics"`
+	Success bool             `json:"success"`
+	Topics  []database.Topic `json:"topics"`
 }
 
-func GetAllTasksPerTopics(w http.ResponseWriter, r *http.Request) {
+func getAllTasksPerTopics(w http.ResponseWriter, r *http.Request) {
 	topics := database.GetAllTasksPerTopic()
 
-	res := tasksResponse{Topics: topics}
+	res := tasksResponse{
+		Success: true,
+		Topics:  topics,
+	}
 
 	w.Header().Add("content-type", "application/json")
 	json.NewEncoder(w).Encode(res)

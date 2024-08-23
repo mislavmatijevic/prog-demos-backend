@@ -12,12 +12,12 @@ import (
 	"github.com/mislavmatijevic/prog-demos-backend/internal/utils"
 )
 
-type RequestPasswordResetBody struct {
+type requestPasswordResetBody struct {
 	Email string `json:"email,omitempty"`
 }
 
-func RequestPasswordReset(w http.ResponseWriter, r *http.Request) {
-	var requestBody RequestPasswordResetBody
+func requestPasswordReset(w http.ResponseWriter, r *http.Request) {
+	var requestBody requestPasswordResetBody
 	if err := json.NewDecoder(r.Body).Decode(&requestBody); err != nil {
 		api.RequestErrorHandlerGenericMsg(w, err)
 		return

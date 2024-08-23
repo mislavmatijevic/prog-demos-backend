@@ -12,7 +12,7 @@ type LogoutBody struct {
 	RefreshToken string `json:"refreshToken"`
 }
 
-func LogoutUser(w http.ResponseWriter, r *http.Request) {
+func logoutUser(w http.ResponseWriter, r *http.Request) {
 	var logoutBody LogoutBody
 	err := json.NewDecoder(r.Body).Decode(&logoutBody)
 	if err != nil {
