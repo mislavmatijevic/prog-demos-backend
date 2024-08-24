@@ -78,7 +78,7 @@ type User struct {
 	Username            string         `gorm:"not null" json:"username"`
 	Email               string         `gorm:"not null" json:"email"`
 	Password            string         `gorm:"not null" json:"-"`
-	UserType            string         `gorm:"not null;default:basic" json:"-"`
+	UserType            string         `gorm:"not null;default:basic" json:"type"`
 	IsActivated         bool           `gorm:"not null;default:false" json:"-"`
 	ActivationToken     sql.NullString `gorm:"type:char(128);null" json:"-"`
 	DateRegistered      time.Time      `gorm:"not null" json:"-"`
