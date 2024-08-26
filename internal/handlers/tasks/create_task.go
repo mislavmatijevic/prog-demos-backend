@@ -20,6 +20,7 @@ type newTestDefinition struct {
 
 type newTaskRequestBody struct {
 	SubtopicID         int                 `json:"idSubtopic"`
+	Name               string              `json:"name"`
 	Complexity         int                 `json:"complexity"`
 	Input              string              `json:"input"`
 	Output             string              `json:"output"`
@@ -45,6 +46,7 @@ type responseBody struct {
 func (body newTaskRequestBody) mapToEntity() (newFullTaskEntity *database.FullTask) {
 	return &database.FullTask{
 		SubtopicID:         body.SubtopicID,
+		Name:               body.Name,
 		Complexity:         body.Complexity,
 		Input:              body.Input,
 		Output:             body.Output,
@@ -149,9 +151,11 @@ func checkForValidTests(newTask newTaskRequestBody) error {
 }
 
 func checkRequiredProperties(newTask newTaskRequestBody) bool {
+	var hasName bool = false
 	var hasOutput bool = false
 	var hasExample bool = false
 	var hasStarterCode bool = false
+	hasName, newTask.Name = utils.GetTrimmedStringWithValue(newTask.Name)
 	hasOutput, newTask.Output = utils.GetTrimmedStringWithValue(newTask.Output)
 	hasExample, newTask.InputOutputExample = utils.GetTrimmedStringWithValue(newTask.InputOutputExample)
 	hasStarterCode, newTask.StarterCode = utils.GetTrimmedStringWithValue(newTask.StarterCode)
@@ -167,7 +171,7 @@ func checkRequiredProperties(newTask newTaskRequestBody) bool {
 	_, newTask.Helper3Text = utils.GetTrimmedStringWithValue(newTask.Helper3Text)
 	_, newTask.SolutionCode = utils.GetTrimmedStringWithValue(newTask.SolutionCode)
 
-	var hasRequiredPropertiesSet = hasOutput && hasExample && hasStarterCode && hasTests && hasComplexitySet
+	var hasRequiredPropertiesSet = hasName && hasOutput && hasExample && hasStarterCode && hasTests && hasComplexitySet
 	return hasRequiredPropertiesSet
 }
 

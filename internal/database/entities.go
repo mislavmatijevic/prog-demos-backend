@@ -29,9 +29,10 @@ type Video struct {
 }
 
 type BasicTask struct {
-	ID         int `gorm:"primaryKey" json:"id"`
-	SubtopicID int `gorm:"not null;column:id_subtopic" json:"-"`
-	OrderNum   int `gorm:"not null" json:"orderNum"`
+	ID         int    `gorm:"primaryKey" json:"id"`
+	Name       string `gorm:"not null;column:name" json:"name"`
+	SubtopicID int    `gorm:"not null;column:id_subtopic" json:"-"`
+	Complexity int    `gorm:"not null" json:"complexity"`
 }
 
 func (BasicTask) TableName() string {
@@ -40,6 +41,7 @@ func (BasicTask) TableName() string {
 
 type FullTask struct {
 	ID                 int       `gorm:"primaryKey" json:"id"`
+	Name               string    `gorm:"not null;column:name" json:"name"`
 	SubtopicID         int       `gorm:"not null;column:id_subtopic" json:"idSubtopic"`
 	CreatorID          int       `gorm:"not null;column:id_user" json:"-"`
 	Complexity         int       `gorm:"not null" json:"complexity"`
