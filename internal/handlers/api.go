@@ -9,6 +9,7 @@ import (
 	"github.com/mislavmatijevic/prog-demos-backend/internal/handlers/auth"
 	health "github.com/mislavmatijevic/prog-demos-backend/internal/handlers/health"
 	"github.com/mislavmatijevic/prog-demos-backend/internal/handlers/tasks"
+	"github.com/mislavmatijevic/prog-demos-backend/internal/handlers/topics"
 	videos "github.com/mislavmatijevic/prog-demos-backend/internal/handlers/videos"
 )
 
@@ -22,6 +23,8 @@ func Handler(r *chi.Mux) {
 	videos.HandleVideos(r)
 	log.Debug("Setting up /tasks handler...")
 	tasks.HandleTasks(r)
+	log.Debug("Setting up /topics handler...")
+	topics.HandleTopics(r)
 	log.Debug("Setting up /health handler...")
 	health.HandleHealth(r)
 }
