@@ -35,10 +35,10 @@ func CheckTaskExists(taskId int) bool {
 	return task.ID != 0
 }
 
-func GetTestsForTask(taskId int) []Test {
-	var tests []Test = make([]Test, 0)
+func GetTestsForTask(taskId int) []TaskTest {
+	var tests []TaskTest = make([]TaskTest, 0)
 
-	result := Instance.db.Where("id_task=?", taskId).Find(&Test{}).Scan(&tests)
+	result := Instance.db.Where("id_task=?", taskId).Find(&TaskTest{}).Scan(&tests)
 
 	if result.Error != nil {
 		log.Error("Error fetching task: ", result.Error)

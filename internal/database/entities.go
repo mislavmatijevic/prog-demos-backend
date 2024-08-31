@@ -40,39 +40,40 @@ func (BasicTask) TableName() string {
 }
 
 type FullTask struct {
-	ID                 int       `gorm:"primaryKey" json:"id"`
-	Name               string    `gorm:"not null;column:name" json:"name"`
-	SubtopicID         int       `gorm:"not null;column:id_subtopic" json:"idSubtopic"`
-	CreatorID          int       `gorm:"not null;column:id_user" json:"-"`
-	Complexity         string    `gorm:"type:char(1);not null" json:"complexity"`
-	Input              string    `gorm:"size:512;not null" json:"input"`
-	Output             string    `gorm:"size:512;not null" json:"output"`
-	InputOutputExample string    `gorm:"type:text" json:"inputOutputExample"`
-	IsFinalBoss        bool      `gorm:"not null;default:false" json:"isFinalBoss"`
-	StarterCode        string    `gorm:"type:text" json:"starterCode"`
-	Step1Code          string    `gorm:"type:text" json:"step1Code,omitempty"`
-	Step2Code          string    `gorm:"type:text" json:"step2Code,omitempty"`
-	Step3Code          string    `gorm:"type:text" json:"step3Code,omitempty"`
-	Helper1Text        string    `gorm:"size:255" json:"helper1Text,omitempty"`
-	Helper2Text        string    `gorm:"size:255" json:"helper2Text,omitempty"`
-	Helper3Text        string    `gorm:"size:255" json:"helper3Text,omitempty"`
-	SolutionCode       string    `gorm:"type:text" json:"solutionCode,omitempty"`
-	Subtopic           *Subtopic `gorm:"foreignKey:SubtopicID" json:"subtopic"`
-	Tests              []Test    `gorm:"foreignKey:IDTask" json:"-"`
-	Creator            *User     `gorm:"foreignKey:CreatorID" json:"creator,omitempty"`
+	ID                 int            `gorm:"primaryKey" json:"id"`
+	Name               string         `gorm:"not null;column:name" json:"name"`
+	SubtopicID         int            `gorm:"not null;column:id_subtopic" json:"idSubtopic"`
+	CreatorID          int            `gorm:"not null;column:id_user" json:"-"`
+	Complexity         string         `gorm:"type:char(1);not null" json:"complexity"`
+	Input              string         `gorm:"size:512;not null" json:"input"`
+	Output             string         `gorm:"size:512;not null" json:"output"`
+	InputOutputExample string         `gorm:"type:text" json:"inputOutputExample"`
+	IsFinalBoss        bool           `gorm:"not null;default:false" json:"isFinalBoss"`
+	SolutionCode       string         `gorm:"type:text" json:"solutionCode,omitempty"`
+	Subtopic           *Subtopic      `gorm:"foreignKey:SubtopicID" json:"subtopic"`
+	Tests              []TaskTest     `gorm:"foreignKey:IDTask" json:"-"`
+	Creator            *User          `gorm:"foreignKey:CreatorID" json:"creator,omitempty"`
+	HelpSteps          []TaskHelpStep `gorm:"foreignKey:IDTask" json:"-"`
 }
 
 func (FullTask) TableName() string {
 	return "tasks"
 }
 
-type Test struct {
-	ID             int      `gorm:"primaryKey" json:"id"`
-	IDTask         int      `gorm:"not null" json:"idTask"`
-	Input          string   `gorm:"size:512;not null" json:"input"`
-	ExpectedOutput string   `gorm:"size:512;not null" json:"expectedOutput"`
-	ArtefactSHA256 string   `gorm:"type:char(64)" json:"-"`
-	Task           FullTask `gorm:"foreignKey:IDTask" json:"task"`
+type TaskHelpStep struct {
+	ID         int            `gorm:"primaryKey" json:"-"`
+	IDTask     int            `gorm:"not null" json:"idTask"`
+	Step       int            `gorm:"int" json:"step"`
+	HelperCode sql.NullString `gorm:"type:text" json:"helperCode,omitempty"`
+	HelperText sql.NullString `gorm:"size:512" json:"helperText,omitempty"`
+}
+
+type TaskTest struct {
+	ID             int    `gorm:"primaryKey" json:"id"`
+	IDTask         int    `gorm:"not null" json:"idTask"`
+	Input          string `gorm:"size:512;not null" json:"input"`
+	ExpectedOutput string `gorm:"size:512;not null" json:"expectedOutput"`
+	ArtefactSHA256 string `gorm:"type:char(64)" json:"-"`
 }
 
 type User struct {

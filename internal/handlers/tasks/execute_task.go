@@ -120,7 +120,7 @@ func executeTask(w http.ResponseWriter, r *http.Request) {
 		os.Remove(cppFileForSyntaxChecking.Name())
 	}
 
-	var tests []database.Test = database.GetTestsForTask(taskId)
+	var tests []database.TaskTest = database.GetTestsForTask(taskId)
 	if len(tests) == 0 {
 		sendTaskExecutionFailedResponse(w, EXEC_ERR_CODE_NO_TESTS, nil)
 		setTaskExecutionStatusFailed(taskExecution)
@@ -244,7 +244,7 @@ func handleTestExecutionInternalFail(w http.ResponseWriter, tempDirPath string, 
 	setTaskExecutionStatusFailed(taskExecution)
 }
 
-func checkHashMatch(test database.Test, tempDirPath string) (hashMatches bool, err error) {
+func checkHashMatch(test database.TaskTest, tempDirPath string) (hashMatches bool, err error) {
 	actualSha256, err := calculateOutputArtefactsHash(tempDirPath)
 	if err != nil {
 		return false, err

@@ -1,6 +1,7 @@
 package tasks
 
 import (
+	"database/sql"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -13,29 +14,29 @@ import (
 	"github.com/mislavmatijevic/prog-demos-backend/internal/utils"
 )
 
-type newTestDefinition struct {
+type taskTestBody struct {
 	Input          string `json:"input"`
 	ExpectedOutput string `json:"expectedOutput"`
 	ArtefactSHA256 string `json:"artefactSha256,omitempty"`
 }
 
+type taskHelpBody struct {
+	Step       int    `json:"step"`
+	HelperCode string `json:"helperCode,omitempty"`
+	HelperText string `json:"helperText,omitempty"`
+}
+
 type newTaskRequestBody struct {
-	SubtopicID         int                 `json:"idSubtopic"`
-	Name               string              `json:"name"`
-	Complexity         string              `json:"complexity"`
-	Input              string              `json:"input"`
-	Output             string              `json:"output"`
-	InputOutputExample string              `json:"inputOutputExample"`
-	IsFinalBoss        bool                `json:"isFinalBoss"`
-	StarterCode        string              `json:"starterCode"`
-	Step1Code          string              `json:"step1Code,omitempty"`
-	Step2Code          string              `json:"step2Code,omitempty"`
-	Step3Code          string              `json:"step3Code,omitempty"`
-	Helper1Text        string              `json:"helper1Text,omitempty"`
-	Helper2Text        string              `json:"helper2Text,omitempty"`
-	Helper3Text        string              `json:"helper3Text,omitempty"`
-	SolutionCode       string              `json:"solutionCode,omitempty"`
-	Tests              []newTestDefinition `json:"tests"`
+	SubtopicID         int            `json:"idSubtopic"`
+	Name               string         `json:"name"`
+	Complexity         string         `json:"complexity"`
+	Input              string         `json:"input"`
+	Output             string         `json:"output"`
+	InputOutputExample string         `json:"inputOutputExample"`
+	IsFinalBoss        bool           `json:"isFinalBoss"`
+	SolutionCode       string         `json:"solutionCode,omitempty"`
+	Tests              []taskTestBody `json:"tests"`
+	HelpSteps          []taskHelpBody `json:"helpSteps"`
 }
 
 type responseBody struct {
@@ -53,13 +54,6 @@ func (body newTaskRequestBody) mapToEntity() (newFullTaskEntity *database.FullTa
 		Output:             body.Output,
 		InputOutputExample: body.InputOutputExample,
 		IsFinalBoss:        body.IsFinalBoss,
-		StarterCode:        body.StarterCode,
-		Step1Code:          body.Step1Code,
-		Step2Code:          body.Step2Code,
-		Step3Code:          body.Step3Code,
-		Helper1Text:        body.Helper1Text,
-		Helper2Text:        body.Helper2Text,
-		Helper3Text:        body.Helper3Text,
 		SolutionCode:       body.SolutionCode,
 		ID:                 0,
 		CreatorID:          0,
@@ -99,6 +93,15 @@ func createTask(w http.ResponseWriter, r *http.Request) {
 
 	attachTestsToTask(newTask.Tests, taskEntity)
 
+	if !newTask.IsFinalBoss {
+		err = checkForValidHelpSteps(*newTask)
+		if err != nil {
+			api.RequestErrorHandlerCustomMsg(w, err.Error())
+			return
+		}
+		attachHelpStepsToTask(newTask.HelpSteps, taskEntity)
+	}
+
 	err = storeTaskInDatabase(taskEntity)
 	if err != nil {
 		api.InternalErrorHandlerGenericMsg(w, err)
@@ -116,7 +119,7 @@ func getNewTaskFromBody(r *http.Request) (*newTaskRequestBody, error) {
 
 	var requestBody newTaskRequestBody
 	err := json.NewDecoder(r.Body).Decode(&requestBody)
-	if err != nil || requestBody.SolutionCode == "" {
+	if err != nil {
 		return nil, errors.New("body is not in correct format")
 	}
 	return &requestBody, nil
@@ -140,11 +143,9 @@ func checkRequiredProperties(newTask newTaskRequestBody) bool {
 	var hasName bool = false
 	var hasOutput bool = false
 	var hasExample bool = false
-	var hasStarterCode bool = false
 	hasName, newTask.Name = utils.GetTrimmedStringWithValue(newTask.Name)
 	hasOutput, newTask.Output = utils.GetTrimmedStringWithValue(newTask.Output)
 	hasExample, newTask.InputOutputExample = utils.GetTrimmedStringWithValue(newTask.InputOutputExample)
-	hasStarterCode, newTask.StarterCode = utils.GetTrimmedStringWithValue(newTask.StarterCode)
 
 	var complexityNumber, err = strconv.Atoi(newTask.Complexity)
 	if err != nil {
@@ -154,15 +155,9 @@ func checkRequiredProperties(newTask newTaskRequestBody) bool {
 	var hasTests bool = newTask.Tests != nil && len(newTask.Tests) > 0
 	var hasComplexitySet bool = complexityNumber >= 1 && complexityNumber <= 5
 	_, newTask.Input = utils.GetTrimmedStringWithValue(newTask.Input)
-	_, newTask.Step1Code = utils.GetTrimmedStringWithValue(newTask.Step1Code)
-	_, newTask.Step2Code = utils.GetTrimmedStringWithValue(newTask.Step2Code)
-	_, newTask.Step3Code = utils.GetTrimmedStringWithValue(newTask.Step3Code)
-	_, newTask.Helper1Text = utils.GetTrimmedStringWithValue(newTask.Helper1Text)
-	_, newTask.Helper2Text = utils.GetTrimmedStringWithValue(newTask.Helper2Text)
-	_, newTask.Helper3Text = utils.GetTrimmedStringWithValue(newTask.Helper3Text)
 	_, newTask.SolutionCode = utils.GetTrimmedStringWithValue(newTask.SolutionCode)
 
-	var hasRequiredPropertiesSet = hasName && hasOutput && hasExample && hasStarterCode && hasTests && hasComplexitySet
+	var hasRequiredPropertiesSet = hasName && hasOutput && hasExample && hasTests && hasComplexitySet
 	return hasRequiredPropertiesSet
 }
 
@@ -188,7 +183,34 @@ func checkForValidTests(newTask newTaskRequestBody) error {
 		var outputDefined = outputContainsChars || artefactIsExpected
 
 		if !outputDefined {
-			return fmt.Errorf(fmt.Sprintf("test #%d is not testable", index))
+			return fmt.Errorf(fmt.Sprintf("test #%d is not testable", index+1))
+		}
+	}
+
+	return nil
+}
+
+func checkForValidHelpSteps(newTask newTaskRequestBody) error {
+	helpStepsCount := len(newTask.HelpSteps)
+
+	if helpStepsCount < 1 {
+		return errors.New("too few help steps")
+	}
+
+	if helpStepsCount > 10 {
+		return errors.New("too many help steps")
+	}
+
+	for index, helpStep := range newTask.HelpSteps {
+		containsCode, _ := utils.GetTrimmedStringWithValue(helpStep.HelperCode)
+		containsText, _ := utils.GetTrimmedStringWithValue(helpStep.HelperText)
+
+		if !(containsCode || containsText) {
+			return fmt.Errorf(fmt.Sprintf("help step #%d is not well defined", index+1))
+		}
+
+		if helpStep.Step > 0 && helpStep.Step < helpStepsCount {
+			return fmt.Errorf(fmt.Sprintf("help step #%d has a weird step number: %d", index+1, helpStep.Step))
 		}
 	}
 
@@ -205,14 +227,29 @@ func storeTaskInDatabase(taskEntity *database.FullTask) error {
 	return err
 }
 
-func attachTestsToTask(newTestDefinition []newTestDefinition, taskEntity *database.FullTask) {
+func attachTestsToTask(newTestDefinition []taskTestBody, taskEntity *database.FullTask) {
 	for _, test := range newTestDefinition {
-		var testEntity = database.Test{
+		var testEntity = database.TaskTest{
 			Input:          test.Input,
 			ExpectedOutput: test.ExpectedOutput,
 			ArtefactSHA256: test.ArtefactSHA256,
 		}
 
 		taskEntity.Tests = append(taskEntity.Tests, testEntity)
+	}
+}
+
+func attachHelpStepsToTask(taskHelpStepBody []taskHelpBody, taskEntity *database.FullTask) {
+	for _, helpStep := range taskHelpStepBody {
+		containsCode, trimmedHelperCode := utils.GetTrimmedStringWithValue(helpStep.HelperCode)
+		containsText, trimmedHelperText := utils.GetTrimmedStringWithValue(helpStep.HelperText)
+
+		var helpStepEntity = database.TaskHelpStep{
+			Step:       helpStep.Step,
+			HelperCode: sql.NullString{String: trimmedHelperCode, Valid: containsCode},
+			HelperText: sql.NullString{String: trimmedHelperText, Valid: containsText},
+		}
+
+		taskEntity.HelpSteps = append(taskEntity.HelpSteps, helpStepEntity)
 	}
 }
