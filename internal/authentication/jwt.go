@@ -2,6 +2,7 @@ package authentication
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"os"
@@ -96,6 +97,24 @@ func GenerateNewTokenPair(user *database.User) (*AuthTokenPair, error) {
 
 func ValidateRefreshTokenFormat(refreshTokenValue string) bool {
 	return utils.IsValidRandomString(refreshTokenValue, REFRESH_TOKEN_SIZE)
+}
+
+func ValidateTokenPair(previousAccessTokenValue string, refreshTokenValue *database.RefreshToken) error {
+	var parsedToken, err = jwtauth.VerifyToken(authToken, previousAccessTokenValue)
+	if err != nil && err.Error() != "token is expired" {
+		return err
+	}
+
+	var tokenIssuedAt = parsedToken.IssuedAt()
+	tokenIssuedAt = tokenIssuedAt.UTC().Truncate(time.Second)
+	var refreshTokenCreatedAt = refreshTokenValue.Expiration.Add(-refreshTokenDuration)
+	refreshTokenCreatedAt = refreshTokenCreatedAt.UTC().Truncate(time.Second)
+
+	if tokenIssuedAt.Compare(refreshTokenCreatedAt) != 0 {
+		return errors.New("given tokens are not a pair")
+	}
+
+	return nil
 }
 
 func RemoveRefreshToken(refreshTokenValue string) bool {

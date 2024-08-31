@@ -27,7 +27,7 @@ func UpdateRefreshTokenForUser(newRefreshTokenValue string, user *User, expiresA
 func GetRefreshTokenWithUser(refreshTokenValue string) *RefreshToken {
 	var refreshToken RefreshToken
 
-	var result = Instance.db.Preload("Owner").Where("value = ?", refreshTokenValue).First(&refreshToken)
+	var result = Instance.db.Preload("Owner").Where("value = ?", refreshTokenValue).Find(&refreshToken)
 
 	if result.Error != nil {
 		log.Error("Error fetching refresh token: ", result.Error)

@@ -2,6 +2,7 @@ package auth
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"time"
 
@@ -11,7 +12,8 @@ import (
 )
 
 type refreshRequest struct {
-	RefreshToken string `json:"refreshToken"`
+	AccessTokenValue  string `json:"accessToken"`
+	RefreshTokenValue string `json:"refreshToken"`
 }
 
 type refreshResponse struct {
@@ -26,17 +28,25 @@ func refreshAccess(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var refreshTokenValue string = refreshBody.RefreshToken
+	previousAccessTokenValue, refreshTokenValue, isValid := validateRequestFormat(refreshBody)
+	if !isValid {
+		api.RequestErrorHandlerCustomMsg(w, "Valid token pair could not be extracted from your request.")
+		return
+	}
 
-	isOk := authentication.ValidateRefreshTokenFormat(refreshTokenValue)
-	if !isOk {
+	refreshToken, isExpired := findValidRefreshToken(refreshTokenValue)
+	if refreshToken == nil {
+		api.RequestErrorHandlerCustomMsg(w, "Refresh token does not exist.")
+		return
+	}
+	if isExpired {
 		api.AuthorizationExpiredGenericMsg(w)
 		return
 	}
 
-	refreshToken, isValid := findValidRefreshToken(refreshTokenValue)
-	if !isValid {
-		api.AuthorizationExpiredGenericMsg(w)
+	err := authentication.ValidateTokenPair(previousAccessTokenValue, refreshToken)
+	if err != nil {
+		api.AuthorizationInvalidCustomMsg(w, fmt.Sprintf("Couldn't generate new refresh token: %v", err))
 		return
 	}
 
@@ -54,16 +64,25 @@ func refreshAccess(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(res)
 }
 
-func findValidRefreshToken(refreshTokenValue string) (user *database.RefreshToken, isValid bool) {
-	refreshToken := database.GetRefreshTokenWithUser(refreshTokenValue)
+func validateRequestFormat(refreshBody refreshRequest) (previousAccessTokenValue string, refreshTokenValue string, isValid bool) {
+	isValid = authentication.ValidateRefreshTokenFormat(refreshBody.RefreshTokenValue) && len(refreshBody.AccessTokenValue) > 20
+	if isValid {
+		previousAccessTokenValue = refreshBody.AccessTokenValue
+		refreshTokenValue = refreshBody.RefreshTokenValue
+	}
+	return
+}
+
+func findValidRefreshToken(refreshTokenValue string) (refreshToken *database.RefreshToken, isExpired bool) {
+	refreshToken = database.GetRefreshTokenWithUser(refreshTokenValue)
 
 	if refreshToken == nil || refreshToken.Owner == nil {
 		return nil, false
 	}
 
 	if time.Now().After(refreshToken.Expiration) {
-		return nil, false
+		return nil, true
 	}
 
-	return refreshToken, true
+	return refreshToken, false
 }
