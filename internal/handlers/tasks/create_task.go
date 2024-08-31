@@ -128,24 +128,9 @@ func validateNewTask(newTask newTaskRequestBody) error {
 		return errors.New("task is not completely defined")
 	}
 
-	return nil
-}
-
-func checkForValidTests(newTask newTaskRequestBody) error {
-	if len(newTask.Tests) > 20 {
-		return errors.New("too many tests")
-	}
-
-	for index, test := range newTask.Tests {
-		var artefactIsExpected bool = false
-
-		outputContainsChars, _ := utils.GetTrimmedStringWithValue(test.ExpectedOutput)
-		artefactIsExpected, test.ExpectedOutput = utils.GetTrimmedStringWithValue(test.ArtefactSHA256)
-		var outputDefined = outputContainsChars || artefactIsExpected
-
-		if !outputDefined {
-			return fmt.Errorf(fmt.Sprintf("test #%d is not testable", index))
-		}
+	subtopicExists := checkIfSubtopicExists(newTask.SubtopicID)
+	if !subtopicExists {
+		return errors.New("subtopic does not exist")
 	}
 
 	return nil
@@ -179,6 +164,31 @@ func checkRequiredProperties(newTask newTaskRequestBody) bool {
 
 	var hasRequiredPropertiesSet = hasName && hasOutput && hasExample && hasStarterCode && hasTests && hasComplexitySet
 	return hasRequiredPropertiesSet
+}
+
+func checkIfSubtopicExists(subtopicID int) bool {
+	var foundSubtopic = database.GetSubtopicById(subtopicID)
+	return (foundSubtopic != nil)
+}
+
+func checkForValidTests(newTask newTaskRequestBody) error {
+	if len(newTask.Tests) > 20 {
+		return errors.New("too many tests")
+	}
+
+	for index, test := range newTask.Tests {
+		var artefactIsExpected bool = false
+
+		outputContainsChars, _ := utils.GetTrimmedStringWithValue(test.ExpectedOutput)
+		artefactIsExpected, test.ExpectedOutput = utils.GetTrimmedStringWithValue(test.ArtefactSHA256)
+		var outputDefined = outputContainsChars || artefactIsExpected
+
+		if !outputDefined {
+			return fmt.Errorf(fmt.Sprintf("test #%d is not testable", index))
+		}
+	}
+
+	return nil
 }
 
 func attachCreatorIdToTask(r *http.Request, newTask *database.FullTask) (err error) {
