@@ -172,6 +172,10 @@ func checkIfSubtopicExists(subtopicID int) bool {
 }
 
 func checkForValidTests(newTask newTaskRequestBody) error {
+	if len(newTask.Tests) < 2 {
+		return errors.New("too few tests")
+	}
+
 	if len(newTask.Tests) > 20 {
 		return errors.New("too many tests")
 	}
