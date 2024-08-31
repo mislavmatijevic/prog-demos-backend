@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strconv"
 
 	"github.com/mislavmatijevic/prog-demos-backend/internal/authentication"
 	"github.com/mislavmatijevic/prog-demos-backend/internal/database"
@@ -21,7 +22,7 @@ type newTestDefinition struct {
 type newTaskRequestBody struct {
 	SubtopicID         int                 `json:"idSubtopic"`
 	Name               string              `json:"name"`
-	Complexity         int                 `json:"complexity"`
+	Complexity         string              `json:"complexity"`
 	Input              string              `json:"input"`
 	Output             string              `json:"output"`
 	InputOutputExample string              `json:"inputOutputExample"`
@@ -160,8 +161,13 @@ func checkRequiredProperties(newTask newTaskRequestBody) bool {
 	hasExample, newTask.InputOutputExample = utils.GetTrimmedStringWithValue(newTask.InputOutputExample)
 	hasStarterCode, newTask.StarterCode = utils.GetTrimmedStringWithValue(newTask.StarterCode)
 
+	var complexityNumber, err = strconv.Atoi(newTask.Complexity)
+	if err != nil {
+		return false
+	}
+
 	var hasTests bool = newTask.Tests != nil && len(newTask.Tests) > 0
-	var hasComplexitySet bool = newTask.Complexity >= 1 && newTask.Complexity <= 10
+	var hasComplexitySet bool = complexityNumber >= 1 && complexityNumber <= 5
 	_, newTask.Input = utils.GetTrimmedStringWithValue(newTask.Input)
 	_, newTask.Step1Code = utils.GetTrimmedStringWithValue(newTask.Step1Code)
 	_, newTask.Step2Code = utils.GetTrimmedStringWithValue(newTask.Step2Code)

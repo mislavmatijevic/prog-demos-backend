@@ -44,7 +44,7 @@ type FullTask struct {
 	Name               string    `gorm:"not null;column:name" json:"name"`
 	SubtopicID         int       `gorm:"not null;column:id_subtopic" json:"idSubtopic"`
 	CreatorID          int       `gorm:"not null;column:id_user" json:"-"`
-	Complexity         int       `gorm:"not null" json:"complexity"`
+	Complexity         string    `gorm:"type:char(1);not null" json:"complexity"`
 	Input              string    `gorm:"size:512;not null" json:"input"`
 	Output             string    `gorm:"size:512;not null" json:"output"`
 	InputOutputExample string    `gorm:"type:text" json:"inputOutputExample"`
