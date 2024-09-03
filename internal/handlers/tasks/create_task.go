@@ -209,7 +209,7 @@ func checkForValidHelpSteps(newTask newTaskRequestBody) error {
 			return fmt.Errorf(fmt.Sprintf("help step #%d is not well defined", index+1))
 		}
 
-		if helpStep.Step > 0 && helpStep.Step < helpStepsCount {
+		if !(helpStep.Step > 0 && helpStep.Step <= helpStepsCount) {
 			return fmt.Errorf(fmt.Sprintf("help step #%d has a weird step number: %d", index+1, helpStep.Step))
 		}
 	}
