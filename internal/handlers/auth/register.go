@@ -133,7 +133,7 @@ func createUser(username, email, hashPassword string) database.User {
 		Email:           email,
 		Password:        hashPassword,
 		IsActivated:     false,
-		ActivationToken: sql.NullString{String: utils.RandomString(128), Valid: true},
+		ActivationToken: database.WrappedNullString{NullString: sql.NullString{String: utils.RandomString(128), Valid: true}},
 		DateRegistered:  time.Now(),
 		UserType:        "basic",
 	}

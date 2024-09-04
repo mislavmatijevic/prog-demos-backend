@@ -2,8 +2,20 @@ package database
 
 import (
 	"database/sql"
+	"encoding/json"
 	"time"
 )
+
+type WrappedNullString struct {
+	sql.NullString
+}
+
+func (s WrappedNullString) MarshalJSON() ([]byte, error) {
+	if s.Valid {
+		return json.Marshal(s.String)
+	}
+	return []byte(`null`), nil
+}
 
 type Topic struct {
 	ID        int         `gorm:"primaryKey" json:"id"`
@@ -61,11 +73,11 @@ func (FullTask) TableName() string {
 }
 
 type TaskHelpStep struct {
-	ID         int            `gorm:"primaryKey" json:"-"`
-	IDTask     int            `gorm:"not null" json:"idTask"`
-	Step       int            `gorm:"int" json:"step"`
-	HelperCode sql.NullString `gorm:"type:text" json:"helperCode,omitempty"`
-	HelperText sql.NullString `gorm:"size:512" json:"helperText,omitempty"`
+	ID         int               `gorm:"primaryKey" json:"-"`
+	IDTask     int               `gorm:"not null" json:"-"`
+	Step       int               `gorm:"int" json:"step"`
+	HelperCode WrappedNullString `gorm:"type:text" json:"helperCode,omitempty"`
+	HelperText WrappedNullString `gorm:"size:512" json:"helperText,omitempty"`
 }
 
 type TaskTest struct {
@@ -77,16 +89,16 @@ type TaskTest struct {
 }
 
 type User struct {
-	ID                  int            `gorm:"primaryKey" json:"id"`
-	Username            string         `gorm:"not null" json:"username"`
-	Email               string         `gorm:"not null" json:"email"`
-	Password            string         `gorm:"not null" json:"-"`
-	UserType            string         `gorm:"not null;default:basic" json:"type"`
-	IsActivated         bool           `gorm:"not null;default:false" json:"-"`
-	ActivationToken     sql.NullString `gorm:"type:char(128);null" json:"-"`
-	DateRegistered      time.Time      `gorm:"not null" json:"-"`
-	PasswordResetToken  string         `gorm:"type:char(128);null;default:null" json:"-"`
-	PasswordResetExpiry time.Time      `gorm:"null;default:null" json:"-"`
+	ID                  int               `gorm:"primaryKey" json:"id"`
+	Username            string            `gorm:"not null" json:"username"`
+	Email               string            `gorm:"not null" json:"email"`
+	Password            string            `gorm:"not null" json:"-"`
+	UserType            string            `gorm:"not null;default:basic" json:"type"`
+	IsActivated         bool              `gorm:"not null;default:false" json:"-"`
+	ActivationToken     WrappedNullString `gorm:"type:char(128);null" json:"-"`
+	DateRegistered      time.Time         `gorm:"not null" json:"-"`
+	PasswordResetToken  string            `gorm:"type:char(128);null;default:null" json:"-"`
+	PasswordResetExpiry time.Time         `gorm:"null;default:null" json:"-"`
 }
 
 type RefreshToken struct {

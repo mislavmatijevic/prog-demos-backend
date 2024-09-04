@@ -56,7 +56,7 @@ func SetUserActivated(activationToken string) (*User, error) {
 	}
 
 	user.IsActivated = true
-	user.ActivationToken = sql.NullString{}
+	user.ActivationToken = WrappedNullString{}
 
 	err := SaveUser(*user)
 	return user, err

@@ -246,8 +246,8 @@ func attachHelpStepsToTask(taskHelpStepBody []taskHelpBody, taskEntity *database
 
 		var helpStepEntity = database.TaskHelpStep{
 			Step:       helpStep.Step,
-			HelperCode: sql.NullString{String: trimmedHelperCode, Valid: containsCode},
-			HelperText: sql.NullString{String: trimmedHelperText, Valid: containsText},
+			HelperCode: database.WrappedNullString{NullString: sql.NullString{String: trimmedHelperCode, Valid: containsCode}},
+			HelperText: database.WrappedNullString{NullString: sql.NullString{String: trimmedHelperText, Valid: containsText}},
 		}
 
 		taskEntity.HelpSteps = append(taskEntity.HelpSteps, helpStepEntity)
