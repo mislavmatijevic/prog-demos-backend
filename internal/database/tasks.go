@@ -19,7 +19,7 @@ func GetAllTasksPerTopic() []Topic {
 func GetSingleFullTasks(taskId int) *FullTask {
 	var task FullTask
 
-	result := Instance.db.Preload("Subtopic").First(&task, taskId)
+	result := Instance.db.Preload("Subtopic").Preload("HelpSteps").First(&task, taskId)
 
 	if result.Error != nil {
 		log.Error("Error fetching task: ", result.Error)
