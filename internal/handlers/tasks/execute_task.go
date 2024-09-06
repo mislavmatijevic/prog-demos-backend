@@ -330,7 +330,7 @@ func fillFileWithData(tempFile *os.File, inputs string) error {
 	return err
 }
 
-func runFileInIsolatedDockerContainerTask(context context.Context, cppFile *os.File) error {
+func runFileInIsolatedDockerContainerTask(timeoutContext context.Context, cppFile *os.File) error {
 	errChan := make(chan error, 1)
 	sourceCodePath := cppFile.Name()
 
@@ -339,9 +339,10 @@ func runFileInIsolatedDockerContainerTask(context context.Context, cppFile *os.F
 	}()
 
 	select {
-	case <-context.Done():
-		var containerName = filepath.Base(filepath.Dir(sourceCodePath))
+	case <-timeoutContext.Done():
+		log.Info("Timeout reached - forcefully removing Docker container!")
 
+		var containerName = filepath.Base(filepath.Dir(sourceCodePath))
 		err := removeRunningDockerContainer(containerName)
 		if err != nil {
 			log.Error(err)
@@ -349,7 +350,9 @@ func runFileInIsolatedDockerContainerTask(context context.Context, cppFile *os.F
 
 		return errors.New(CONTAINER_TIMEOUT_MARK)
 	case err := <-errChan:
-		log.Errorf("Failed to run Docker container: %v", err)
+		if err != nil {
+			log.Errorf("Failed to run Docker container: %v", err)
+		}
 		return err
 	}
 }
