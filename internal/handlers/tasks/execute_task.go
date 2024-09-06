@@ -235,6 +235,7 @@ func checkUserHasRunningTasks(userId int) bool {
 
 func sendTaskExecutionFailedResponse(w http.ResponseWriter, execErrCode ExecutionErrorCode, reasonFailed interface{}) {
 	res := taskExecutionResponse{Success: false, ErrorCode: execErrCode.EnumIndex(), Message: execErrCode.String(), ReasonFailed: reasonFailed}
+	w.WriteHeader(422)
 	sendResponse(w, res)
 }
 
