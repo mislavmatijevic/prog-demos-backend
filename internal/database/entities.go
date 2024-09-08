@@ -17,6 +17,17 @@ func (s WrappedNullString) MarshalJSON() ([]byte, error) {
 	return []byte(`null`), nil
 }
 
+type WrappedNullTime struct {
+	sql.NullTime
+}
+
+func (s WrappedNullTime) MarshalJSON() ([]byte, error) {
+	if s.Valid {
+		return json.Marshal(s.Time)
+	}
+	return []byte(`null`), nil
+}
+
 type Topic struct {
 	ID        int         `gorm:"primaryKey" json:"id"`
 	Name      string      `gorm:"size:100;not null" json:"name"`
@@ -97,8 +108,8 @@ type User struct {
 	IsActivated         bool              `gorm:"not null;default:false" json:"-"`
 	ActivationToken     WrappedNullString `gorm:"type:char(128);null" json:"-"`
 	DateRegistered      time.Time         `gorm:"not null" json:"-"`
-	PasswordResetToken  string            `gorm:"type:char(128);null;default:null" json:"-"`
-	PasswordResetExpiry time.Time         `gorm:"null;default:null" json:"-"`
+	PasswordResetToken  WrappedNullString `gorm:"type:char(128);null;default:null" json:"-"`
+	PasswordResetExpiry WrappedNullTime   `gorm:"null;default:null" json:"-"`
 }
 
 type RefreshToken struct {

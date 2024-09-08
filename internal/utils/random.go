@@ -4,6 +4,8 @@ import (
 	"crypto/rand"
 	"math/big"
 	"regexp"
+
+	"golang.org/x/crypto/bcrypt"
 )
 
 var validRefreshTokenRegex = regexp.MustCompile(`^[a-zA-Z0-9]+$`)
@@ -20,4 +22,13 @@ func RandomString(n int) string {
 
 func IsValidRandomString(value string, n int) bool {
 	return validRefreshTokenRegex.MatchString(value) && len(value) == n
+}
+
+func CreateSecureHash(text string) (string, error) {
+	bytePassword := []byte(text)
+	hash, err := bcrypt.GenerateFromPassword(bytePassword, bcrypt.DefaultCost)
+	if err != nil {
+		return "", err
+	}
+	return string(hash), nil
 }

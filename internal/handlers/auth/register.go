@@ -12,7 +12,6 @@ import (
 	"github.com/mislavmatijevic/prog-demos-backend/internal/mailing"
 	"github.com/mislavmatijevic/prog-demos-backend/internal/utils"
 	log "github.com/sirupsen/logrus"
-	"golang.org/x/crypto/bcrypt"
 )
 
 type registrationErrorCode int
@@ -64,7 +63,7 @@ func registerUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	hashPassword, err := getHashPassword(userReqBody.Password)
+	hashPassword, err := utils.CreateSecureHash(userReqBody.Password)
 	if err != nil {
 		api.InternalErrorHandlerGenericMsg(w, err)
 		return
@@ -109,22 +108,14 @@ func respondForErrorCode(w http.ResponseWriter, errorCode registrationErrorCode)
 	writeRequest(w, res)
 }
 
-func getHashPassword(password string) (string, error) {
-	bytePassword := []byte(password)
-	hash, err := bcrypt.GenerateFromPassword(bytePassword, bcrypt.DefaultCost)
-	if err != nil {
-		return "", err
-	}
-	return string(hash), nil
-}
-
 func checkIfUserInfoValid(username, email, password string) bool {
 	var usernameAtLeast2Characters = len(username) >= 2
 	var emailAtLeast4Characters = len(email) >= 4
 	var isEmailValid = utils.IsEmailValid(email)
 	var usernameDoesNotContainAt = !strings.Contains(username, "@")
 	var passwordAtLeast8Chars = len(password) >= 8
-	return usernameAtLeast2Characters && emailAtLeast4Characters && isEmailValid && usernameDoesNotContainAt && passwordAtLeast8Chars
+	var passwordNotLongerThan72Chars = len(password) < 72
+	return usernameAtLeast2Characters && emailAtLeast4Characters && isEmailValid && usernameDoesNotContainAt && passwordAtLeast8Chars && passwordNotLongerThan72Chars
 }
 
 func createUser(username, email, hashPassword string) database.User {

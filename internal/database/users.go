@@ -3,6 +3,7 @@ package database
 import (
 	"database/sql"
 	"errors"
+	"time"
 
 	log "github.com/sirupsen/logrus"
 )
@@ -65,4 +66,28 @@ func SetUserActivated(activationToken string) (*User, error) {
 func DeleteUser(user *User) error {
 	result := Instance.db.Delete(user)
 	return result.Error
+}
+
+func ChangeUserPassword(passwordResetToken string, newPasswordHash string) (*User, error) {
+	user := getUserByCondition("password_reset_token = ?", passwordResetToken)
+	if user == nil {
+		return nil, errors.New("password reset token does not exist")
+	}
+
+	if !user.PasswordResetExpiry.Valid || time.Now().After(user.PasswordResetExpiry.Time) {
+		removePasswordReset(user)
+		return nil, errors.New("password reset token has expired")
+	}
+
+	user.Password = newPasswordHash
+	removePasswordReset(user)
+
+	err := SaveUser(*user)
+	return user, err
+}
+
+func removePasswordReset(user *User) {
+	user.PasswordResetToken = WrappedNullString{NullString: sql.NullString{Valid: false}}
+	user.PasswordResetExpiry = WrappedNullTime{NullTime: sql.NullTime{Valid: false}}
+	SaveUser(*user)
 }

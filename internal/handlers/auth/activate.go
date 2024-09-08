@@ -33,9 +33,10 @@ func activateUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	user, err := database.SetUserActivated(trimmedToken)
+
 	var res activationResponse
 
-	user, err := database.SetUserActivated(trimmedToken)
 	if err != nil {
 		res = activationResponse{
 			Success: false,

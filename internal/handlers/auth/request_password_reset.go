@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -58,11 +59,17 @@ func getActivatedUserByEmail(email string) *database.User {
 }
 
 func userHasPasswordResetInProgress(user *database.User) bool {
-	return user.PasswordResetExpiry.After(time.Now())
+	var hasPasswordResetInProgress = false
+
+	if user.PasswordResetExpiry.Valid {
+		hasPasswordResetInProgress = user.PasswordResetExpiry.Time.After(time.Now())
+	}
+
+	return hasPasswordResetInProgress
 }
 
 func setPasswordResetToken(user *database.User) {
-	user.PasswordResetToken = utils.RandomString(128)
-	user.PasswordResetExpiry = time.Now().Add(10 * time.Minute)
+	user.PasswordResetToken = database.WrappedNullString{NullString: sql.NullString{String: utils.RandomString(128), Valid: true}}
+	user.PasswordResetExpiry = database.WrappedNullTime{NullTime: sql.NullTime{Time: time.Now().Add(10 * time.Minute), Valid: true}}
 	database.SaveUser(*user)
 }
