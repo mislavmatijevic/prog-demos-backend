@@ -26,20 +26,18 @@ import (
 type ExecutionErrorCode int
 
 const (
-	EXEC_ERR_CODE_NO_TESTS ExecutionErrorCode = iota + 1
-	EXEC_ERR_ARTEFACT_CONTENT_MISMATCH
-	EXEC_ERR_TEST_FAILED
+	EXEC_ERR_TEST_FAILED ExecutionErrorCode = iota + 1
 	EXEC_ERR_TIMEOUT
+	EXEC_ERR_ARTEFACT_CONTENT_MISMATCH
 )
 
 const CONTAINER_TIMEOUT_MARK = "timeout"
 
 func (execErrCode ExecutionErrorCode) String() string {
 	return [...]string{
-		"Can't test this task.",
-		"Artefact files did not contain expected contents.",
 		"Program did not output expected test data.",
 		"Execution took too long.",
+		"Artefact files did not contain expected contents.",
 	}[execErrCode-1]
 }
 
@@ -122,7 +120,7 @@ func executeTask(w http.ResponseWriter, r *http.Request) {
 
 	var tests []database.TaskTest = database.GetTestsForTask(taskId)
 	if len(tests) == 0 {
-		sendTaskExecutionFailedResponse(w, EXEC_ERR_CODE_NO_TESTS, nil)
+		api.InternalErrorHandlerCustomMsg(w, fmt.Sprintf("No tests defined for task %d!", taskId))
 		setTaskExecutionStatusFailed(taskExecution)
 		return
 	}
