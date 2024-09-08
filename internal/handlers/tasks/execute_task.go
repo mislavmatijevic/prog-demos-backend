@@ -25,18 +25,20 @@ import (
 
 type ExecutionErrorCode int
 
+const CONTAINER_TIMEOUT_MARK = "timeout"
+const CONTAINER_FORCEFULLY_KILLED_MARK = "forcefully killed"
+
 const (
-	EXEC_ERR_TEST_FAILED ExecutionErrorCode = iota + 1
+	EXEC_ERR_BAD_SYNTAX ExecutionErrorCode = iota + 1
+	EXEC_ERR_TEST_FAILED
 	EXEC_ERR_TIMEOUT
 	EXEC_ERR_KILLED
 	EXEC_ERR_ARTEFACT_CONTENT_MISMATCH
 )
 
-const CONTAINER_TIMEOUT_MARK = "timeout"
-const CONTAINER_FORCEFULLY_KILLED_MARK = "forcefully killed"
-
 func (execErrCode ExecutionErrorCode) String() string {
 	return [...]string{
+		"Solution code has syntax errors.",
 		"Program did not output expected test data.",
 		"Execution took too long.",
 		"Execution was forcefully killed. Most probably a memory leak.",
@@ -112,13 +114,17 @@ func executeTask(w http.ResponseWriter, r *http.Request) {
 		api.RequestErrorHandlerGenericMsg(w, err)
 		setTaskExecutionStatusFailed(taskExecution)
 		return
-	} else if !checkIsValidSolutionCode(cppFileForSyntaxChecking) {
-		api.RequestErrorHandlerCustomMsg(w, "Code is not valid C++.")
-		os.Remove(cppFileForSyntaxChecking.Name())
+	}
+
+	reportedErrors, err := findAllErrorsInSolutionCode(cppFileForSyntaxChecking)
+	os.Remove(cppFileForSyntaxChecking.Name())
+	if err != nil {
+		api.InternalErrorHandlerCustomMsg(w, fmt.Sprintf("Couldn't check code syntax: %v", err))
 		setTaskExecutionStatusFailed(taskExecution)
 		return
-	} else {
-		os.Remove(cppFileForSyntaxChecking.Name())
+	} else if len(reportedErrors) != 0 {
+		sendTaskExecutionFailedResponse(taskExecution, w, EXEC_ERR_BAD_SYNTAX, reportedErrors)
+		return
 	}
 
 	var tests []database.TaskTest = database.GetTestsForTask(taskId)
@@ -149,14 +155,12 @@ func executeTask(w http.ResponseWriter, r *http.Request) {
 			switch err.Error() {
 			case CONTAINER_TIMEOUT_MARK:
 				{
-					sendTaskExecutionFailedResponse(w, EXEC_ERR_TIMEOUT, nil)
-					setTaskExecutionStatusFailed(taskExecution)
+					sendTaskExecutionFailedResponse(taskExecution, w, EXEC_ERR_TIMEOUT, nil)
 					break
 				}
 			case CONTAINER_FORCEFULLY_KILLED_MARK:
 				{
-					sendTaskExecutionFailedResponse(w, EXEC_ERR_KILLED, nil)
-					setTaskExecutionStatusFailed(taskExecution)
+					sendTaskExecutionFailedResponse(taskExecution, w, EXEC_ERR_KILLED, nil)
 					break
 				}
 			default:
@@ -185,8 +189,7 @@ func executeTask(w http.ResponseWriter, r *http.Request) {
 				handleTestExecutionInternalFail(w, tempDirPath, err, taskExecution)
 				return
 			} else if !hashMatches {
-				sendTaskExecutionFailedResponse(w, EXEC_ERR_ARTEFACT_CONTENT_MISMATCH, testDataMismatchReason{TestInput: testInput})
-				setTaskExecutionStatusFailed(taskExecution)
+				sendTaskExecutionFailedResponse(taskExecution, w, EXEC_ERR_ARTEFACT_CONTENT_MISMATCH, testDataMismatchReason{TestInput: testInput})
 				omitOutputsCheck = true
 			}
 		}
@@ -198,12 +201,11 @@ func executeTask(w http.ResponseWriter, r *http.Request) {
 		}
 
 		if actualOutputs != test.ExpectedOutput {
-			sendTaskExecutionFailedResponse(w, EXEC_ERR_TEST_FAILED, testDataMismatchReason{
+			sendTaskExecutionFailedResponse(taskExecution, w, EXEC_ERR_TEST_FAILED, testDataMismatchReason{
 				TestInput:      testInput,
 				Output:         actualOutputs,
 				ExpectedOutput: test.ExpectedOutput,
 			})
-			setTaskExecutionStatusFailed(taskExecution)
 			return
 		}
 	}
@@ -213,10 +215,17 @@ func executeTask(w http.ResponseWriter, r *http.Request) {
 	setTaskExecutionStatusSucceeded(taskExecution)
 }
 
-func checkIsValidSolutionCode(cppFile *os.File) bool {
-	cmd := exec.Command("g++", "-fsyntax-only", cppFile.Name())
-	_, err := cmd.CombinedOutput()
-	return err == nil
+func findAllErrorsInSolutionCode(cppFile *os.File) ([]utils.GppCompilerReportedSyntaxError, error) {
+	cmd := exec.Command("g++", "-fsyntax-only", "-o /dev/null", cppFile.Name())
+	output, err := cmd.CombinedOutput()
+
+	var foundErrors []utils.GppCompilerReportedSyntaxError
+
+	if err != nil {
+		foundErrors, err = utils.ExtractGppSyntaxErrors(string(output))
+	}
+
+	return foundErrors, err
 }
 
 func markTaskExecutionStartForUserId(taskId, userId int, code string) (*database.TaskExecution, error) {
@@ -253,7 +262,8 @@ func checkUserHasRunningTasks(userId int) bool {
 	return currentlyRunningTaskExecution != nil
 }
 
-func sendTaskExecutionFailedResponse(w http.ResponseWriter, execErrCode ExecutionErrorCode, reasonFailed interface{}) {
+func sendTaskExecutionFailedResponse(taskExecution *database.TaskExecution, w http.ResponseWriter, execErrCode ExecutionErrorCode, reasonFailed interface{}) {
+	setTaskExecutionStatusFailed(taskExecution)
 	res := taskExecutionResponse{Success: false, ErrorCode: execErrCode.EnumIndex(), Message: execErrCode.String(), ReasonFailed: reasonFailed}
 	w.WriteHeader(422)
 	sendResponse(w, res)

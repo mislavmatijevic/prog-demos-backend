@@ -43,6 +43,7 @@ var (
 		writerError(w, "An Unexpected Error Occurred.", http.StatusInternalServerError)
 	}
 	InternalErrorHandlerCustomMsg = func(w http.ResponseWriter, errorMessage string) {
+		log.Error(errorMessage)
 		writerError(w, errorMessage, http.StatusInternalServerError)
 	}
 	AuthorizationMissingGenericMsg = func(w http.ResponseWriter) {
