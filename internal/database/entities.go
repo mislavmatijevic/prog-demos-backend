@@ -71,7 +71,7 @@ type FullTask struct {
 	Input              string         `gorm:"size:512;not null" json:"input"`
 	Output             string         `gorm:"size:512;not null" json:"output"`
 	InputOutputExample string         `gorm:"type:text" json:"inputOutputExample"`
-	IsFinalBoss        bool           `gorm:"not null;default:false" json:"isFinalBoss"`
+	IsBossBattle       bool           `gorm:"not null;default:false" json:"isBossBattle"`
 	SolutionCode       string         `gorm:"type:text" json:"solutionCode,omitempty"`
 	Subtopic           *Subtopic      `gorm:"foreignKey:SubtopicID" json:"subtopic"`
 	Tests              []TaskTest     `gorm:"foreignKey:IDTask" json:"-"`

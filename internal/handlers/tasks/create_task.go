@@ -33,7 +33,7 @@ type newTaskRequestBody struct {
 	Input              string         `json:"input"`
 	Output             string         `json:"output"`
 	InputOutputExample string         `json:"inputOutputExample"`
-	IsFinalBoss        bool           `json:"isFinalBoss"`
+	IsBossBattle       bool           `json:"isBossBattle"`
 	SolutionCode       string         `json:"solutionCode,omitempty"`
 	Tests              []taskTestBody `json:"tests"`
 	HelpSteps          []taskHelpBody `json:"helpSteps"`
@@ -53,7 +53,7 @@ func (body newTaskRequestBody) mapToEntity() (newFullTaskEntity *database.FullTa
 		Input:              body.Input,
 		Output:             body.Output,
 		InputOutputExample: body.InputOutputExample,
-		IsFinalBoss:        body.IsFinalBoss,
+		IsBossBattle:       body.IsBossBattle,
 		SolutionCode:       body.SolutionCode,
 		ID:                 0,
 		CreatorID:          0,
@@ -93,7 +93,7 @@ func createTask(w http.ResponseWriter, r *http.Request) {
 
 	attachTestsToTask(newTask.Tests, taskEntity)
 
-	if !newTask.IsFinalBoss {
+	if !newTask.IsBossBattle {
 		err = checkForValidHelpSteps(*newTask)
 		if err != nil {
 			api.RequestErrorHandlerCustomMsg(w, err.Error())
