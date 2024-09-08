@@ -28,15 +28,18 @@ type ExecutionErrorCode int
 const (
 	EXEC_ERR_TEST_FAILED ExecutionErrorCode = iota + 1
 	EXEC_ERR_TIMEOUT
+	EXEC_ERR_KILLED
 	EXEC_ERR_ARTEFACT_CONTENT_MISMATCH
 )
 
 const CONTAINER_TIMEOUT_MARK = "timeout"
+const CONTAINER_FORCEFULLY_KILLED_MARK = "forcefully killed"
 
 func (execErrCode ExecutionErrorCode) String() string {
 	return [...]string{
 		"Program did not output expected test data.",
 		"Execution took too long.",
+		"Execution was forcefully killed. Most probably a memory leak.",
 		"Artefact files did not contain expected contents.",
 	}[execErrCode-1]
 }
@@ -143,7 +146,26 @@ func executeTask(w http.ResponseWriter, r *http.Request) {
 
 		err = runFileInIsolatedDockerContainerTask(ctx, cppFile)
 		if err != nil {
-			handleDockerContainerFail(err, w, taskExecution, tempDirPath)
+			switch err.Error() {
+			case CONTAINER_TIMEOUT_MARK:
+				{
+					sendTaskExecutionFailedResponse(w, EXEC_ERR_TIMEOUT, nil)
+					setTaskExecutionStatusFailed(taskExecution)
+					break
+				}
+			case CONTAINER_FORCEFULLY_KILLED_MARK:
+				{
+					sendTaskExecutionFailedResponse(w, EXEC_ERR_KILLED, nil)
+					setTaskExecutionStatusFailed(taskExecution)
+					break
+				}
+			default:
+				{
+					handleTestExecutionInternalFail(w, tempDirPath, err, taskExecution)
+				}
+			}
+
+			log.Error(err)
 			return
 		}
 
@@ -349,7 +371,7 @@ func runFileInIsolatedDockerContainerTask(timeoutContext context.Context, cppFil
 		return errors.New(CONTAINER_TIMEOUT_MARK)
 	case err := <-errChan:
 		if err != nil {
-			log.Errorf("Failed to run Docker container: %v", err)
+			log.Errorf("Ran into trouble while running a Docker container: %v", err)
 		}
 		return err
 	}
@@ -392,6 +414,8 @@ func runDockerRunnerImage(fullFilePath string, allowBuildingImageIfNotFound bool
 			} else {
 				log.Errorf("Failed to build Docker container: %s", err)
 			}
+		} else if strings.Contains(stringOutput, "Killed") {
+			return errors.New(CONTAINER_FORCEFULLY_KILLED_MARK)
 		} else {
 			log.Warningf("Suspicious output from task-runner container: %s", stringOutput)
 		}
@@ -403,21 +427,6 @@ func runDockerRunnerImage(fullFilePath string, allowBuildingImageIfNotFound bool
 func buildRunnerImage(dockerPath string) error {
 	cmd := exec.Command("bash", "-c", dockerPath+" build -t task-runner:latest -f ./task-runner.Dockerfile .")
 	return cmd.Run()
-}
-
-func handleDockerContainerFail(err error, w http.ResponseWriter, taskExecution *database.TaskExecution, tempDirPath string) {
-	switch err.Error() {
-	case CONTAINER_TIMEOUT_MARK:
-		{
-			sendTaskExecutionFailedResponse(w, EXEC_ERR_TIMEOUT, nil)
-			setTaskExecutionStatusFailed(taskExecution)
-		}
-	default:
-		{
-			log.Error(err)
-			handleTestExecutionInternalFail(w, tempDirPath, err, taskExecution)
-		}
-	}
 }
 
 func removeRunningDockerContainer(containerName string) error {
