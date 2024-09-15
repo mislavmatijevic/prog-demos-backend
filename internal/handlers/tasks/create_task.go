@@ -91,7 +91,11 @@ func createTask(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	attachTestsToTask(newTask.Tests, taskEntity)
+	err = attachTestsToTask(newTask.Tests, taskEntity)
+	if err != nil {
+		api.RequestErrorHandlerCustomMsg(w, err.Error())
+		return
+	}
 
 	if !newTask.IsBossBattle {
 		err = checkForValidHelpSteps(*newTask)
@@ -227,16 +231,25 @@ func storeTaskInDatabase(taskEntity *database.FullTask) error {
 	return err
 }
 
-func attachTestsToTask(newTestDefinition []taskTestBody, taskEntity *database.FullTask) {
+func attachTestsToTask(newTestDefinition []taskTestBody, taskEntity *database.FullTask) error {
 	for _, test := range newTestDefinition {
+		containsSha256, artefactsHash := utils.GetTrimmedStringWithValue(test.ArtefactSHA256)
+		var isValidSha256 = containsSha256 && len(artefactsHash) == 64
+
+		if !isValidSha256 && len(artefactsHash) > 0 {
+			return errors.New("expected artefact hash is not sha256")
+		}
+
 		var testEntity = database.TaskTest{
 			Input:          test.Input,
 			ExpectedOutput: test.ExpectedOutput,
-			ArtefactSHA256: test.ArtefactSHA256,
+			ArtefactSHA256: database.WrappedNullString{NullString: sql.NullString{String: artefactsHash, Valid: isValidSha256}},
 		}
 
 		taskEntity.Tests = append(taskEntity.Tests, testEntity)
 	}
+
+	return nil
 }
 
 func attachHelpStepsToTask(taskHelpStepBody []taskHelpBody, taskEntity *database.FullTask) {

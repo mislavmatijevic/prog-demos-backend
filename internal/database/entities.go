@@ -92,11 +92,11 @@ type TaskHelpStep struct {
 }
 
 type TaskTest struct {
-	ID             int    `gorm:"primaryKey" json:"id"`
-	IDTask         int    `gorm:"not null" json:"idTask"`
-	Input          string `gorm:"size:512;not null" json:"input"`
-	ExpectedOutput string `gorm:"size:512;not null" json:"expectedOutput"`
-	ArtefactSHA256 string `gorm:"type:char(64)" json:"-"`
+	ID             int               `gorm:"primaryKey" json:"id"`
+	IDTask         int               `gorm:"not null" json:"idTask"`
+	Input          string            `gorm:"size:512;not null" json:"input"`
+	ExpectedOutput string            `gorm:"size:512;not null" json:"expectedOutput"`
+	ArtefactSHA256 WrappedNullString `gorm:"type:char(64)" json:"-"`
 }
 
 type User struct {

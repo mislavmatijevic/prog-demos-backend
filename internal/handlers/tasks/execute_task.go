@@ -180,7 +180,7 @@ func executeTask(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		var hasArtefacts bool = len(test.ArtefactSHA256) != 0
+		var hasArtefacts bool = test.ArtefactSHA256.Valid
 
 		if hasArtefacts {
 			hashMatches, err := checkHashMatch(test, tempDirPath)
@@ -281,7 +281,7 @@ func checkHashMatch(test database.TaskTest, tempDirPath string) (hashMatches boo
 		return false, err
 	}
 
-	if actualSha256 != test.ArtefactSHA256 {
+	if actualSha256 != test.ArtefactSHA256.String {
 		return false, nil
 	}
 
