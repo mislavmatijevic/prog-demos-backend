@@ -55,7 +55,7 @@ type BasicTask struct {
 	ID         int    `gorm:"primaryKey" json:"id"`
 	Name       string `gorm:"not null;column:name" json:"name"`
 	SubtopicID int    `gorm:"not null;column:id_subtopic" json:"-"`
-	Complexity int    `gorm:"not null" json:"complexity"`
+	Complexity string `gorm:"not null" json:"complexity"`
 }
 
 func (BasicTask) TableName() string {
