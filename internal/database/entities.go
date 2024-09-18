@@ -72,7 +72,6 @@ type FullTask struct {
 	Output             string         `gorm:"size:512;not null" json:"output"`
 	InputOutputExample string         `gorm:"type:text" json:"inputOutputExample"`
 	IsBossBattle       bool           `gorm:"not null;default:false" json:"isBossBattle"`
-	SolutionCode       string         `gorm:"type:text" json:"solutionCode,omitempty"`
 	Subtopic           *Subtopic      `gorm:"foreignKey:SubtopicID" json:"subtopic"`
 	Tests              []TaskTest     `gorm:"foreignKey:IDTask" json:"-"`
 	Creator            *User          `gorm:"foreignKey:CreatorID" json:"creator,omitempty"`
@@ -127,7 +126,7 @@ type TaskExecution struct {
 	IsFinished    bool      `gorm:"not null;default:false" json:"-"`
 	StartedAt     time.Time `gorm:"not null" json:"-"`
 	FinishedAt    time.Time `gorm:"null;default:null" json:"-"`
-	SubmittedCode string    `gorm:"type:text" json:"solutionCode"`
+	SubmittedCode string    `gorm:"type:text" json:"submittedCode"`
 	WasSuccessful bool      `gorm:"not null;default:false" json:"-"`
 	Initiator     *User     `gorm:"foreignKey:InitiatorID" json:"-"`
 	Task          *FullTask `gorm:"foreignKey:TaskID" json:"-"`

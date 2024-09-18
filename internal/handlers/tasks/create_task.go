@@ -34,7 +34,6 @@ type newTaskRequestBody struct {
 	Output             string         `json:"output"`
 	InputOutputExample string         `json:"inputOutputExample"`
 	IsBossBattle       bool           `json:"isBossBattle"`
-	SolutionCode       string         `json:"solutionCode,omitempty"`
 	Tests              []taskTestBody `json:"tests"`
 	HelpSteps          []taskHelpBody `json:"helpSteps"`
 }
@@ -54,7 +53,6 @@ func (body newTaskRequestBody) mapToEntity() (newFullTaskEntity *database.FullTa
 		Output:             body.Output,
 		InputOutputExample: body.InputOutputExample,
 		IsBossBattle:       body.IsBossBattle,
-		SolutionCode:       body.SolutionCode,
 		ID:                 0,
 		CreatorID:          0,
 		Subtopic:           nil,
@@ -159,7 +157,6 @@ func checkRequiredProperties(newTask newTaskRequestBody) bool {
 	var hasTests bool = newTask.Tests != nil && len(newTask.Tests) > 0
 	var hasComplexitySet bool = complexityNumber >= 1 && complexityNumber <= 5
 	_, newTask.Input = utils.GetTrimmedStringWithValue(newTask.Input)
-	_, newTask.SolutionCode = utils.GetTrimmedStringWithValue(newTask.SolutionCode)
 
 	var hasRequiredPropertiesSet = hasName && hasOutput && hasExample && hasTests && hasComplexitySet
 	return hasRequiredPropertiesSet
