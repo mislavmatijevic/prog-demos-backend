@@ -272,7 +272,11 @@ func setTaskExecutionStatusFailed(taskExecution *database.TaskExecution) {
 func setTaskExecutionStatusSucceeded(taskExecution *database.TaskExecution, score lizard.CodeScore) {
 	taskExecution.WasSuccessful = true
 	taskExecution.CodeScore = &score
-	increaseAverageScoreOnTaskItself(database.GetSingleFullTasks(taskExecution.TaskID), score)
+	// TODO: if already was solved, subtract last score from sum and set to new value
+	var alreadySolved = database.CheckIfUserAlreadySuccessfullyExecutedTask(taskExecution.InitiatorID, taskExecution.TaskID)
+	if !alreadySolved {
+		increaseAverageScoreOnTaskItself(database.GetSingleFullTasks(taskExecution.TaskID), score)
+	}
 	saveFinishedTaskExecution(taskExecution)
 }
 
