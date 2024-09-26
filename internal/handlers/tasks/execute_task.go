@@ -60,11 +60,16 @@ type testDataMismatchReason = struct {
 	ExpectedOutput string `json:"expectedOutput,omitempty"`
 }
 
-type taskExecutionResponse = struct {
+type taskExecutionFailedResponse = struct {
 	Success      bool        `json:"success"`
 	Message      string      `json:"message"`
 	ErrorCode    int         `json:"errorCode"`
 	ReasonFailed interface{} `json:"reason,omitempty"`
+}
+
+type taskExecutionSuccessResponse = struct {
+	Success bool   `json:"success"`
+	Message string `json:"message"`
 }
 
 func executeTask(w http.ResponseWriter, r *http.Request) {
@@ -133,8 +138,6 @@ func executeTask(w http.ResponseWriter, r *http.Request) {
 		setTaskExecutionStatusFailed(taskExecution)
 		return
 	}
-
-	var res taskExecutionResponse
 
 	for _, test := range tests {
 		omitOutputsCheck := false
@@ -209,9 +212,9 @@ func executeTask(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-
-	res = taskExecutionResponse{Success: true, Message: "Test data matches output!"}
-	sendResponse(w, res)
+	var successResponse = taskExecutionSuccessResponse{Success: true, Message: "Test data matches output!"}
+	w.Header().Add("content-type", "application/json")
+	json.NewEncoder(w).Encode(successResponse)
 	setTaskExecutionStatusSucceeded(taskExecution)
 }
 
@@ -264,9 +267,10 @@ func checkUserHasRunningTasks(userId int) bool {
 
 func sendTaskExecutionFailedResponse(taskExecution *database.TaskExecution, w http.ResponseWriter, execErrCode ExecutionErrorCode, reasonFailed interface{}) {
 	setTaskExecutionStatusFailed(taskExecution)
-	res := taskExecutionResponse{Success: false, ErrorCode: execErrCode.EnumIndex(), Message: execErrCode.String(), ReasonFailed: reasonFailed}
+	var errorResponse = taskExecutionFailedResponse{Success: false, ErrorCode: execErrCode.EnumIndex(), Message: execErrCode.String(), ReasonFailed: reasonFailed}
 	w.WriteHeader(422)
-	sendResponse(w, res)
+	w.Header().Add("content-type", "application/json")
+	json.NewEncoder(w).Encode(errorResponse)
 }
 
 func handleTestExecutionInternalFail(w http.ResponseWriter, tempDirPath string, err error, taskExecution *database.TaskExecution) {
@@ -286,11 +290,6 @@ func checkHashMatch(test database.TaskTest, tempDirPath string) (hashMatches boo
 	}
 
 	return true, nil
-}
-
-func sendResponse(w http.ResponseWriter, res taskExecutionResponse) {
-	w.Header().Add("content-type", "application/json")
-	json.NewEncoder(w).Encode(res)
 }
 
 func getRequestBody(r *http.Request) (*taskExecutionRequest, error) {
