@@ -20,6 +20,7 @@ import (
 	"github.com/mislavmatijevic/prog-demos-backend/internal/database"
 	"github.com/mislavmatijevic/prog-demos-backend/internal/handlers/api"
 	"github.com/mislavmatijevic/prog-demos-backend/internal/utils"
+	"github.com/mislavmatijevic/prog-demos-backend/internal/utils/lizard"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -68,8 +69,9 @@ type taskExecutionFailedResponse = struct {
 }
 
 type taskExecutionSuccessResponse = struct {
-	Success bool   `json:"success"`
-	Message string `json:"message"`
+	Success bool             `json:"success"`
+	Message string           `json:"message"`
+	Score   lizard.CodeScore `json:"score"`
 }
 
 func executeTask(w http.ResponseWriter, r *http.Request) {
@@ -212,7 +214,25 @@ func executeTask(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-	var successResponse = taskExecutionSuccessResponse{Success: true, Message: "Test data matches output!"}
+
+	cppFileForScoreCalculation, err := createTempCppFile("", solutionCode)
+	if err != nil {
+		api.InternalErrorHandlerGenericMsg(w, err)
+		setTaskExecutionStatusFailed(taskExecution)
+		return
+	}
+	score, err := lizard.CalculateScore(cppFileForScoreCalculation)
+	if err != nil {
+		api.InternalErrorHandlerCustomMsg(w, fmt.Sprintf("Could not calculate score: %v", err))
+		setTaskExecutionStatusFailed(taskExecution)
+		return
+	}
+	err = os.Remove(cppFileForScoreCalculation.Name())
+	if err != nil {
+		log.Errorf("Could not delete temp file created for scoring! %v", err)
+	}
+
+	var successResponse = taskExecutionSuccessResponse{Success: true, Score: *score, Message: "Test data matches output!"}
 	w.Header().Add("content-type", "application/json")
 	json.NewEncoder(w).Encode(successResponse)
 	setTaskExecutionStatusSucceeded(taskExecution)
