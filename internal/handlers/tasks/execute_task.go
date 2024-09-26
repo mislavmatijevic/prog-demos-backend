@@ -424,7 +424,7 @@ func runDockerRunnerImage(fullFilePath string, allowBuildingImageIfNotFound bool
 		"%s run --rm "+
 			"--name %s "+
 			"-v %s:/var/temp_tasks/ "+
-			"--memory 30m --cpus 0.15 "+
+			"--memory 50m --cpus 0.15 "+
 			"--security-opt no-new-privileges --network none "+
 			"-e SOURCE_CODE_FOLDER=%s "+
 			"-e SOURCE_FILE_NAME=%s "+
