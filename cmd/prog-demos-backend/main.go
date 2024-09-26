@@ -26,7 +26,7 @@ func main() {
 
 	err = godotenv.Load()
 	if err != nil {
-		log.Fatalln("Coudn't load env file!!")
+		log.Fatalln("Couldn't load env file!!")
 	}
 
 	authentication.Initialize()
