@@ -235,7 +235,7 @@ func executeTask(w http.ResponseWriter, r *http.Request) {
 	var successResponse = taskExecutionSuccessResponse{Success: true, Score: *score, Message: "Test data matches output!"}
 	w.Header().Add("content-type", "application/json")
 	json.NewEncoder(w).Encode(successResponse)
-	setTaskExecutionStatusSucceeded(taskExecution)
+	setTaskExecutionStatusSucceeded(taskExecution, *score)
 }
 
 func findAllErrorsInSolutionCode(cppFile *os.File) ([]utils.GppCompilerReportedSyntaxError, error) {
@@ -269,9 +269,30 @@ func setTaskExecutionStatusFailed(taskExecution *database.TaskExecution) {
 	saveFinishedTaskExecution(taskExecution)
 }
 
-func setTaskExecutionStatusSucceeded(taskExecution *database.TaskExecution) {
+func setTaskExecutionStatusSucceeded(taskExecution *database.TaskExecution, score lizard.CodeScore) {
 	taskExecution.WasSuccessful = true
+	taskExecution.CodeScore = &score
+	increaseAverageScoreOnTaskItself(database.GetSingleFullTasks(taskExecution.TaskID), score)
 	saveFinishedTaskExecution(taskExecution)
+}
+
+func increaseAverageScoreOnTaskItself(fullTask *database.FullTask, score lizard.CodeScore) {
+	var scoresCountSoFar = fullTask.ScoresCount
+	var tokensSum = fullTask.AvgTokens * scoresCountSoFar
+	var scoresSum = fullTask.AvgTotalScore * float32(scoresCountSoFar)
+	var complexitySum = fullTask.AvgComplexity * scoresCountSoFar
+
+	tokensSum += score.Tokens
+	scoresSum += score.TotalScore
+	complexitySum += score.Complexity
+	scoresCountSoFar++
+
+	fullTask.ScoresCount = scoresCountSoFar
+	fullTask.AvgTokens = tokensSum / scoresCountSoFar
+	fullTask.AvgTotalScore = utils.RoundNumberDownToTwoDecimals(scoresSum / float32(scoresCountSoFar))
+	fullTask.AvgComplexity = complexitySum / scoresCountSoFar
+
+	database.SaveTask(fullTask)
 }
 
 func saveFinishedTaskExecution(taskExecution *database.TaskExecution) {

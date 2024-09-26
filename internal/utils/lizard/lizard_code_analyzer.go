@@ -2,12 +2,12 @@ package lizard
 
 import (
 	"fmt"
-	"math"
 	"os"
 	"os/exec"
 	"strconv"
 	"strings"
 
+	"github.com/mislavmatijevic/prog-demos-backend/internal/utils"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -53,9 +53,9 @@ func CalculateScore(solutionCode *os.File) (*CodeScore, error) {
 	score = awardManyFunctions(score, functionCount)
 	score = punishHighAverageTokenCountPerFunction(score, averageTokensPerFunction)
 
-	var roundedScore = float64(math.Round(score*100) / 100)
+	var roundedScore = utils.RoundNumberDownToTwoDecimals(score)
 
-	return &CodeScore{Complexity: int(totalCcn), Tokens: int(totalTokens), TotalScore: float32(roundedScore)}, nil
+	return &CodeScore{Complexity: int(totalCcn), Tokens: int(totalTokens), TotalScore: roundedScore}, nil
 }
 
 func awardManyFunctions(score float64, functionCount float64) float64 {

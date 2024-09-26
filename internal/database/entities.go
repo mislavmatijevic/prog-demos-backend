@@ -4,6 +4,8 @@ import (
 	"database/sql"
 	"encoding/json"
 	"time"
+
+	"github.com/mislavmatijevic/prog-demos-backend/internal/utils/lizard"
 )
 
 type WrappedNullString struct {
@@ -76,6 +78,10 @@ type FullTask struct {
 	Tests              []TaskTest     `gorm:"foreignKey:IDTask" json:"-"`
 	Creator            *User          `gorm:"foreignKey:CreatorID" json:"creator,omitempty"`
 	HelpSteps          []TaskHelpStep `gorm:"foreignKey:IDTask" json:"helpSteps"`
+	AvgTokens          int            `json:"averageTokens"`
+	AvgComplexity      int            `json:"averageComplexity"`
+	AvgTotalScore      float32        `json:"averageTotalScore"`
+	ScoresCount        int            `json:"-"`
 }
 
 func (FullTask) TableName() string {
@@ -120,14 +126,15 @@ type RefreshToken struct {
 }
 
 type TaskExecution struct {
-	ID            int       `gorm:"primaryKey" json:"-"`
-	InitiatorID   int       `gorm:"not null;column:id_user" json:"-"`
-	TaskID        int       `gorm:"not null;column:id_task" json:"-"`
-	IsFinished    bool      `gorm:"not null;default:false" json:"-"`
-	StartedAt     time.Time `gorm:"not null" json:"-"`
-	FinishedAt    time.Time `gorm:"null;default:null" json:"-"`
-	SubmittedCode string    `gorm:"type:text" json:"submittedCode"`
-	WasSuccessful bool      `gorm:"not null;default:false" json:"-"`
-	Initiator     *User     `gorm:"foreignKey:InitiatorID" json:"-"`
-	Task          *FullTask `gorm:"foreignKey:TaskID" json:"-"`
+	ID                int       `gorm:"primaryKey" json:"-"`
+	InitiatorID       int       `gorm:"not null;column:id_user" json:"-"`
+	TaskID            int       `gorm:"not null;column:id_task" json:"-"`
+	IsFinished        bool      `gorm:"not null;default:false" json:"-"`
+	StartedAt         time.Time `gorm:"not null" json:"-"`
+	FinishedAt        time.Time `gorm:"null;default:null" json:"-"`
+	SubmittedCode     string    `gorm:"type:text" json:"submittedCode"`
+	WasSuccessful     bool      `gorm:"not null;default:false" json:"-"`
+	*lizard.CodeScore `gorm:"default:false" json:"score"`
+	Initiator         *User     `gorm:"foreignKey:InitiatorID" json:"-"`
+	Task              *FullTask `gorm:"foreignKey:TaskID" json:"-"`
 }
