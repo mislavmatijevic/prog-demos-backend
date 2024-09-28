@@ -11,10 +11,14 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-type CodeScore = struct {
+type CodeScore struct {
 	Tokens     int     `json:"tokens"`
 	Complexity int     `json:"complexity"`
 	TotalScore float32 `json:"totalScore"`
+}
+
+func (comparedWith *CodeScore) HasBetterScoreThan(compareTo *CodeScore) bool {
+	return comparedWith.TotalScore < compareTo.TotalScore
 }
 
 /*

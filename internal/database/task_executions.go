@@ -19,18 +19,22 @@ func GetRunningTaskExecutionForUserId(userId int) *TaskExecution {
 	return &taskExecution
 }
 
-func CheckIfUserAlreadySuccessfullyExecutedTask(userId int, taskId int) bool {
-	var exists bool
+func GetBestScoreExecutionOfUserForTask(userId int, taskId int) *TaskExecution {
+	var foundSuccessfulExecution TaskExecution
 
-	Instance.db.Model(&TaskExecution{}).
-		Select("count(*) > 0").
-		Where("id_user = @UserID AND id_task = @TaskID AND was_successful = @WasSuccessful",
+	Instance.db.
+		Where("id_user = @UserID AND id_task = @TaskID AND was_successful = @WasSuccessful AND best_score = @BestScore",
 			sql.Named("UserID", userId),
 			sql.Named("TaskID", taskId),
 			sql.Named("WasSuccessful", true),
-		).Find(&exists)
+			sql.Named("BestScore", true),
+		).Find(&TaskExecution{}).Scan(&foundSuccessfulExecution)
 
-	return exists
+	if foundSuccessfulExecution.ID == 0 {
+		return nil
+	}
+
+	return &foundSuccessfulExecution
 }
 
 func SaveTaskExecution(taskExecution TaskExecution) (*TaskExecution, error) {

@@ -134,6 +134,7 @@ type TaskExecution struct {
 	FinishedAt        time.Time `gorm:"null;default:null" json:"-"`
 	SubmittedCode     string    `gorm:"type:text" json:"submittedCode"`
 	WasSuccessful     bool      `gorm:"not null;default:false" json:"-"`
+	BestScore         bool      `gorm:"not null;default:false" json:"-"`
 	*lizard.CodeScore `gorm:"default:false" json:"score"`
 	Initiator         *User     `gorm:"foreignKey:InitiatorID" json:"-"`
 	Task              *FullTask `gorm:"foreignKey:TaskID" json:"-"`
