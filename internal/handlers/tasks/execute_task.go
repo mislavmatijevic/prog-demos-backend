@@ -24,6 +24,9 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+var tasksVolumeName = os.Getenv("TASKS_VOLUME_NAME")
+var tempTasksFolderPath = "/var/temp_tasks/"
+
 type ExecutionErrorCode int
 
 const CONTAINER_TIMEOUT_MARK = "timeout"
@@ -354,7 +357,7 @@ func getRequestBody(r *http.Request) (*taskExecutionRequest, error) {
 // If it fails, the function deletes whatever it created.
 // Returns: new CPP file
 func storeTempFiles(cppCode string, inputs string) (*os.File, error) {
-	createdTempPath, _ := os.MkdirTemp("/var/temp_tasks/", "temp_cpp_solutions_*")
+	createdTempPath, _ := os.MkdirTemp(tempTasksFolderPath, "temp_cpp_solutions_*")
 	createdTempCppFile, err := createTempCppFile(createdTempPath, cppCode)
 	if err != nil {
 		return nil, err
@@ -408,6 +411,8 @@ func runFileInIsolatedDockerContainerTask(timeoutContext context.Context, cppFil
 	errChan := make(chan error, 1)
 	sourceCodePath := cppFile.Name()
 
+	log.Debugf("Source code path: %s", sourceCodePath)
+
 	go func() {
 		errChan <- runDockerRunnerImage(sourceCodePath, true)
 	}()
@@ -431,10 +436,8 @@ func runFileInIsolatedDockerContainerTask(timeoutContext context.Context, cppFil
 	}
 }
 
-// Names the new container after the temp parent folder in which the CPP file is stored.
 func runDockerRunnerImage(fullFilePath string, allowBuildingImageIfNotFound bool) error {
 	var sourceCodePath = filepath.Dir(fullFilePath)
-	var parentFolderName = filepath.Base(sourceCodePath)
 	var sourceFileName = filepath.Base(fullFilePath)
 
 	dockerPath, err := exec.LookPath("docker")
@@ -442,18 +445,24 @@ func runDockerRunnerImage(fullFilePath string, allowBuildingImageIfNotFound bool
 		return err
 	}
 
-	var volumeName = os.Getenv("TASKS_VOLUME_NAME")
-	var containerName = parentFolderName
+	var volumeName = ""
+	var parentFolderName = ""
+	if utils.IsProd() {
+		volumeName = tasksVolumeName
+		parentFolderName = filepath.Base(sourceCodePath)
+	} else {
+		volumeName = sourceCodePath
+		parentFolderName = ""
+	}
 
 	var dockerRunArguments = fmt.Sprintf(
 		"%s run --rm "+
-			"--name %s "+
-			"-v %s:/var/temp_tasks/ "+
+			"-v %s:%s "+
 			"--memory 50m --cpus 0.15 "+
 			"--security-opt no-new-privileges --network none "+
 			"-e SOURCE_CODE_FOLDER=%s "+
 			"-e SOURCE_FILE_NAME=%s "+
-			"task-runner:latest", dockerPath, containerName, volumeName, parentFolderName, sourceFileName,
+			"task-runner:latest", dockerPath, volumeName, tempTasksFolderPath, parentFolderName, sourceFileName,
 	)
 
 	cmd := exec.Command("bash", "-c", dockerRunArguments)
