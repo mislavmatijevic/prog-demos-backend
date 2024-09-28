@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/go-chi/chi"
 	"github.com/joho/godotenv"
@@ -13,10 +14,11 @@ import (
 	"github.com/mislavmatijevic/prog-demos-backend/internal/database"
 	"github.com/mislavmatijevic/prog-demos-backend/internal/handlers"
 	"github.com/mislavmatijevic/prog-demos-backend/internal/mailing"
+	"github.com/mislavmatijevic/prog-demos-backend/internal/utils"
 )
 
 func main() {
-	log.SetReportCaller(true)
+	setupLogging()
 	var r *chi.Mux = chi.NewRouter()
 	handlers.Handler(r)
 
@@ -39,4 +41,19 @@ func main() {
 	if err != nil {
 		log.Error(err)
 	}
+}
+
+func setupLogging() {
+	log.SetReportCaller(true)
+	var formatter log.Formatter = nil
+
+	if utils.IsProd() {
+		log.SetLevel(log.WarnLevel)
+		formatter = &log.JSONFormatter{PrettyPrint: true, TimestampFormat: time.RFC3339}
+	} else {
+		log.SetLevel(log.DebugLevel)
+		formatter = &log.TextFormatter{ForceColors: true, TimestampFormat: time.StampMilli}
+	}
+
+	log.SetFormatter(formatter)
 }

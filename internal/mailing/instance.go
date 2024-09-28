@@ -8,6 +8,7 @@ import (
 	"strconv"
 
 	"github.com/mislavmatijevic/prog-demos-backend/internal/database"
+	"github.com/mislavmatijevic/prog-demos-backend/internal/utils"
 	log "github.com/sirupsen/logrus"
 	"github.com/wneessen/go-mail"
 )
@@ -16,9 +17,8 @@ var client *mail.Client
 var isMailingInitialized = false
 
 func Initialize() {
-	var PROD = os.Getenv("PROD")
-	if PROD != "1" {
-		log.Info("Did not detect PROD flag, skipping mailing...")
+	if !utils.IsProd() {
+		log.Info("Not PROD, skipping mailing...")
 		return
 	}
 
