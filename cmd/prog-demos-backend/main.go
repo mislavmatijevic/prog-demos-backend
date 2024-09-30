@@ -48,7 +48,7 @@ func setupLogging() {
 	var formatter log.Formatter = nil
 
 	if utils.IsProd() {
-		log.SetLevel(log.WarnLevel)
+		log.SetLevel(log.InfoLevel)
 		formatter = &log.JSONFormatter{PrettyPrint: true, TimestampFormat: time.RFC3339}
 	} else {
 		log.SetLevel(log.DebugLevel)
