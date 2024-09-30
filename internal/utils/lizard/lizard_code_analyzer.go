@@ -11,6 +11,13 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+const complexityWeight = 13
+const tokenWeight = 17
+const mainScoreMultiplier = 50
+const maxFunctionsAwardMultiplier = 1
+const manyFunctionsAward = 5
+const longFunctionPenalty = 5
+
 type CodeScore struct {
 	Tokens     int     `json:"tokens"`
 	Complexity int     `json:"complexity"`
@@ -18,15 +25,12 @@ type CodeScore struct {
 }
 
 func (comparedWith *CodeScore) HasBetterScoreThan(compareTo *CodeScore) bool {
-	return comparedWith.TotalScore < compareTo.TotalScore
+	return comparedWith.TotalScore > compareTo.TotalScore
 }
 
 /*
-My system of calculating solution scores:
-
-	score = (0.3 * totalCCN + 0.7 * totalTokens) / 2 + 10 * (numberOfFunctions - 1) - 15 * (isAvgTokens > 40).
-
-I think many smaller functions are great and therefore I encourage usage of them in code.
+My system of calculating solution scores promotes usage of many smaller functions.
+I think it's great and therefore I encourage usage of them in code.
 */
 func CalculateScore(solutionCode *os.File) (*CodeScore, error) {
 	lizardOutput, err := getLizardOutput(solutionCode.Name())
@@ -52,7 +56,7 @@ func CalculateScore(solutionCode *os.File) (*CodeScore, error) {
 	var totalTokens = averageTokensPerFunction * functionCount
 	var totalCcn = averageCcnPerFunction * functionCount
 
-	var score = (0.3*totalCcn + 0.7*totalTokens) / 2
+	var score = (complexityWeight/(totalCcn+1) + tokenWeight/(totalTokens+1)) * mainScoreMultiplier
 	log.Debugf("Original score: %v", score)
 	score = awardManyFunctions(score, functionCount)
 	score = punishHighAverageTokenCountPerFunction(score, averageTokensPerFunction)
@@ -65,17 +69,17 @@ func CalculateScore(solutionCode *os.File) (*CodeScore, error) {
 func awardManyFunctions(score float64, functionCount float64) float64 {
 	if functionCount > 1 {
 		var awardMultiplier = functionCount
-		if awardMultiplier > 10 {
-			awardMultiplier = 10
+		if awardMultiplier > maxFunctionsAwardMultiplier {
+			awardMultiplier = maxFunctionsAwardMultiplier
 		}
-		var awardForManyFunctions = 10 * awardMultiplier
+		var awardForManyFunctions = manyFunctionsAward * awardMultiplier
 		score += awardForManyFunctions
 	}
 	return score
 }
 
 func punishHighAverageTokenCountPerFunction(score float64, averageTokensPerFunction float64) float64 {
-	var punishmentForLongFunctions = float64(15 * int(averageTokensPerFunction/40))
+	var punishmentForLongFunctions = float64(longFunctionPenalty * int(averageTokensPerFunction/40))
 	score -= punishmentForLongFunctions
 	return score
 }
