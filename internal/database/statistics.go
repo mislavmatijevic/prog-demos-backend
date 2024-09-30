@@ -2,7 +2,6 @@ package database
 
 import (
 	"database/sql"
-	"errors"
 )
 
 type SolutionAttemptsDto struct {
@@ -16,15 +15,11 @@ type SolutionAttemptsPerSubtopic struct {
 	TotalTriesPerThisSubtopic       int `json:"totalTries"`
 }
 
-func GetTotalCountOfSolutionAttempts(userId int) (*SolutionAttemptsDto, error) {
+func GetAllSolutionAttempts(userId int) (*SolutionAttemptsDto, error) {
 	var taskExecutions []TaskExecution
 	var aggregateObject SolutionAttemptsDto
 
 	Instance.db.Where("id_user = @userId", sql.Named("userId", userId)).Preload("Task.Subtopic").Find(&taskExecutions)
-
-	if len(taskExecutions) == 0 {
-		return nil, errors.New("user has no task executions")
-	}
 
 	topics := GetAllTasksPerTopic()
 

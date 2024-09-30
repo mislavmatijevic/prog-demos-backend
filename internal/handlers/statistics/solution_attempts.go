@@ -16,7 +16,7 @@ func GetTotalCountOfSolutionAttempts(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	solutionAttemptsDto, err := database.GetTotalCountOfSolutionAttempts(userId)
+	solutionAttemptsDto, err := database.GetAllSolutionAttempts(userId)
 	if err != nil {
 		api.RequestErrorHandlerCustomMsg(w, err.Error())
 		return
