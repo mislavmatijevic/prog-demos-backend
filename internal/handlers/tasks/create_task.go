@@ -110,8 +110,12 @@ func createTask(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Header().Add("content-type", "application/json")
-	json.NewEncoder(w).Encode(responseBody{Success: true, Message: fmt.Sprintf("Created new task with ID %v", taskEntity.ID)})
+	var res = responseBody{
+		Success: true,
+		Message: fmt.Sprintf("Created new task with ID %v", taskEntity.ID),
+	}
+
+	api.RespondOk(w, res)
 }
 
 func getNewTaskFromBody(r *http.Request) (*newTaskRequestBody, error) {

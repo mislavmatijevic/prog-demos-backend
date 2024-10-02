@@ -54,24 +54,24 @@ func (execErrCode ExecutionErrorCode) EnumIndex() int {
 	return int(execErrCode)
 }
 
-type taskExecutionRequest = struct {
+type taskExecutionRequest struct {
 	SolutionCode string `json:"solutionCode"`
 }
 
-type testDataMismatchReason = struct {
+type testDataMismatchReason struct {
 	TestInput      string `json:"testInput,omitempty"`
 	Output         string `json:"output,omitempty"`
 	ExpectedOutput string `json:"expectedOutput,omitempty"`
 }
 
-type taskExecutionFailedResponse = struct {
+type taskExecutionFailedResponse struct {
 	Success      bool        `json:"success"`
 	Message      string      `json:"message"`
 	ErrorCode    int         `json:"errorCode"`
 	ReasonFailed interface{} `json:"reason,omitempty"`
 }
 
-type taskExecutionSuccessResponse = struct {
+type successfulTaskExecutionResponse struct {
 	Success bool             `json:"success"`
 	Message string           `json:"message"`
 	Score   lizard.CodeScore `json:"score"`
@@ -235,9 +235,9 @@ func executeTask(w http.ResponseWriter, r *http.Request) {
 		log.Errorf("Could not delete temp file created for scoring! %v", err)
 	}
 
-	var successResponse = taskExecutionSuccessResponse{Success: true, Score: *score, Message: "Test data matches output!"}
-	w.Header().Add("content-type", "application/json")
-	json.NewEncoder(w).Encode(successResponse)
+	var successResponse = successfulTaskExecutionResponse{Success: true, Score: *score, Message: "Test data matches output!"}
+	api.RespondOk(w, successResponse)
+
 	setTaskExecutionStatusSucceeded(taskExecution, *score)
 }
 
@@ -365,9 +365,8 @@ func checkUserHasRunningTasks(userId int) bool {
 func sendTaskExecutionFailedResponse(taskExecution *database.TaskExecution, w http.ResponseWriter, execErrCode ExecutionErrorCode, reasonFailed interface{}) {
 	setTaskExecutionStatusFailed(taskExecution)
 	var errorResponse = taskExecutionFailedResponse{Success: false, ErrorCode: execErrCode.EnumIndex(), Message: execErrCode.String(), ReasonFailed: reasonFailed}
-	w.WriteHeader(422)
-	w.Header().Add("content-type", "application/json")
-	json.NewEncoder(w).Encode(errorResponse)
+
+	api.RespondWithStatus(w, errorResponse, http.StatusUnprocessableEntity)
 }
 
 func handleTestExecutionInternalFail(w http.ResponseWriter, tempDirPath string, err error, taskExecution *database.TaskExecution) {

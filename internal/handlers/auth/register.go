@@ -43,7 +43,7 @@ type successResponse struct {
 	NewId   int  `json:"newId"`
 }
 
-type errorResponse = struct {
+type errorResponse struct {
 	Success   bool   `json:"success"`
 	Message   string `json:"message"`
 	ErrorCode int    `json:"errorCode"`
@@ -89,13 +89,12 @@ func registerUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	res := successResponse{
+	var res = successResponse{
 		Success: true,
 		NewId:   newUser.ID,
 	}
 
-	w.WriteHeader(http.StatusCreated)
-	writeRequest(w, res)
+	api.RespondWithStatus(w, res, http.StatusCreated)
 }
 
 func respondForErrorCode(w http.ResponseWriter, errorCode registrationErrorCode) {
@@ -104,8 +103,8 @@ func respondForErrorCode(w http.ResponseWriter, errorCode registrationErrorCode)
 		Message:   errorCode.String(),
 		ErrorCode: errorCode.EnumIndex(),
 	}
-	w.WriteHeader(http.StatusBadRequest)
-	writeRequest(w, res)
+
+	api.RespondWithStatus(w, res, http.StatusBadRequest)
 }
 
 func checkIfUserInfoValid(username, email, password string) bool {
@@ -128,9 +127,4 @@ func createUser(username, email, hashPassword string) database.User {
 		DateRegistered:  time.Now(),
 		UserType:        "basic",
 	}
-}
-
-func writeRequest(w http.ResponseWriter, res any) {
-	w.Header().Add("content-type", "application/json")
-	json.NewEncoder(w).Encode(res)
 }

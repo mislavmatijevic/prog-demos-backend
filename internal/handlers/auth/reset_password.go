@@ -49,21 +49,21 @@ func resetPassword(w http.ResponseWriter, r *http.Request) {
 	user, err := database.ChangeUserPassword(trimmedToken, hashedPassword)
 
 	var res passwordResetResponse
+	var status int
 
 	if err != nil {
 		res = passwordResetResponse{
 			Success: false,
 			Message: fmt.Sprintf("Failed to fulfill password reset request: %s", err),
 		}
-		w.WriteHeader(http.StatusForbidden)
+		status = http.StatusForbidden
 	} else {
 		res = passwordResetResponse{
 			Success: true,
 			Message: fmt.Sprintf("Changed password for user: %s", user.Username),
 		}
-		w.WriteHeader(http.StatusOK)
+		status = http.StatusOK
 	}
 
-	w.Header().Add("content-type", "application/json")
-	json.NewEncoder(w).Encode(res)
+	api.RespondWithStatus(w, res, status)
 }

@@ -1,13 +1,13 @@
 package topics
 
 import (
-	"encoding/json"
 	"net/http"
 
 	"github.com/mislavmatijevic/prog-demos-backend/internal/database"
+	"github.com/mislavmatijevic/prog-demos-backend/internal/handlers/api"
 )
 
-type topicsResponse = struct {
+type topicsResponse struct {
 	Success bool             `json:"success"`
 	Topics  []database.Topic `json:"topics"`
 }
@@ -15,11 +15,10 @@ type topicsResponse = struct {
 func getAllTopics(w http.ResponseWriter, r *http.Request) {
 	topics := database.GetAllTopicsWithSubtopics()
 
-	res := topicsResponse{
+	var res = topicsResponse{
 		Success: true,
 		Topics:  topics,
 	}
 
-	w.Header().Add("content-type", "application/json")
-	json.NewEncoder(w).Encode(res)
+	api.RespondOk(w, res)
 }

@@ -1,7 +1,6 @@
 package statistics
 
 import (
-	"encoding/json"
 	"net/http"
 
 	"github.com/mislavmatijevic/prog-demos-backend/internal/authentication"
@@ -22,6 +21,5 @@ func GetTotalCountOfSolutionAttempts(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Header().Add("content-type", "application/json")
-	json.NewEncoder(w).Encode(solutionAttemptsDto)
+	api.RespondOk(w, solutionAttemptsDto)
 }

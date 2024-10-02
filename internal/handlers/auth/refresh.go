@@ -60,8 +60,8 @@ func refreshAccess(w http.ResponseWriter, r *http.Request) {
 		Success:       true,
 		AuthTokenPair: newTokenPair,
 	}
-	w.Header().Add("content-type", "application/json")
-	json.NewEncoder(w).Encode(res)
+
+	api.RespondOk(w, res)
 }
 
 func validateRequestFormat(refreshBody refreshRequest) (previousAccessTokenValue string, refreshTokenValue string, isValid bool) {

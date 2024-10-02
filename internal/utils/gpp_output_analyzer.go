@@ -9,7 +9,7 @@ import (
 
 var gppErrorRegex = regexp.MustCompile(`^.*:(\d+):(\d+):\s+error:\s+(.*)$`)
 
-type GppCompilerReportedSyntaxError = struct {
+type GppCompilerReportedSyntaxError struct {
 	Line    int    `json:"line"`
 	Column  int    `json:"column"`
 	Message string `json:"message"`

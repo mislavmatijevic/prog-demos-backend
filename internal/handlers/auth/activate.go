@@ -36,22 +36,22 @@ func activateUser(w http.ResponseWriter, r *http.Request) {
 	user, err := database.SetUserActivated(trimmedToken)
 
 	var res activationResponse
+	var status int
 
 	if err != nil {
 		res = activationResponse{
 			Success: false,
 			Message: fmt.Sprintf("Failed to activate the user: %s", err),
 		}
-		w.WriteHeader(http.StatusForbidden)
+		status = http.StatusForbidden
 	} else {
 		res = activationResponse{
 			Success:  true,
 			Message:  fmt.Sprintf("User %s activated", user.Username),
 			Username: user.Username,
 		}
-		w.WriteHeader(http.StatusOK)
+		status = http.StatusOK
 	}
 
-	w.Header().Add("content-type", "application/json")
-	json.NewEncoder(w).Encode(res)
+	api.RespondWithStatus(w, res, status)
 }

@@ -1,7 +1,6 @@
 package videos
 
 import (
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -11,7 +10,7 @@ import (
 	"github.com/mislavmatijevic/prog-demos-backend/internal/handlers/api"
 )
 
-type videoResponse = struct {
+type videoResponse struct {
 	Success bool           `json:"success"`
 	Video   database.Video `json:"video"`
 }
@@ -32,11 +31,10 @@ func getSingleVideo(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	res := videoResponse{
+	var res = videoResponse{
 		Success: true,
 		Video:   *video,
 	}
 
-	w.Header().Add("content-type", "application/json")
-	json.NewEncoder(w).Encode(res)
+	api.RespondOk(w, res)
 }

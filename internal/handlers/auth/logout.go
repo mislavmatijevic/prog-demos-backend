@@ -8,12 +8,12 @@ import (
 	"github.com/mislavmatijevic/prog-demos-backend/internal/handlers/api"
 )
 
-type LogoutBody struct {
+type logoutBody struct {
 	RefreshToken string `json:"refreshToken"`
 }
 
 func logoutUser(w http.ResponseWriter, r *http.Request) {
-	var logoutBody LogoutBody
+	var logoutBody logoutBody
 	err := json.NewDecoder(r.Body).Decode(&logoutBody)
 	if err != nil {
 		api.RequestErrorHandlerGenericMsg(w, err)
@@ -22,8 +22,7 @@ func logoutUser(w http.ResponseWriter, r *http.Request) {
 
 	wasSuccessful := authentication.RemoveRefreshToken(logoutBody.RefreshToken)
 	if wasSuccessful {
-		w.WriteHeader(http.StatusOK)
-		w.Header().Add("content-type", "application/json")
+		api.RespondOk(w, struct{ message string }{message: "Logged out."})
 	} else {
 		api.RequestErrorHandlerGenericMsg(w, err)
 		return

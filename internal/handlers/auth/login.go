@@ -49,15 +49,13 @@ func loginUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	res := loginResponse{
+	var res = loginResponse{
 		Success:  true,
 		UserInfo: *user,
 		Tokens:   *newTokenPair,
 	}
 
-	w.WriteHeader(http.StatusOK)
-	w.Header().Add("content-type", "application/json")
-	json.NewEncoder(w).Encode(res)
+	api.RespondOk(w, res)
 }
 
 func getValidUser(identifier string, password string) (isUserOk bool, foundUser *database.User) {

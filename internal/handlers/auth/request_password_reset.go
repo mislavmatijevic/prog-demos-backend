@@ -45,8 +45,7 @@ func requestPasswordReset(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.WriteHeader(http.StatusAccepted)
-	w.Header().Add("content-type", "application/json")
+	api.RespondWithStatus(w, struct{ message string }{message: "Mail sent."}, http.StatusAccepted)
 }
 
 func getActivatedUserByEmail(email string) *database.User {

@@ -1,7 +1,6 @@
 package api
 
 import (
-	"encoding/json"
 	"net/http"
 
 	log "github.com/sirupsen/logrus"
@@ -22,17 +21,12 @@ func writerError(w http.ResponseWriter, message string, code int) {
 		Message: message,
 	}
 
-	w.Header().Set("Content-type", "application/json")
-	w.WriteHeader(code)
-
-	json.NewEncoder(w).Encode(resp)
+	RespondWithStatus(w, resp, code)
 }
 
 var (
 	RequestErrorHandlerGenericMsg = func(w http.ResponseWriter, err error) {
-		if err != nil {
-			log.Error(err)
-		}
+		log.Error(err)
 		writerError(w, "Request invalid.", http.StatusBadRequest)
 	}
 	RequestErrorHandlerCustomMsg = func(w http.ResponseWriter, errorMessage string) {
@@ -43,7 +37,6 @@ var (
 		writerError(w, "An Unexpected Error Occurred.", http.StatusInternalServerError)
 	}
 	InternalErrorHandlerCustomMsg = func(w http.ResponseWriter, errorMessage string) {
-		log.Error(errorMessage)
 		writerError(w, errorMessage, http.StatusInternalServerError)
 	}
 	AuthorizationMissingGenericMsg = func(w http.ResponseWriter) {

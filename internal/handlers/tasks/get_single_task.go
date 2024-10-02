@@ -1,7 +1,6 @@
 package tasks
 
 import (
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -11,7 +10,7 @@ import (
 	"github.com/mislavmatijevic/prog-demos-backend/internal/handlers/api"
 )
 
-type taskResponse = struct {
+type taskResponse struct {
 	Success bool              `json:"success"`
 	Task    database.FullTask `json:"task"`
 }
@@ -32,11 +31,10 @@ func getSingleTask(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	res := taskResponse{
+	var res = taskResponse{
 		Success: true,
 		Task:    *Task,
 	}
 
-	w.Header().Add("content-type", "application/json")
-	json.NewEncoder(w).Encode(res)
+	api.RespondOk(w, res)
 }
