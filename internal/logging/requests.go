@@ -10,13 +10,16 @@ import (
 func LogRequest(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var jsonReqBody string = ""
+		var bodyOutputLimit = 500
 
-		if r.URL.String() != "/auth/login" && r.URL.String() != "/auth/register" {
+		if censoredBody := r.Context().Value(CensoredBodyCtxKey); censoredBody != nil {
+			jsonReqBody = censoredBody.(*contextValue).Name
+		} else {
 			var reqBody any
 			json.NewDecoder(r.Body).Decode(&reqBody)
 			if reqBody != nil {
 				jsonRawBody, _ := json.Marshal(reqBody)
-				jsonReqBody = string(jsonRawBody)
+				jsonReqBody = string(jsonRawBody)[0:bodyOutputLimit]
 			}
 		}
 

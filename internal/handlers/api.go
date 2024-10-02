@@ -19,6 +19,7 @@ func Handler(r *chi.Mux) {
 	setupCors(r)
 
 	r.Use(chimiddle.StripSlashes)
+	r.Use(logging.HandleSecureEndpoints)
 	r.Use(logging.LogRequest)
 	log.Debug("Setting up /auth handler...")
 	auth.HandleAuth(r)
