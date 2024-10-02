@@ -1,7 +1,6 @@
 package logging
 
 import (
-	"encoding/json"
 	"net/http"
 
 	log "github.com/sirupsen/logrus"
@@ -15,11 +14,14 @@ func LogRequest(next http.Handler) http.Handler {
 		if censoredBody := r.Context().Value(CensoredBodyCtxKey); censoredBody != nil {
 			jsonReqBody = censoredBody.(*contextValue).Name
 		} else {
-			var reqBody any
-			json.NewDecoder(r.Body).Decode(&reqBody)
+			var reqBody = ReadRequestBodyWithoutClosing(r)
 			if reqBody != nil {
-				jsonRawBody, _ := json.Marshal(reqBody)
-				jsonReqBody = string(jsonRawBody)[0:bodyOutputLimit]
+				reqBodyLength := len(reqBody)
+				if bodyOutputLimit > reqBodyLength {
+					bodyOutputLimit = reqBodyLength - 1
+				}
+
+				jsonReqBody = string(reqBody)[0:bodyOutputLimit]
 			}
 		}
 

@@ -1,9 +1,13 @@
 package logging
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
+	"io"
 	"net/http"
+
+	"github.com/sirupsen/logrus"
 )
 
 type contextKey struct {
@@ -49,18 +53,26 @@ func getBodyForPasswordResetRequest(r *http.Request) context.Context {
 }
 
 func removeFieldFromBody(r *http.Request, fieldName string) context.Context {
-	var reqBody any
+	var reqBody = ReadRequestBodyWithoutClosing(r)
 	var jsonReqBody string
 	var data map[string]interface{}
-	json.NewDecoder(r.Body).Decode(&reqBody)
 
 	if reqBody != nil {
-		jsonRawBody, _ := json.Marshal(reqBody)
-		json.Unmarshal(jsonRawBody, &data)
+		json.Unmarshal(reqBody, &data)
 		delete(data, fieldName)
-		jsonRawBody, _ = json.Marshal(&data)
-		jsonReqBody = string(jsonRawBody)
+		reqBody, _ = json.Marshal(&data)
+		jsonReqBody = string(reqBody)
 	}
 
+	logrus.Info(jsonReqBody)
+
 	return context.WithValue(r.Context(), CensoredBodyCtxKey, &contextValue{jsonReqBody})
+}
+
+func ReadRequestBodyWithoutClosing(r *http.Request) []byte {
+	var bodyBuffer bytes.Buffer
+	io.Copy(&bodyBuffer, r.Body)
+	r.Body.Close()
+	r.Body = io.NopCloser(io.LimitReader(bytes.NewReader(bodyBuffer.Bytes()), 1024))
+	return bodyBuffer.Bytes()
 }

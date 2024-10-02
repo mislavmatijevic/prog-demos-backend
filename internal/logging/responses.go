@@ -9,7 +9,7 @@ func LogResponse(status int, jsonRes []byte) {
 	}
 	resBodyLength := len(jsonRes)
 	if bodyOutputLimit > resBodyLength {
-		bodyOutputLimit = resBodyLength
+		bodyOutputLimit = resBodyLength - 1
 	}
 	log.Tracef("HTTP %d %s", status, string(jsonRes[0:bodyOutputLimit]))
 }
