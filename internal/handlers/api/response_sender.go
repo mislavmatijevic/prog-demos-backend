@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 
-	log "github.com/sirupsen/logrus"
+	"github.com/mislavmatijevic/prog-demos-backend/internal/logging"
 )
 
 func RespondOk(w http.ResponseWriter, res interface{}) {
@@ -17,17 +17,5 @@ func RespondWithStatus(w http.ResponseWriter, res interface{}, status int) {
 	w.Header().Add("content-type", "application/json")
 	w.Write(jsonRes)
 
-	logResponse(status, jsonRes)
-}
-
-func logResponse(status int, jsonRes []byte) {
-	var bodyOutputLimit = 50
-	if status >= 400 {
-		bodyOutputLimit = 500
-	}
-	resBodyLength := len(jsonRes)
-	if bodyOutputLimit > resBodyLength {
-		bodyOutputLimit = resBodyLength
-	}
-	log.Trace("HTTP ", status, string(jsonRes)[0:bodyOutputLimit])
+	logging.LogResponse(status, jsonRes)
 }

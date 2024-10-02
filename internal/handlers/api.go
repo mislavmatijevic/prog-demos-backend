@@ -12,12 +12,14 @@ import (
 	"github.com/mislavmatijevic/prog-demos-backend/internal/handlers/tasks"
 	"github.com/mislavmatijevic/prog-demos-backend/internal/handlers/topics"
 	videos "github.com/mislavmatijevic/prog-demos-backend/internal/handlers/videos"
+	"github.com/mislavmatijevic/prog-demos-backend/internal/logging"
 )
 
 func Handler(r *chi.Mux) {
 	setupCors(r)
 
 	r.Use(chimiddle.StripSlashes)
+	r.Use(logging.LogRequest)
 	log.Debug("Setting up /auth handler...")
 	auth.HandleAuth(r)
 	log.Debug("Setting up /videos handler...")

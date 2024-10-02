@@ -14,6 +14,7 @@ import (
 	"github.com/mislavmatijevic/prog-demos-backend/internal/database"
 	"github.com/mislavmatijevic/prog-demos-backend/internal/handlers/api"
 	"github.com/mislavmatijevic/prog-demos-backend/internal/utils"
+	"github.com/sirupsen/logrus"
 )
 
 var authToken *jwtauth.JWTAuth
@@ -126,6 +127,8 @@ func GetUserIdFromToken(r *http.Request) (int, error) {
 	if err != nil {
 		return 0, err
 	}
+
+	logrus.Tracef("User: %v", userIdClaim)
 
 	userId, err := strconv.Atoi(userIdClaim)
 	return userId, err
