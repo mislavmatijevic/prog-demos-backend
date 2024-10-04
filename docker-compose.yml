@@ -36,6 +36,7 @@ services:
             PORT: 8080
             TASKS_VOLUME_NAME: prog-demos-backend_tasks
             PROD: 1
+            USE_LOKI: 1
         volumes:
             - /var/run/docker.sock:/var/run/docker.sock
             - tasks:/var/temp_tasks/

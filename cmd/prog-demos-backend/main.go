@@ -13,23 +13,23 @@ import (
 	"github.com/mislavmatijevic/prog-demos-backend/internal/authentication"
 	"github.com/mislavmatijevic/prog-demos-backend/internal/database"
 	"github.com/mislavmatijevic/prog-demos-backend/internal/handlers"
+	"github.com/mislavmatijevic/prog-demos-backend/internal/logging/loki"
 	"github.com/mislavmatijevic/prog-demos-backend/internal/mailing"
 	"github.com/mislavmatijevic/prog-demos-backend/internal/utils"
 )
 
 func main() {
-	setupLogging()
-	var r *chi.Mux = chi.NewRouter()
-	handlers.Handler(r)
-
 	var err error
-
-	database.Initialize()
 
 	err = godotenv.Load()
 	if err != nil {
 		log.Fatalln("Couldn't load env file!!")
 	}
+	setupLogging()
+	var r *chi.Mux = chi.NewRouter()
+	handlers.Handler(r)
+
+	database.Initialize()
 
 	authentication.Initialize()
 	mailing.Initialize()
@@ -44,15 +44,19 @@ func main() {
 }
 
 func setupLogging() {
-	log.SetReportCaller(true)
 	var formatter log.Formatter = nil
 
 	if utils.IsProd() {
 		log.SetLevel(log.TraceLevel)
 		formatter = &log.JSONFormatter{PrettyPrint: true, TimestampFormat: time.RFC3339}
+		if utils.UseLoki() {
+			loki.InitializeLoki()
+		}
+		log.SetReportCaller(true)
 	} else {
 		log.SetLevel(log.TraceLevel)
 		formatter = &log.TextFormatter{ForceColors: true, TimestampFormat: time.StampMilli}
+		log.SetReportCaller(false)
 	}
 
 	log.SetFormatter(formatter)
