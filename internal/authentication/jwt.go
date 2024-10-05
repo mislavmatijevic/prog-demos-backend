@@ -11,10 +11,10 @@ import (
 	"time"
 
 	"github.com/go-chi/jwtauth"
+	"github.com/lestrrat-go/jwx/jwt"
 	"github.com/mislavmatijevic/prog-demos-backend/internal/database"
 	"github.com/mislavmatijevic/prog-demos-backend/internal/handlers/api"
 	"github.com/mislavmatijevic/prog-demos-backend/internal/utils"
-	"github.com/sirupsen/logrus"
 )
 
 var authToken *jwtauth.JWTAuth
@@ -41,15 +41,27 @@ func Initialize() {
 	authToken = jwtauth.New("HS256", []byte(JWT_SECRET_KEY), nil)
 }
 
+func AttachTokenToRequest(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		token, _ := jwtauth.VerifyRequest(authToken, r, jwtauth.TokenFromHeader)
+		var contextWithToken = context.WithValue(r.Context(), jwtauth.TokenCtxKey, token)
+		next.ServeHTTP(w, r.WithContext(contextWithToken))
+	})
+}
+
 func RequireAccessToken(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		token, err := jwtauth.VerifyRequest(authToken, r, jwtauth.TokenFromHeader)
+		var tokenAttachedToRequest = r.Context().Value(jwtauth.TokenCtxKey)
+		if tokenAttachedToRequest == nil {
+			api.AuthorizationMissingGenericMsg(w)
+			return
+		}
+
+		err := jwt.Validate(tokenAttachedToRequest.(jwt.Token))
 
 		if err != nil {
+			err = jwtauth.ErrorReason(err)
 			switch err {
-			case jwtauth.ErrNoTokenFound:
-				api.AuthorizationMissingGenericMsg(w)
-				return
 			case jwtauth.ErrUnauthorized:
 				api.AuthorizationInvalidGenericMsg(w)
 				return
@@ -59,8 +71,7 @@ func RequireAccessToken(next http.Handler) http.Handler {
 			}
 		}
 
-		var contextWithToken = context.WithValue(r.Context(), jwtauth.TokenCtxKey, token)
-		next.ServeHTTP(w, r.WithContext(contextWithToken))
+		next.ServeHTTP(w, r)
 	})
 }
 
@@ -127,8 +138,6 @@ func GetUserIdFromToken(r *http.Request) (int, error) {
 	if err != nil {
 		return 0, err
 	}
-
-	logrus.Tracef("User: %v", userIdClaim)
 
 	userId, err := strconv.Atoi(userIdClaim)
 	return userId, err

@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/mislavmatijevic/prog-demos-backend/internal/logging"
+	"github.com/mislavmatijevic/prog-demos-backend/internal/logging/logging_responses"
 )
 
 func RespondOk(w http.ResponseWriter, res interface{}) {
@@ -17,5 +17,5 @@ func RespondWithStatus(w http.ResponseWriter, res interface{}, status int) {
 	w.Header().Add("content-type", "application/json")
 	w.Write(jsonRes)
 
-	logging.LogResponse(status, jsonRes)
+	logging_responses.LogResponse(status, jsonRes)
 }

@@ -1,4 +1,4 @@
-package logging
+package logging_responses
 
 import log "github.com/sirupsen/logrus"
 

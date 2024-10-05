@@ -6,6 +6,7 @@ import (
 	"github.com/go-chi/cors"
 	log "github.com/sirupsen/logrus"
 
+	"github.com/mislavmatijevic/prog-demos-backend/internal/authentication"
 	"github.com/mislavmatijevic/prog-demos-backend/internal/handlers/auth"
 	health "github.com/mislavmatijevic/prog-demos-backend/internal/handlers/health"
 	"github.com/mislavmatijevic/prog-demos-backend/internal/handlers/statistics"
@@ -13,14 +14,16 @@ import (
 	"github.com/mislavmatijevic/prog-demos-backend/internal/handlers/topics"
 	videos "github.com/mislavmatijevic/prog-demos-backend/internal/handlers/videos"
 	"github.com/mislavmatijevic/prog-demos-backend/internal/logging"
+	"github.com/mislavmatijevic/prog-demos-backend/internal/logging/logging_requests"
 )
 
 func Handler(r *chi.Mux) {
 	setupCors(r)
 
 	r.Use(chimiddle.StripSlashes)
+	r.Use(authentication.AttachTokenToRequest)
 	r.Use(logging.HandleSecureEndpoints)
-	r.Use(logging.LogRequest)
+	r.Use(logging_requests.LogRequest)
 	log.Debug("Setting up /auth handler...")
 	auth.HandleAuth(r)
 	log.Debug("Setting up /videos handler...")
