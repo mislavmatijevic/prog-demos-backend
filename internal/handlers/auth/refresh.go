@@ -34,7 +34,7 @@ func refreshAccess(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	refreshToken, isExpired := findValidRefreshToken(refreshTokenValue)
+	refreshToken, isExpired := findCurrentRefreshToken(refreshTokenValue)
 	if refreshToken == nil {
 		api.RequestErrorHandlerCustomMsg(w, "Refresh token does not exist.")
 		return
@@ -56,6 +56,8 @@ func refreshAccess(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	database.DeleteRefreshTokenWithValue(refreshToken.Value)
+
 	var res refreshResponse = refreshResponse{
 		Success:       true,
 		AuthTokenPair: newTokenPair,
@@ -73,7 +75,7 @@ func validateRequestFormat(refreshBody refreshRequest) (previousAccessTokenValue
 	return
 }
 
-func findValidRefreshToken(refreshTokenValue string) (refreshToken *database.RefreshToken, isExpired bool) {
+func findCurrentRefreshToken(refreshTokenValue string) (refreshToken *database.RefreshToken, isExpired bool) {
 	refreshToken = database.GetRefreshTokenWithUser(refreshTokenValue)
 
 	if refreshToken == nil || refreshToken.Owner == nil {

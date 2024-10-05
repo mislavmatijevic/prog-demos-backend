@@ -46,7 +46,7 @@ func GetRefreshTokenWithUser(refreshTokenValue string) *RefreshToken {
 	return &refreshToken
 }
 
-func DeleteRefreshTokenWithValue(refreshTokenValue string) bool {
+func DeleteRefreshTokenWithValue(refreshTokenValue string) (success bool) {
 	var refreshToken RefreshToken
 	var result = Instance.db.Where("value = ?", refreshTokenValue).Unscoped().Delete(&refreshToken)
 	return result.RowsAffected == 1
