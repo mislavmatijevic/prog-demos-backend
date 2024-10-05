@@ -14,7 +14,7 @@ func LogRequest(next http.Handler) http.Handler {
 		if censoredBody := r.Context().Value(CensoredBodyCtxKey); censoredBody != nil {
 			jsonReqBody = censoredBody.(*contextValue).Name
 		} else {
-			var reqBody = ReadRequestBodyWithoutClosing(r)
+			var reqBody = readRequestBodyWithoutClosing(r)
 			if reqBody != nil {
 				reqBodyLength := len(reqBody)
 				if bodyOutputLimit > reqBodyLength {
