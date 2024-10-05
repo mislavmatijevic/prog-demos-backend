@@ -161,6 +161,6 @@ func generateNewAccessToken(user *database.User) (string, error) {
 func persistNewRefreshTokenForUser(user *database.User) (*database.RefreshToken, error) {
 	var refreshTokenValue string = utils.RandomString(REFRESH_TOKEN_SIZE)
 	refreshTokenExpiresAt := time.Now().Add(refreshTokenDuration)
-	refreshToken, err := database.UpdateRefreshTokenForUser(refreshTokenValue, user, refreshTokenExpiresAt)
+	refreshToken, err := database.CreateRefreshTokenForUser(refreshTokenValue, user, refreshTokenExpiresAt)
 	return refreshToken, err
 }
