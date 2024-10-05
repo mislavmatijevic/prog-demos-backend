@@ -1,7 +1,6 @@
 package logging_requests
 
 import (
-	"fmt"
 	"net/http"
 	"strconv"
 
@@ -30,8 +29,7 @@ func LogRequest(next http.Handler) http.Handler {
 		}
 
 		var authedUser string = "NO_AUTH"
-		userId, err := authentication.GetUserIdFromToken(r)
-		log.Tracef(fmt.Sprintf("%v", err))
+		userId, _ := authentication.GetUserIdFromToken(r)
 		if userId != 0 {
 			authedUser = "USER: " + strconv.Itoa(userId)
 		}
