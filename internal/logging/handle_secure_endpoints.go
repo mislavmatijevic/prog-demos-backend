@@ -76,7 +76,9 @@ func hideFieldFromBody(r *http.Request, fields ...string) context.Context {
 	if reqBody != nil {
 		json.Unmarshal(reqBody, &data)
 		for _, fieldName := range fields {
-			data[fieldName] = data[fieldName][0:10] + "... [HIDDEN]"
+			if len(data[fieldName]) > 10 {
+				data[fieldName] = data[fieldName][0:10] + "... [HIDDEN]"
+			}
 		}
 		reqBody, _ = json.Marshal(&data)
 		jsonReqBody = string(reqBody)
