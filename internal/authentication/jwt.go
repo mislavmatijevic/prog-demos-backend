@@ -102,7 +102,7 @@ func ValidateRefreshTokenFormat(refreshTokenValue string) bool {
 
 func ValidateTokenPair(previousAccessTokenValue string, refreshTokenValue *database.RefreshToken) error {
 	var parsedToken, err = jwtauth.VerifyToken(authToken, previousAccessTokenValue)
-	if err != nil && err.Error() != "token is expired" {
+	if err != nil && err != jwtauth.ErrExpired {
 		return err
 	}
 
