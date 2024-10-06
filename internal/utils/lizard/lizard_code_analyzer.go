@@ -17,6 +17,7 @@ const mainScoreMultiplier = 50
 const maxFunctionsAwardMultiplier = 1
 const manyFunctionsAward = 5
 const longFunctionPenalty = 5
+const awardPerTaskComplexityPoint = 500
 
 type CodeScore struct {
 	Tokens     int     `json:"tokens"`
@@ -32,7 +33,7 @@ func (comparedWith *CodeScore) HasBetterScoreThan(compareTo *CodeScore) bool {
 My system of calculating solution scores promotes usage of many smaller functions.
 I think it's great and therefore I encourage usage of them in code.
 */
-func CalculateScore(solutionCode *os.File) (*CodeScore, error) {
+func CalculateScore(solutionCode *os.File, taskComplexity int) (*CodeScore, error) {
 	lizardOutput, err := getLizardOutput(solutionCode.Name())
 	if err != nil {
 		return nil, err
@@ -60,6 +61,7 @@ func CalculateScore(solutionCode *os.File) (*CodeScore, error) {
 	log.Debugf("Original score: %v", score)
 	score = awardManyFunctions(score, functionCount)
 	score = punishHighAverageTokenCountPerFunction(score, averageTokensPerFunction)
+	score = awardForComplexity(score, taskComplexity)
 
 	var roundedScore = utils.RoundNumberDownToTwoDecimals(score)
 
@@ -81,6 +83,17 @@ func awardManyFunctions(score float64, functionCount float64) float64 {
 func punishHighAverageTokenCountPerFunction(score float64, averageTokensPerFunction float64) float64 {
 	var punishmentForLongFunctions = float64(longFunctionPenalty * int(averageTokensPerFunction/40))
 	score -= punishmentForLongFunctions
+	return score
+}
+
+func awardForComplexity(score float64, taskComplexity int) float64 {
+	var awardMultiplier = taskComplexity - 1
+
+	if awardMultiplier > 0 {
+		var awardForTaskComplexity = awardPerTaskComplexityPoint * (awardMultiplier)
+		score += float64(awardForTaskComplexity)
+	}
+
 	return score
 }
 

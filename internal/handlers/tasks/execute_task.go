@@ -224,7 +224,15 @@ func executeTask(w http.ResponseWriter, r *http.Request) {
 		setTaskExecutionStatusFailed(taskExecution)
 		return
 	}
-	score, err := lizard.CalculateScore(cppFileForScoreCalculation)
+
+	var solvedTask = database.GetSingleFullTasks(taskExecution.TaskID)
+	numbericComplexity, err := strconv.Atoi(solvedTask.Complexity)
+	if err != nil {
+		log.Errorf("Complexity of task %d (%s) could not be converted to integer!", solvedTask.ID, solvedTask.Name)
+		numbericComplexity = 0
+	}
+
+	score, err := lizard.CalculateScore(cppFileForScoreCalculation, numbericComplexity)
 	if err != nil {
 		api.InternalErrorHandlerCustomMsg(w, fmt.Sprintf("Could not calculate score: %v", err))
 		setTaskExecutionStatusFailed(taskExecution)
@@ -235,10 +243,10 @@ func executeTask(w http.ResponseWriter, r *http.Request) {
 		log.Errorf("Could not delete temp file created for scoring! %v", err)
 	}
 
+	setTaskExecutionStatusSucceeded(taskExecution, solvedTask, *score)
+
 	var successResponse = successfulTaskExecutionResponse{Success: true, Score: *score, Message: "Test data matches output!"}
 	api.RespondOk(w, successResponse)
-
-	setTaskExecutionStatusSucceeded(taskExecution, *score)
 }
 
 func findAllErrorsInSolutionCode(cppFile *os.File) ([]utils.GppCompilerReportedSyntaxError, error) {
@@ -272,11 +280,10 @@ func setTaskExecutionStatusFailed(taskExecution *database.TaskExecution) {
 	saveFinishedTaskExecution(taskExecution)
 }
 
-func setTaskExecutionStatusSucceeded(taskExecution *database.TaskExecution, score lizard.CodeScore) {
+func setTaskExecutionStatusSucceeded(taskExecution *database.TaskExecution, solvedTask *database.FullTask, score lizard.CodeScore) {
 	taskExecution.WasSuccessful = true
 	taskExecution.CodeScore = &score
 
-	var solvedTask = database.GetSingleFullTasks(taskExecution.TaskID)
 	var previousBestScoreExecutionFromThisUserForThisTask = database.GetBestScoreExecutionForUserAndTask(
 		taskExecution.InitiatorID,
 		taskExecution.TaskID,

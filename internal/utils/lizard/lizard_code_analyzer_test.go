@@ -1,6 +1,7 @@
 package lizard
 
 import (
+	"math"
 	"os"
 	"testing"
 )
@@ -13,8 +14,8 @@ func TestCalculateScore_GivenBetterAndWorseCodeForSimpleTask_ScoreComparisonRepo
 	worseCppFile, _ := os.CreateTemp("", "solution_*.cpp")
 	worseCppFile.Write([]byte(worseCode))
 
-	var betterScore, _ = CalculateScore(betterCppFile)
-	var worseScore, _ = CalculateScore(worseCppFile)
+	var betterScore, _ = CalculateScore(betterCppFile, 0)
+	var worseScore, _ = CalculateScore(worseCppFile, 0)
 
 	t.Logf("Better score: %v", betterScore)
 	t.Logf("Worse score: %v", worseScore)
@@ -33,13 +34,54 @@ func TestCalculateScore_GivenBetterAndWorseCodeForComplexTask_ScoreComparisonRep
 	worseCppFile, _ := os.CreateTemp("", "solution_*.cpp")
 	worseCppFile.Write([]byte(worseCode))
 
-	var betterScore, _ = CalculateScore(betterCppFile)
-	var worseScore, _ = CalculateScore(worseCppFile)
+	var betterScore, _ = CalculateScore(betterCppFile, 0)
+	var worseScore, _ = CalculateScore(worseCppFile, 0)
 
 	t.Logf("Better score: %v", betterScore)
 	t.Logf("Worse score: %v", worseScore)
 
 	if worseScore.HasBetterScoreThan(betterScore) {
 		t.Fatalf("Score %v reported as better than %v!", worseCode, betterCode)
+	}
+}
+
+func TestCalculateScore_GivenDifferentTaskComplexity_ScoreComparisonReportsHigherScoreForHigherTaskComplexity(t *testing.T) {
+	var mockCode = "#include<iostream>\nusing namespace std;\nint main()\n{cout<<\"mock\";\nreturn 0;}"
+
+	betterCppFile, _ := os.CreateTemp("", "solution_*.cpp")
+	betterCppFile.Write([]byte(mockCode))
+	worseCppFile, _ := os.CreateTemp("", "solution_*.cpp")
+	worseCppFile.Write([]byte(mockCode))
+
+	var invalidScore, _ = CalculateScore(betterCppFile, 0)
+	var basicScore, _ = CalculateScore(betterCppFile, 1)
+	var boostedScore, _ = CalculateScore(worseCppFile, 2)
+	var evenMoreBoostedScore, _ = CalculateScore(worseCppFile, 3)
+
+	t.Logf("Invalid score: %v", invalidScore)
+	t.Logf("Basic Score: %v", basicScore)
+	t.Logf("Boosted Score: %v", boostedScore)
+	t.Logf("Even More Boosted Score: %v", evenMoreBoostedScore)
+
+	if invalidScore.TotalScore != basicScore.TotalScore {
+		t.Fatalf("Invalid score %v not equal to first complexity level score %v!", invalidScore, basicScore)
+	}
+
+	if basicScore.HasBetterScoreThan(boostedScore) {
+		t.Fatalf("Complexity 1 score %v reported as better than complexity 2 score %v!", basicScore, boostedScore)
+	}
+
+	if boostedScore.HasBetterScoreThan(evenMoreBoostedScore) {
+		t.Fatalf("Complexity 2 score %v reported as better than complexity 3 score %v!", boostedScore, evenMoreBoostedScore)
+	}
+
+	basicVsBoosted := boostedScore.TotalScore - basicScore.TotalScore
+	if math.Round(float64(basicVsBoosted)) != 500 {
+		t.Fatalf("Difference between the scores %v and %v is not expected 500, rather %v!", basicScore, boostedScore, basicVsBoosted)
+	}
+
+	boostedVsMoreBoosted := evenMoreBoostedScore.TotalScore - boostedScore.TotalScore
+	if math.Round(float64(basicVsBoosted)) != math.Round(float64(boostedVsMoreBoosted)) {
+		t.Fatalf("Difference between the task complexity levels score awards not same (%v != %v)!", basicVsBoosted, boostedVsMoreBoosted)
 	}
 }
