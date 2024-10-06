@@ -536,7 +536,16 @@ func runDockerRunnerImage(fullFilePath string, allowBuildingImageIfNotFound bool
 }
 
 func buildRunnerImage(dockerPath string) error {
-	cmd := exec.Command("bash", "-c", dockerPath+" build -t task-runner:latest -f ./task-runner.Dockerfile .")
+	var buildCommand string = fmt.Sprintf("%s build -t task-runner:latest -f ", dockerPath)
+	if utils.IsProd() {
+		buildCommand += "./task-runner.Dockerfile ."
+	} else {
+		buildCommand += "./Docker/task-runner/task-runner.Dockerfile ./Docker/task-runner/"
+	}
+
+	log.Infof("Building Docker image using command: %s", buildCommand)
+
+	cmd := exec.Command("bash", "-c", buildCommand)
 	return cmd.Run()
 }
 
