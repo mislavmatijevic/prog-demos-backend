@@ -54,12 +54,12 @@ type Video struct {
 }
 
 type BasicTask struct {
-	ID             int    `gorm:"primaryKey" json:"id"`
-	Name           string `gorm:"not null;column:name" json:"name"`
-	SubtopicID     int    `gorm:"not null;column:id_subtopic" json:"-"`
-	Complexity     string `gorm:"not null" json:"complexity"`
-	IsBossBattle   bool   `gorm:"not null;default:false" json:"isBossBattle"`
-	*TaskExecution `json:"bestSuccessfulSubmission,omitempty"`
+	ID                   int            `gorm:"primaryKey" json:"id"`
+	Name                 string         `gorm:"not null;column:name" json:"name"`
+	SubtopicID           int            `gorm:"not null;column:id_subtopic" json:"-"`
+	Complexity           string         `gorm:"not null" json:"complexity"`
+	IsBossBattle         bool           `gorm:"not null;default:false" json:"isBossBattle"`
+	BestExecutionForUser *TaskExecution `gorm:"-" json:"bestSuccessfulSubmission,omitempty"`
 }
 
 func (BasicTask) TableName() string {

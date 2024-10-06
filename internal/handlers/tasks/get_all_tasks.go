@@ -43,9 +43,9 @@ func fillInfoOnCompletedTasks(userId int, topics []database.Topic) {
 	for _, topic := range topics {
 		for _, subtopic := range topic.Subtopics {
 			for _, task := range subtopic.Tasks {
-				task.TaskExecution = database.GetBestScoreExecutionOfUserForTask(userId, task.ID)
-				if task.TaskExecution != nil {
-					task.TaskExecution.SubmittedCode = ""
+				task.BestExecutionForUser = database.GetBestScoreExecutionForUserAndTask(userId, task.ID)
+				if task.BestExecutionForUser != nil {
+					task.BestExecutionForUser.SubmittedCode = ""
 				}
 			}
 		}

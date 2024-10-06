@@ -19,7 +19,7 @@ func GetRunningTaskExecutionForUserId(userId int) *TaskExecution {
 	return &taskExecution
 }
 
-func GetBestScoreExecutionOfUserForTask(userId int, taskId int) *TaskExecution {
+func GetBestScoreExecutionForUserAndTask(userId int, taskId int) *TaskExecution {
 	var foundSuccessfulExecution TaskExecution
 
 	Instance.db.

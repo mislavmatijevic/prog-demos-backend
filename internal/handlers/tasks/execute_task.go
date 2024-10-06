@@ -277,7 +277,7 @@ func setTaskExecutionStatusSucceeded(taskExecution *database.TaskExecution, scor
 	taskExecution.CodeScore = &score
 
 	var solvedTask = database.GetSingleFullTasks(taskExecution.TaskID)
-	var previousBestScoreExecutionFromThisUserForThisTask = database.GetBestScoreExecutionOfUserForTask(
+	var previousBestScoreExecutionFromThisUserForThisTask = database.GetBestScoreExecutionForUserAndTask(
 		taskExecution.InitiatorID,
 		taskExecution.TaskID,
 	)
