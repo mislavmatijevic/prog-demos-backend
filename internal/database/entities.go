@@ -67,22 +67,22 @@ func (BasicTask) TableName() string {
 }
 
 type FullTask struct {
-	ID                 int               `gorm:"primaryKey" json:"id"`
-	Name               string            `gorm:"not null;column:name" json:"name"`
-	SubtopicID         int               `gorm:"not null;column:id_subtopic" json:"idSubtopic"`
-	CreatorID          int               `gorm:"not null;column:id_user" json:"-"`
-	Complexity         string            `gorm:"type:char(1);not null" json:"complexity"`
-	Input              string            `gorm:"size:512;not null" json:"input"`
-	Output             string            `gorm:"size:512;not null" json:"output"`
-	InputOutputExample string            `gorm:"type:text" json:"inputOutputExample"`
-	IsBossBattle       bool              `gorm:"not null;default:false" json:"isBossBattle"`
-	Subtopic           *Subtopic         `gorm:"foreignKey:SubtopicID" json:"subtopic"`
-	Tests              []TaskTest        `gorm:"foreignKey:IDTask" json:"-"`
-	Creator            *User             `gorm:"foreignKey:CreatorID" json:"creator,omitempty"`
-	HelpSteps          []TaskHelpStep    `gorm:"foreignKey:IDTask" json:"helpSteps"`
-	AllTimeBestScore   *lizard.CodeScore `gorm:"embedded;embeddedPrefix:best_" json:"allTimeBestScore"`
-	AverageScore       *lizard.CodeScore `gorm:"embedded;embeddedPrefix:avg_" json:"averageScore"`
-	ScoresCount        int               `json:"-"`
+	ID                 int              `gorm:"primaryKey" json:"id"`
+	Name               string           `gorm:"not null;column:name" json:"name"`
+	SubtopicID         int              `gorm:"not null;column:id_subtopic" json:"idSubtopic"`
+	CreatorID          int              `gorm:"not null;column:id_user" json:"-"`
+	Complexity         string           `gorm:"type:char(1);not null" json:"complexity"`
+	Input              string           `gorm:"size:512;not null" json:"input"`
+	Output             string           `gorm:"size:512;not null" json:"output"`
+	InputOutputExample string           `gorm:"type:text" json:"inputOutputExample"`
+	IsBossBattle       bool             `gorm:"not null;default:false" json:"isBossBattle"`
+	Subtopic           *Subtopic        `gorm:"foreignKey:SubtopicID" json:"subtopic"`
+	Tests              []TaskTest       `gorm:"foreignKey:IDTask" json:"-"`
+	Creator            *User            `gorm:"foreignKey:CreatorID" json:"creator,omitempty"`
+	HelpSteps          []TaskHelpStep   `gorm:"foreignKey:IDTask" json:"helpSteps"`
+	AllTimeBestScore   lizard.CodeScore `gorm:"embedded;embeddedPrefix:best_" json:"allTimeBestScore"`
+	AverageScore       lizard.CodeScore `gorm:"embedded;embeddedPrefix:avg_" json:"averageScore"`
+	ScoresCount        int              `json:"-"`
 }
 
 func (FullTask) TableName() string {

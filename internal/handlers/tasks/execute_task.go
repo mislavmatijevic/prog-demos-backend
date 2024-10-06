@@ -304,8 +304,8 @@ func setTaskExecutionStatusSucceeded(taskExecution *database.TaskExecution, scor
 		}
 	}
 
-	if solvedTask.AllTimeBestScore == nil || taskExecution.CodeScore.HasBetterScoreThan(solvedTask.AllTimeBestScore) {
-		solvedTask.AllTimeBestScore = taskExecution.CodeScore
+	if taskExecution.CodeScore.HasBetterScoreThan(&solvedTask.AllTimeBestScore) {
+		solvedTask.AllTimeBestScore = *taskExecution.CodeScore
 		newTaskAllTimeBestScore = true
 	}
 
