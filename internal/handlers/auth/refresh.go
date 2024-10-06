@@ -17,8 +17,8 @@ type refreshRequest struct {
 }
 
 type refreshResponse struct {
-	Success bool `json:"success"`
-	*authentication.AuthTokenPair
+	Success   bool                          `json:"success"`
+	NewTokens *authentication.AuthTokenPair `json:"tokens"`
 }
 
 func refreshAccess(w http.ResponseWriter, r *http.Request) {
@@ -67,8 +67,8 @@ func refreshAccess(w http.ResponseWriter, r *http.Request) {
 	database.DeleteRefreshTokenWithValue(refreshToken.Value)
 
 	var res refreshResponse = refreshResponse{
-		Success:       true,
-		AuthTokenPair: newTokenPair,
+		Success:   true,
+		NewTokens: newTokenPair,
 	}
 
 	api.RespondOk(w, res)
