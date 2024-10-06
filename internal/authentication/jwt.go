@@ -51,17 +51,14 @@ func AttachTokenToRequest(next http.Handler) http.Handler {
 
 func RequireAccessToken(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		var tokenAttachedToRequest = r.Context().Value(jwtauth.TokenCtxKey)
-		if tokenAttachedToRequest == nil {
-			api.AuthorizationMissingGenericMsg(w)
-			return
-		}
-
-		err := jwt.Validate(tokenAttachedToRequest.(jwt.Token))
+		err := ValidateJwtTokenFromRequest(r)
 
 		if err != nil {
 			err = jwtauth.ErrorReason(err)
 			switch err {
+			case jwtauth.ErrNoTokenFound:
+				api.AuthorizationMissingGenericMsg(w)
+				return
 			case jwtauth.ErrUnauthorized:
 				api.AuthorizationInvalidGenericMsg(w)
 				return
@@ -73,6 +70,16 @@ func RequireAccessToken(next http.Handler) http.Handler {
 
 		next.ServeHTTP(w, r)
 	})
+}
+
+func ValidateJwtTokenFromRequest(r *http.Request) error {
+	var tokenAttachedToRequest = r.Context().Value(jwtauth.TokenCtxKey)
+	if tokenAttachedToRequest == nil {
+		return jwtauth.ErrNoTokenFound
+	}
+
+	err := jwt.Validate(tokenAttachedToRequest.(jwt.Token))
+	return err
 }
 
 func RequireSpecialType(next http.Handler) http.Handler {

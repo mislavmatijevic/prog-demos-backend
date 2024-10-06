@@ -54,10 +54,12 @@ type Video struct {
 }
 
 type BasicTask struct {
-	ID         int    `gorm:"primaryKey" json:"id"`
-	Name       string `gorm:"not null;column:name" json:"name"`
-	SubtopicID int    `gorm:"not null;column:id_subtopic" json:"-"`
-	Complexity string `gorm:"not null" json:"complexity"`
+	ID             int    `gorm:"primaryKey" json:"id"`
+	Name           string `gorm:"not null;column:name" json:"name"`
+	SubtopicID     int    `gorm:"not null;column:id_subtopic" json:"-"`
+	Complexity     string `gorm:"not null" json:"complexity"`
+	IsBossBattle   bool   `gorm:"not null;default:false" json:"isBossBattle"`
+	*TaskExecution `json:"bestSuccessfulSubmission,omitempty"`
 }
 
 func (BasicTask) TableName() string {
@@ -132,10 +134,10 @@ type TaskExecution struct {
 	IsFinished        bool      `gorm:"not null;default:false" json:"-"`
 	StartedAt         time.Time `gorm:"not null" json:"-"`
 	FinishedAt        time.Time `gorm:"null;default:null" json:"-"`
-	SubmittedCode     string    `gorm:"type:text" json:"submittedCode"`
+	SubmittedCode     string    `gorm:"type:text" json:"submittedCode,omitempty"`
 	WasSuccessful     bool      `gorm:"not null;default:false" json:"-"`
 	BestScore         bool      `gorm:"not null;default:false" json:"-"`
-	*lizard.CodeScore `gorm:"default:false" json:"score"`
+	*lizard.CodeScore `gorm:"default:false" json:"score,omitempty"`
 	Initiator         *User     `gorm:"foreignKey:InitiatorID" json:"-"`
 	Task              *FullTask `gorm:"foreignKey:TaskID" json:"-"`
 }
