@@ -277,32 +277,40 @@ func setTaskExecutionStatusSucceeded(taskExecution *database.TaskExecution, scor
 	taskExecution.CodeScore = &score
 
 	var solvedTask = database.GetSingleFullTasks(taskExecution.TaskID)
-	var previousBestScoreExecutionForThisTask = database.GetBestScoreExecutionOfUserForTask(
+	var previousBestScoreExecutionFromThisUserForThisTask = database.GetBestScoreExecutionOfUserForTask(
 		taskExecution.InitiatorID,
 		taskExecution.TaskID,
 	)
 
-	var newBestScore = false
+	var newUsersBestScore = false
+	var newTaskAllTimeBestScore = false
 
-	if previousBestScoreExecutionForThisTask == nil {
-		newBestScore = true
+	if previousBestScoreExecutionFromThisUserForThisTask == nil {
+		newUsersBestScore = true
 	} else {
-		if taskExecution.CodeScore.HasBetterScoreThan(previousBestScoreExecutionForThisTask.CodeScore) {
-			previousBestScoreExecutionForThisTask.BestScore = false
-			subtractLastScore(solvedTask, *previousBestScoreExecutionForThisTask.CodeScore)
-			newBestScore = true
+		if taskExecution.CodeScore.HasBetterScoreThan(previousBestScoreExecutionFromThisUserForThisTask.CodeScore) {
+			subtractLastScore(solvedTask, *previousBestScoreExecutionFromThisUserForThisTask.CodeScore)
+			newUsersBestScore = true
 		}
 	}
 
-	if newBestScore {
+	if newUsersBestScore {
 		taskExecution.BestScore = true
 		increaseAverageScoreOnTaskItself(solvedTask, score)
 
-		database.SaveTask(solvedTask)
-
-		if previousBestScoreExecutionForThisTask != nil {
-			database.SaveTaskExecution(*previousBestScoreExecutionForThisTask)
+		if previousBestScoreExecutionFromThisUserForThisTask != nil {
+			previousBestScoreExecutionFromThisUserForThisTask.BestScore = false
+			database.SaveTaskExecution(*previousBestScoreExecutionFromThisUserForThisTask)
 		}
+	}
+
+	if solvedTask.AllTimeBestScore == nil || taskExecution.CodeScore.HasBetterScoreThan(solvedTask.AllTimeBestScore) {
+		solvedTask.AllTimeBestScore = taskExecution.CodeScore
+		newTaskAllTimeBestScore = true
+	}
+
+	if newUsersBestScore || newTaskAllTimeBestScore {
+		database.SaveTask(solvedTask)
 	}
 
 	saveFinishedTaskExecution(taskExecution)
@@ -316,7 +324,7 @@ func subtractLastScore(fullTask *database.FullTask, score lizard.CodeScore) {
 	complexitySum -= score.Complexity
 	scoresCountSoFar--
 
-	setTaskScoreSums(fullTask, scoresCountSoFar, tokensSum, scoresSum, complexitySum)
+	setAverageTaskScore(fullTask, scoresCountSoFar, tokensSum, scoresSum, complexitySum)
 }
 
 func increaseAverageScoreOnTaskItself(fullTask *database.FullTask, score lizard.CodeScore) {
@@ -327,27 +335,27 @@ func increaseAverageScoreOnTaskItself(fullTask *database.FullTask, score lizard.
 	complexitySum += score.Complexity
 	scoresCountSoFar++
 
-	setTaskScoreSums(fullTask, scoresCountSoFar, tokensSum, scoresSum, complexitySum)
+	setAverageTaskScore(fullTask, scoresCountSoFar, tokensSum, scoresSum, complexitySum)
 }
 
-func getTaskScoreSums(fullTask *database.FullTask) (int, int, float32, int) {
-	var scoresCountSoFar = fullTask.ScoresCount
-	var tokensSum = fullTask.AvgTokens * scoresCountSoFar
-	var scoresSum = fullTask.AvgTotalScore * float32(scoresCountSoFar)
-	var complexitySum = fullTask.AvgComplexity * scoresCountSoFar
+func getTaskScoreSums(task *database.FullTask) (int, int, float32, int) {
+	var scoresCountSoFar = task.ScoresCount
+	var tokensSum = task.AverageScore.Tokens * scoresCountSoFar
+	var scoresSum = task.AverageScore.TotalScore * float32(scoresCountSoFar)
+	var complexitySum = task.AverageScore.Complexity * scoresCountSoFar
 	return scoresCountSoFar, tokensSum, scoresSum, complexitySum
 }
 
-func setTaskScoreSums(fullTask *database.FullTask, newScoresCount int, tokensSum int, scoresSum float32, complexitySum int) {
-	fullTask.ScoresCount = newScoresCount
+func setAverageTaskScore(task *database.FullTask, newScoresCount int, tokensSum int, scoresSum float32, complexitySum int) {
+	task.ScoresCount = newScoresCount
 	if newScoresCount == 0 {
-		fullTask.AvgTokens = 0
-		fullTask.AvgTotalScore = 0
-		fullTask.AvgComplexity = 0
+		task.AverageScore.Tokens = 0
+		task.AverageScore.TotalScore = 0
+		task.AverageScore.Complexity = 0
 	} else {
-		fullTask.AvgTokens = tokensSum / newScoresCount
-		fullTask.AvgTotalScore = utils.RoundNumberDownToTwoDecimals(scoresSum / float32(newScoresCount))
-		fullTask.AvgComplexity = complexitySum / newScoresCount
+		task.AverageScore.Tokens = tokensSum / newScoresCount
+		task.AverageScore.TotalScore = utils.RoundNumberDownToTwoDecimals(scoresSum / float32(newScoresCount))
+		task.AverageScore.Complexity = complexitySum / newScoresCount
 	}
 }
 
