@@ -84,7 +84,7 @@ func ValidateJwtTokenFromRequest(r *http.Request) error {
 
 func RequireSpecialType(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		userType, err := GetUserTypeFromToken(r)
+		userType, err := GetUserTypeFromRequest(r)
 
 		if err != nil || !slices.Contains(specialTypes, userType) {
 			api.AuthorizationInvalidGenericMsg(w)
@@ -118,7 +118,7 @@ func ValidateRefreshTokenFormat(refreshTokenValue string) bool {
 	return utils.IsValidRandomString(refreshTokenValue, REFRESH_TOKEN_SIZE)
 }
 
-func ValidateTokenPair(previousAccessTokenValue string, refreshTokenValue *database.RefreshToken) error {
+func ValidateTokenPairByCreationTimes(previousAccessTokenValue string, refreshTokenValue *database.RefreshToken) error {
 	var parsedToken, err = jwtauth.VerifyToken(authToken, previousAccessTokenValue)
 	if err != nil && err != jwtauth.ErrExpired {
 		return err
@@ -136,11 +136,32 @@ func ValidateTokenPair(previousAccessTokenValue string, refreshTokenValue *datab
 	return nil
 }
 
+func ValidateTokenPairByUsers(previousAccessTokenValue string, refreshTokenValue *database.RefreshToken) error {
+	var parsedToken, _ = jwtauth.VerifyToken(authToken, previousAccessTokenValue)
+
+	if parsedToken == nil {
+		return errors.New("no token found in order to validate the token pair by users")
+	}
+
+	var userIdFromToken, userClaimFound = parsedToken.Get("user_id")
+	if !userClaimFound {
+		return errors.New("user id claim could not be found within access token")
+	}
+
+	var userFromAccessToken = int(userIdFromToken.(float64))
+	var userFromRefreshToken = refreshTokenValue.OwnerID
+	if userFromAccessToken != userFromRefreshToken {
+		return fmt.Errorf("access token belongs to user %v, refresh token to user %v", userFromAccessToken, userFromRefreshToken)
+	}
+
+	return nil
+}
+
 func RemoveRefreshToken(refreshTokenValue string) bool {
 	return database.DeleteRefreshTokenWithValue(refreshTokenValue)
 }
 
-func GetUserIdFromToken(r *http.Request) (int, error) {
+func GetUserIdFromRequest(r *http.Request) (int, error) {
 	userIdClaim, err := getClaimFromToken("user_id", r)
 	if err != nil {
 		return 0, err
@@ -150,7 +171,7 @@ func GetUserIdFromToken(r *http.Request) (int, error) {
 	return userId, err
 }
 
-func GetUserTypeFromToken(r *http.Request) (string, error) {
+func GetUserTypeFromRequest(r *http.Request) (string, error) {
 	return getClaimFromToken("type", r)
 }
 

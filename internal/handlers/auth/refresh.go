@@ -23,7 +23,9 @@ type refreshResponse struct {
 
 func refreshAccess(w http.ResponseWriter, r *http.Request) {
 	var refreshBody refreshRequest
-	if err := json.NewDecoder(r.Body).Decode(&refreshBody); err != nil {
+	var err error
+
+	if err = json.NewDecoder(r.Body).Decode(&refreshBody); err != nil {
 		api.RequestErrorHandlerGenericMsg(w, err)
 		return
 	}
@@ -34,17 +36,23 @@ func refreshAccess(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	refreshToken, isExpired := findCurrentRefreshToken(refreshTokenValue)
+	refreshToken, isRefreshTokenExpired := findCurrentRefreshToken(refreshTokenValue)
 	if refreshToken == nil {
 		api.RequestErrorHandlerCustomMsg(w, "Refresh token does not exist.")
 		return
 	}
-	if isExpired {
-		api.AuthorizationExpiredGenericMsg(w)
+	if isRefreshTokenExpired {
+		api.RefreshTokenExpiredGenericMsg(w)
 		return
 	}
 
-	err := authentication.ValidateTokenPair(previousAccessTokenValue, refreshToken)
+	err = authentication.ValidateTokenPairByUsers(previousAccessTokenValue, refreshToken)
+	if err != nil {
+		api.RequestErrorHandlerGenericMsg(w, err)
+		return
+	}
+
+	err = authentication.ValidateTokenPairByCreationTimes(previousAccessTokenValue, refreshToken)
 	if err != nil {
 		api.AuthorizationInvalidCustomMsg(w, fmt.Sprintf("Couldn't generate new refresh token: %v", err))
 		return

@@ -223,7 +223,7 @@ func checkForValidHelpSteps(newTask newTaskRequestBody) error {
 }
 
 func attachCreatorIdToTask(r *http.Request, newTask *database.FullTask) (err error) {
-	newTask.CreatorID, err = authentication.GetUserIdFromToken(r)
+	newTask.CreatorID, err = authentication.GetUserIdFromRequest(r)
 	return err
 }
 

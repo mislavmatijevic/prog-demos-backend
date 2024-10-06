@@ -101,7 +101,7 @@ func executeTask(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	userId, err := authentication.GetUserIdFromToken(r)
+	userId, err := authentication.GetUserIdFromRequest(r)
 	if err != nil || userId == 0 {
 		api.InternalErrorHandlerCustomMsg(w, "Couldn't get user from JWT token.")
 		return

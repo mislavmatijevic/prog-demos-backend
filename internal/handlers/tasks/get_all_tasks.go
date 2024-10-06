@@ -30,7 +30,7 @@ func getAllTasksPerTopics(w http.ResponseWriter, r *http.Request) {
 }
 
 func handleAuthenticatedUserRequest(r *http.Request, topics []database.Topic) {
-	var userId, err = authentication.GetUserIdFromToken(r)
+	var userId, err = authentication.GetUserIdFromRequest(r)
 	if err != nil {
 		log.Errorf("Token validated, but couldn't extract user id: %v", err)
 		return

@@ -9,7 +9,7 @@ import (
 )
 
 func GetTotalCountOfSolutionAttempts(w http.ResponseWriter, r *http.Request) {
-	userId, err := authentication.GetUserIdFromToken(r)
+	userId, err := authentication.GetUserIdFromRequest(r)
 	if err != nil {
 		api.InternalErrorHandlerGenericMsg(w, err)
 		return

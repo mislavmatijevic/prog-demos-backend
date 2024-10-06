@@ -51,6 +51,9 @@ var (
 	AuthorizationInvalidCustomMsg = func(w http.ResponseWriter, errorMessage string) {
 		writeError(w, errorMessage, http.StatusForbidden)
 	}
+	RefreshTokenExpiredGenericMsg = func(w http.ResponseWriter) {
+		writeError(w, "Refresh token expired.", http.StatusForbidden)
+	}
 	TooEarlyErrorHandlerCustomMsg = func(w http.ResponseWriter, errorMessage string) {
 		writeError(w, errorMessage, http.StatusTooEarly)
 	}

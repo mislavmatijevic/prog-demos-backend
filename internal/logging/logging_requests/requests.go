@@ -29,7 +29,7 @@ func LogRequest(next http.Handler) http.Handler {
 		}
 
 		var authedUser string = "NO_AUTH"
-		userId, _ := authentication.GetUserIdFromToken(r)
+		userId, _ := authentication.GetUserIdFromRequest(r)
 		if userId != 0 {
 			authedUser = "USER: " + strconv.Itoa(userId)
 		}
