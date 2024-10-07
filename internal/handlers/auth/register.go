@@ -109,12 +109,13 @@ func respondForErrorCode(w http.ResponseWriter, errorCode registrationErrorCode)
 
 func checkIfUserInfoValid(username, email, password string) bool {
 	var usernameAtLeast2Characters = len(username) >= 2
+	var usernameAtMost15Characters = len(username) <= 20
 	var emailAtLeast4Characters = len(email) >= 4
 	var isEmailValid = utils.IsEmailValid(email)
 	var usernameDoesNotContainAt = !strings.Contains(username, "@")
 	var passwordAtLeast8Chars = len(password) >= 8
 	var passwordNotLongerThan72Chars = len(password) < 72
-	return usernameAtLeast2Characters && emailAtLeast4Characters && isEmailValid && usernameDoesNotContainAt && passwordAtLeast8Chars && passwordNotLongerThan72Chars
+	return usernameAtLeast2Characters && usernameAtMost15Characters && emailAtLeast4Characters && isEmailValid && usernameDoesNotContainAt && passwordAtLeast8Chars && passwordNotLongerThan72Chars
 }
 
 func createUser(username, email, hashPassword string) database.User {
