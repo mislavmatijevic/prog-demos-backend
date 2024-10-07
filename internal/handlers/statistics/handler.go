@@ -12,6 +12,7 @@ func HandleStatistics(r *chi.Mux) {
 			protectedRouter.Use(authentication.RequireAccessToken)
 
 			protectedRouter.Get("/solution-attempts", GetTotalCountOfSolutionAttempts)
+			protectedRouter.Get("/total-score", GetTotalScore)
 		})
 	})
 }
