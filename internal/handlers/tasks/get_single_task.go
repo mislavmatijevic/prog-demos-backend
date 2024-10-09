@@ -6,8 +6,10 @@ import (
 	"strconv"
 
 	"github.com/go-chi/chi"
+	"github.com/mislavmatijevic/prog-demos-backend/internal/authentication"
 	"github.com/mislavmatijevic/prog-demos-backend/internal/database"
 	"github.com/mislavmatijevic/prog-demos-backend/internal/handlers/api"
+	log "github.com/sirupsen/logrus"
 )
 
 type taskResponse struct {
@@ -26,6 +28,10 @@ func getSingleTask(w http.ResponseWriter, r *http.Request) {
 
 	task := database.GetSingleFullTasks(taskId)
 
+	if err := authentication.ValidateJwtTokenFromRequest(r); err == nil {
+		fillTaskWithPersonalizedInfo(r, task)
+	}
+
 	if task == nil {
 		api.NotFoundHandlerCustomMsg(w, fmt.Sprintf("Task with id %s not found!", originalParamId))
 		return
@@ -37,4 +43,21 @@ func getSingleTask(w http.ResponseWriter, r *http.Request) {
 	}
 
 	api.RespondOk(w, res)
+}
+
+func fillTaskWithPersonalizedInfo(r *http.Request, task *database.FullTask) {
+	var userId, err = authentication.GetUserIdFromRequest(r)
+	if err != nil {
+		log.Errorf("Token validated, but couldn't extract user id: %v", err)
+		return
+	}
+
+	fillInfoOnCompletedTask(userId, task)
+}
+
+func fillInfoOnCompletedTask(userId int, task *database.FullTask) {
+	task.BasicInfo.BestExecutionForUser = database.GetBestScoreExecutionForUserAndTask(userId, task.BasicInfo.ID)
+	if task.BasicInfo.BestExecutionForUser != nil {
+		task.BasicInfo.BestExecutionForUser.SubmittedCode = ""
+	}
 }
