@@ -60,7 +60,7 @@ func getExecutionStatsForSubtopic(taskExecutions []TaskExecution, subtopic *Subt
 	var totalTries = 0
 	var completedTasks = make(map[int]bool)
 	for _, taskExecution := range taskExecutions {
-		if taskExecution.Task.SubtopicID == subtopic.ID {
+		if taskExecution.Task.BasicInfo.SubtopicID == subtopic.ID {
 			totalTries++
 			if taskExecution.WasSuccessful {
 				completedTasks[taskExecution.TaskID] = true

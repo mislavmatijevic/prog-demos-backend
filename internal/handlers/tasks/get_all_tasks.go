@@ -18,7 +18,7 @@ func getAllTasksPerTopics(w http.ResponseWriter, r *http.Request) {
 	topics := database.GetAllTasksPerTopic()
 
 	if err := authentication.ValidateJwtTokenFromRequest(r); err == nil {
-		handleAuthenticatedUserRequest(r, topics)
+		fillBasicTasksWithPersonalizedInfo(r, topics)
 	}
 
 	var res = tasksResponse{
@@ -29,7 +29,7 @@ func getAllTasksPerTopics(w http.ResponseWriter, r *http.Request) {
 	api.RespondOk(w, res)
 }
 
-func handleAuthenticatedUserRequest(r *http.Request, topics []database.Topic) {
+func fillBasicTasksWithPersonalizedInfo(r *http.Request, topics []database.Topic) {
 	var userId, err = authentication.GetUserIdFromRequest(r)
 	if err != nil {
 		log.Errorf("Token validated, but couldn't extract user id: %v", err)

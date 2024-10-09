@@ -226,9 +226,9 @@ func executeTask(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var solvedTask = database.GetSingleFullTasks(taskExecution.TaskID)
-	numbericComplexity, err := strconv.Atoi(solvedTask.Complexity)
+	numbericComplexity, err := strconv.Atoi(solvedTask.BasicInfo.Complexity)
 	if err != nil {
-		log.Errorf("Complexity of task %d (%s) could not be converted to integer!", solvedTask.ID, solvedTask.Name)
+		log.Errorf("Complexity of task %d (%s) could not be converted to integer!", solvedTask.BasicInfo.ID, solvedTask.BasicInfo.Name)
 		numbericComplexity = 0
 	}
 

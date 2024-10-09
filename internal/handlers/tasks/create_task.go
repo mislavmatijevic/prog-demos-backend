@@ -46,14 +46,16 @@ type responseBody struct {
 
 func (body newTaskRequestBody) mapToEntity() (newFullTaskEntity *database.FullTask) {
 	return &database.FullTask{
-		SubtopicID:         body.SubtopicID,
-		Name:               body.Name,
-		Complexity:         body.Complexity,
+		BasicInfo: database.Task{
+			ID:           0,
+			SubtopicID:   body.SubtopicID,
+			Name:         body.Name,
+			Complexity:   body.Complexity,
+			IsBossBattle: body.IsBossBattle,
+		},
 		Input:              body.Input,
 		Output:             body.Output,
 		InputOutputExample: body.InputOutputExample,
-		IsBossBattle:       body.IsBossBattle,
-		ID:                 0,
 		CreatorID:          0,
 		Subtopic:           nil,
 		Tests:              nil,
@@ -112,7 +114,7 @@ func createTask(w http.ResponseWriter, r *http.Request) {
 
 	var res = responseBody{
 		Success: true,
-		Message: fmt.Sprintf("Created new task with ID %v", taskEntity.ID),
+		Message: fmt.Sprintf("Created new task with ID %v", taskEntity.BasicInfo.ID),
 	}
 
 	api.RespondOk(w, res)

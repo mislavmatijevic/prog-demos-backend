@@ -30,7 +30,7 @@ func GetSingleFullTasks(taskId int) *FullTask {
 }
 
 func CheckTaskExists(taskId int) bool {
-	var task BasicTask
+	var task Task
 	Instance.db.Find(&task, taskId)
 	return task.ID != 0
 }
