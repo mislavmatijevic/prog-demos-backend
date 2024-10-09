@@ -17,23 +17,23 @@ type taskResponse struct {
 
 func getSingleTask(w http.ResponseWriter, r *http.Request) {
 	var originalParamId = chi.URLParam(r, "taskId")
-	TaskId, err := strconv.Atoi(originalParamId)
+	taskId, err := strconv.Atoi(originalParamId)
 
 	if err != nil {
 		api.RequestErrorHandlerGenericMsg(w, err)
 		return
 	}
 
-	Task := database.GetSingleFullTasks(TaskId)
+	task := database.GetSingleFullTasks(taskId)
 
-	if Task == nil {
+	if task == nil {
 		api.NotFoundHandlerCustomMsg(w, fmt.Sprintf("Task with id %s not found!", originalParamId))
 		return
 	}
 
 	var res = taskResponse{
 		Success: true,
-		Task:    *Task,
+		Task:    *task,
 	}
 
 	api.RespondOk(w, res)
