@@ -471,20 +471,20 @@ func fillFileWithData(tempFile *os.File, inputs string) error {
 }
 
 func runFileInIsolatedDockerContainerTask(timeoutContext context.Context, cppFile *os.File) error {
-	errChan := make(chan error, 1)
-	sourceCodePath := cppFile.Name()
+	var errChan = make(chan error, 1)
+	var sourceCodePath = cppFile.Name()
+	var containerName = utils.CreateShortHash(sourceCodePath)
 
 	log.Debugf("Source code path: %s", sourceCodePath)
 
 	go func() {
-		errChan <- runDockerRunnerImage(sourceCodePath, true)
+		errChan <- runDockerRunnerImage(containerName, sourceCodePath, true)
 	}()
 
 	select {
 	case <-timeoutContext.Done():
 		log.Info("Timeout reached - forcefully removing Docker container!")
 
-		var containerName = filepath.Base(filepath.Dir(sourceCodePath))
 		err := removeRunningDockerContainer(containerName)
 		if err != nil {
 			log.Error(err)
@@ -499,7 +499,7 @@ func runFileInIsolatedDockerContainerTask(timeoutContext context.Context, cppFil
 	}
 }
 
-func runDockerRunnerImage(fullFilePath string, allowBuildingImageIfNotFound bool) error {
+func runDockerRunnerImage(containerName string, fullFilePath string, allowBuildingImageIfNotFound bool) error {
 	var sourceCodePath = filepath.Dir(fullFilePath)
 	var sourceFileName = filepath.Base(fullFilePath)
 
@@ -520,12 +520,13 @@ func runDockerRunnerImage(fullFilePath string, allowBuildingImageIfNotFound bool
 
 	var dockerRunArguments = fmt.Sprintf(
 		"%s run --rm "+
+			"--name %s "+
 			"-v %s:%s "+
 			"--memory 50m --cpus 0.15 "+
 			"--security-opt no-new-privileges --network none "+
 			"-e SOURCE_CODE_FOLDER=%s "+
 			"-e SOURCE_FILE_NAME=%s "+
-			"task-runner:latest", dockerPath, volumeName, tempTasksFolderPath, parentFolderName, sourceFileName,
+			"task-runner:latest", dockerPath, containerName, volumeName, tempTasksFolderPath, parentFolderName, sourceFileName,
 	)
 
 	cmd := exec.Command("bash", "-c", dockerRunArguments)
@@ -536,7 +537,7 @@ func runDockerRunnerImage(fullFilePath string, allowBuildingImageIfNotFound bool
 		if strings.Contains(stringOutput, "Unable to find image 'task-runner:latest'") {
 			if allowBuildingImageIfNotFound {
 				buildRunnerImage(dockerPath)
-				return runDockerRunnerImage(fullFilePath, false)
+				return runDockerRunnerImage(containerName, fullFilePath, false)
 			} else {
 				log.Errorf("Failed to build Docker container: %s", err)
 			}

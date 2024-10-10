@@ -2,6 +2,8 @@ package utils
 
 import (
 	"crypto/rand"
+	"crypto/sha1"
+	"fmt"
 	"math/big"
 	"regexp"
 
@@ -31,4 +33,10 @@ func CreateSecureHash(text string) (string, error) {
 		return "", err
 	}
 	return string(hash), nil
+}
+
+func CreateShortHash(text string) string {
+	sha := sha1.New()
+	sha.Write([]byte(text))
+	return fmt.Sprintf("%x", sha.Sum(nil))[0:10]
 }
