@@ -176,8 +176,6 @@ func executeTask(w http.ResponseWriter, r *http.Request) {
 					handleTestExecutionInternalFail(w, tempDirPath, err, taskExecution)
 				}
 			}
-
-			log.Error(err)
 			return
 		}
 
@@ -573,12 +571,12 @@ func removeRunningDockerContainer(containerName string) error {
 
 	cmd := exec.Command("bash", "-c", fmt.Sprintf(dockerPath+" rm --force "+containerName))
 	output, err := cmd.CombinedOutput()
-	var stringOutputs = string(output)
+	var stringOutputs = strings.Trim(string(output), "\n")
 	if stringOutputs != containerName {
 		if err == nil {
 			return fmt.Errorf("container %s could not be stopped: %s", containerName, stringOutputs)
 		} else {
-			return fmt.Errorf(fmt.Sprintf("Container %s could not be stopped: error:%v, output:%s", containerName, err, stringOutputs))
+			return fmt.Errorf("container %s could not be stopped: error:%v, output:%s", containerName, err, stringOutputs)
 		}
 	}
 
