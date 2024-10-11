@@ -12,10 +12,10 @@ func RespondOk(w http.ResponseWriter, res interface{}) {
 }
 
 func RespondWithStatus(w http.ResponseWriter, res interface{}, status int) {
-	jsonRes, _ := json.Marshal(res)
-	w.WriteHeader(status)
 	w.Header().Add("content-type", "application/json")
+	w.WriteHeader(status)
+	jsonRes, _ := json.Marshal(res)
 	w.Write(jsonRes)
 
-	logging_responses.LogResponse(status, jsonRes)
+	logging_responses.LogResponse(status, w.Header(), jsonRes)
 }

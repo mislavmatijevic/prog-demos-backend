@@ -21,9 +21,12 @@ func Handler(r *chi.Mux) {
 	setupCors(r)
 
 	r.Use(chimiddle.StripSlashes)
+	r.Use(chimiddle.RequestID)
+	r.Use(chimiddle.RealIP)
 	r.Use(authentication.AttachTokenToRequest)
 	r.Use(logging.HandleSecureEndpoints)
 	r.Use(logging_requests.LogRequest)
+
 	log.Debug("Setting up /auth handler...")
 	auth.HandleAuth(r)
 	log.Debug("Setting up /videos handler...")

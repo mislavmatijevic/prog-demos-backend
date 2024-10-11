@@ -2,7 +2,6 @@ package logging
 
 import (
 	"context"
-	"encoding/json"
 	"net/http"
 )
 
@@ -19,8 +18,8 @@ var (
 )
 
 var secureRequestContextHandlers = map[string]func(*http.Request) context.Context{
-	"/auth/login":          getBodyForLoginRequest,
-	"/auth/register":       getBodyForRegisterRequest,
+	"/auth/login":          getBodyForRequestWithPassword,
+	"/auth/register":       getBodyForRequestWithPassword,
 	"/auth/password/reset": getBodyForPasswordResetRequest,
 	"/auth/refresh":        getBodyForTokenRefreshRequest,
 }
@@ -37,52 +36,20 @@ func HandleSecureEndpoints(next http.Handler) http.Handler {
 	})
 }
 
-func getBodyForLoginRequest(r *http.Request) context.Context {
-	return removeFieldFromBody(r, "password")
-}
-
-func getBodyForRegisterRequest(r *http.Request) context.Context {
-	return removeFieldFromBody(r, "password")
-}
-
-func getBodyForPasswordResetRequest(r *http.Request) context.Context {
-	return removeFieldFromBody(r, "newPassword")
-}
-
-func getBodyForTokenRefreshRequest(r *http.Request) context.Context {
-	return hideFieldFromBody(r, "accessToken", "refreshToken")
-}
-
-func removeFieldFromBody(r *http.Request, fieldName string) context.Context {
+func getBodyForRequestWithPassword(r *http.Request) context.Context {
 	var reqBody = ReadRequestBodyWithoutClosing(r)
-	var jsonReqBody string
-	var data map[string]interface{}
-
-	if reqBody != nil {
-		json.Unmarshal(reqBody, &data)
-		delete(data, fieldName)
-		reqBody, _ = json.Marshal(&data)
-		jsonReqBody = string(reqBody)
-	}
-
+	jsonReqBody := HideFieldsFromJsonBody(reqBody, false, "password")
 	return context.WithValue(r.Context(), CensoredBodyCtxKey, &ContextValue{jsonReqBody})
 }
 
-func hideFieldFromBody(r *http.Request, fields ...string) context.Context {
+func getBodyForPasswordResetRequest(r *http.Request) context.Context {
 	var reqBody = ReadRequestBodyWithoutClosing(r)
-	var jsonReqBody string
-	var data map[string]string
+	jsonReqBody := HideFieldsFromJsonBody(reqBody, false, "newPassword")
+	return context.WithValue(r.Context(), CensoredBodyCtxKey, &ContextValue{jsonReqBody})
+}
 
-	if reqBody != nil {
-		json.Unmarshal(reqBody, &data)
-		for _, fieldName := range fields {
-			if len(data[fieldName]) > 10 {
-				data[fieldName] = data[fieldName][0:10] + "... [HIDDEN]"
-			}
-		}
-		reqBody, _ = json.Marshal(&data)
-		jsonReqBody = string(reqBody)
-	}
-
+func getBodyForTokenRefreshRequest(r *http.Request) context.Context {
+	var reqBody = ReadRequestBodyWithoutClosing(r)
+	jsonReqBody := HideFieldsFromJsonBody(reqBody, true, "accessToken", "refreshToken")
 	return context.WithValue(r.Context(), CensoredBodyCtxKey, &ContextValue{jsonReqBody})
 }

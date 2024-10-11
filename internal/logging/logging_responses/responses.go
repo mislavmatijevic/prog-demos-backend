@@ -1,15 +1,29 @@
 package logging_responses
 
-import log "github.com/sirupsen/logrus"
+import (
+	"net/http"
 
-func LogResponse(status int, jsonRes []byte) {
-	var bodyOutputLimit = 150
+	chimiddle "github.com/go-chi/chi/v5/middleware"
+	"github.com/mislavmatijevic/prog-demos-backend/internal/logging"
+	log "github.com/sirupsen/logrus"
+)
+
+func LogResponse(status int, header http.Header, jsonRes []byte) {
+	requestId := header.Get(chimiddle.RequestIDHeader)
+
+	var level = log.InfoLevel
 	if status >= 400 {
-		bodyOutputLimit = 500
+		level = log.WarnLevel
 	}
-	resBodyLength := len(jsonRes)
-	if bodyOutputLimit > resBodyLength {
-		bodyOutputLimit = resBodyLength - 1
-	}
-	log.WithFields(log.Fields{"context": "response", "status": status, "body": string(jsonRes[0:bodyOutputLimit])}).Trace()
+
+	resBody := logging.HideFieldsFromJsonBody(jsonRes, true, "tokens.accessToken", "tokens.refreshToken.value")
+
+	log.WithFields(
+		log.Fields{
+			"context":    "response",
+			"request_id": requestId,
+			"status":     status,
+			"body":       resBody,
+		},
+	).Log(level, http.StatusText(status))
 }
