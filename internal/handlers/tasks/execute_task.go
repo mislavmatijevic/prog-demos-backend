@@ -485,7 +485,7 @@ func runFileInIsolatedDockerContainerTask(timeoutContext context.Context, cppFil
 
 	select {
 	case <-timeoutContext.Done():
-		log.Info("Timeout reached - forcefully removing Docker container!")
+		log.WithFields(log.Fields{"context": "task_execution"}).Warning("Timeout reached - forcefully removing Docker container!")
 
 		err := removeRunningDockerContainer(containerName)
 		if err != nil {
@@ -543,7 +543,7 @@ func runDockerRunnerImage(containerName string, fullFilePath string, allowBuildi
 		} else if strings.Contains(stringOutput, "Killed") {
 			return errors.New(CONTAINER_FORCEFULLY_KILLED_MARK)
 		} else {
-			log.Warningf("Suspicious output from task-runner container: %s", stringOutput)
+			log.WithFields(log.Fields{"suspicious_output": stringOutput, "context": "task_execution"}).Warning("Suspicious output from task-runner container!")
 		}
 	}
 
