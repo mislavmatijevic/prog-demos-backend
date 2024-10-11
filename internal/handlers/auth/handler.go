@@ -1,6 +1,6 @@
 package auth
 
-import "github.com/go-chi/chi"
+import "github.com/go-chi/chi/v5"
 
 func HandleAuth(r *chi.Mux) {
 	r.Route("/auth", func(router chi.Router) {
