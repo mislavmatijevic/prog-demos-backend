@@ -2,8 +2,6 @@ package api
 
 import (
 	"net/http"
-
-	log "github.com/sirupsen/logrus"
 )
 
 type errorResponse struct {
@@ -26,14 +24,12 @@ func writeError(w http.ResponseWriter, message string, code int) {
 
 var (
 	RequestErrorHandlerGenericMsg = func(w http.ResponseWriter, err error) {
-		log.Error(err)
 		writeError(w, "Request invalid.", http.StatusBadRequest)
 	}
 	RequestErrorHandlerCustomMsg = func(w http.ResponseWriter, errorMessage string) {
 		writeError(w, errorMessage, http.StatusBadRequest)
 	}
 	InternalErrorHandlerGenericMsg = func(w http.ResponseWriter, err error) {
-		log.Error(err)
 		writeError(w, "An Unexpected Error Occurred.", http.StatusInternalServerError)
 	}
 	InternalErrorHandlerCustomMsg = func(w http.ResponseWriter, errorMessage string) {

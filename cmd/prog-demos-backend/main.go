@@ -23,7 +23,7 @@ func main() {
 
 	err = godotenv.Load()
 	if err != nil {
-		log.Fatalln("Couldn't load env file!!")
+		log.WithError(err).WithFields(log.Fields{"priority": "high", "context": "main"}).Panic("Couldn't load env file!")
 	}
 	setupLogging()
 	var r *chi.Mux = chi.NewRouter()
@@ -34,17 +34,19 @@ func main() {
 	authentication.Initialize()
 	mailing.Initialize()
 
-	var port = os.Getenv("PORT")
-	listeningAddress := fmt.Sprintf("0.0.0.0:%s", port)
+	port := os.Getenv("PORT")
+	var listeningAddress = fmt.Sprintf("0.0.0.0:%s", port)
 	log.Infof("I'm rockin' at %s!", listeningAddress)
 	err = http.ListenAndServe(listeningAddress, r)
 	if err != nil {
-		log.Error(err)
+		log.WithError(err).WithFields(log.Fields{"priority": "high", "context": "main", "ip_address": listeningAddress}).Error("Failed while running.")
 	}
 }
 
 func setupLogging() {
 	var formatter log.Formatter = nil
+
+	log.ErrorKey = "error_object"
 
 	if utils.IsProd() {
 		log.SetLevel(log.TraceLevel)

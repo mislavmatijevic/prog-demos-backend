@@ -48,7 +48,7 @@ func getSingleTask(w http.ResponseWriter, r *http.Request) {
 func fillTaskWithPersonalizedInfo(r *http.Request, task *database.FullTask) {
 	var userId, err = authentication.GetUserIdFromRequest(r)
 	if err != nil {
-		log.Errorf("Token validated, but couldn't extract user id: %v", err)
+		log.WithError(err).WithFields(log.Fields{"priority": "high", "context": "tasks"}).Error("Token validated for filling a task with user info, but couldn't extract user id!")
 		return
 	}
 

@@ -10,7 +10,7 @@ func GetAllVideosPerTopics() []Topic {
 	result := Instance.db.Model(&Topic{}).Preload("Subtopics.Videos").Find(&topics)
 
 	if result.Error != nil {
-		log.Error("Error fetching videos: ", result.Error)
+		log.WithError(result.Error).WithFields(log.Fields{"priority": "high", "context": "videos"}).Error("Couldn't fetch videos per topics!")
 	}
 
 	return topics
@@ -22,7 +22,6 @@ func GetSingleVideo(videoId int) *Video {
 	result := Instance.db.First(&video, videoId)
 
 	if result.Error != nil {
-		log.Error("Error fetching video: ", result.Error)
 		return nil
 	}
 

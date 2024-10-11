@@ -39,7 +39,6 @@ func GetRefreshTokenWithUser(refreshTokenValue string) *RefreshToken {
 	var result = Instance.db.Preload("Owner").Where("value = ?", refreshTokenValue).Find(&refreshToken)
 
 	if result.Error != nil {
-		log.Error("Error fetching refresh token: ", result.Error)
 		return nil
 	}
 

@@ -32,7 +32,7 @@ func getAllTasksPerTopics(w http.ResponseWriter, r *http.Request) {
 func fillBasicTasksWithPersonalizedInfo(r *http.Request, topics []database.Topic) {
 	var userId, err = authentication.GetUserIdFromRequest(r)
 	if err != nil {
-		log.Errorf("Token validated, but couldn't extract user id: %v", err)
+		log.WithError(err).WithFields(log.Fields{"priority": "high", "context": "tasks"}).Error("Token validated for filling tasks with user info, but couldn't extract user id!")
 		return
 	}
 

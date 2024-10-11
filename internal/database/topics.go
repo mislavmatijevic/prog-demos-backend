@@ -10,7 +10,7 @@ func GetAllTopicsWithSubtopics() []Topic {
 	result := Instance.db.Model(&Topic{}).Preload("Subtopics").Find(&topics)
 
 	if result.Error != nil {
-		log.Error("Error fetching topics: ", result.Error)
+		log.WithError(result.Error).WithFields(log.Fields{"priority": "medium", "context": "topics"}).Error("Couldn't fetch topics with subtopics!")
 	}
 
 	return topics
@@ -22,7 +22,6 @@ func GetSubtopicById(subtopicId int) *Subtopic {
 	result := Instance.db.Find(&subtopic, subtopicId)
 
 	if result.Error != nil || result.RowsAffected == 0 {
-		log.Error("Error fetching subtopic: ", result.Error)
 		return nil
 	}
 

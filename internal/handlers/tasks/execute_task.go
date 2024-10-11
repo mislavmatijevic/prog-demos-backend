@@ -104,6 +104,7 @@ func executeTask(w http.ResponseWriter, r *http.Request) {
 	userId, err := authentication.GetUserIdFromRequest(r)
 	if err != nil || userId == 0 {
 		api.InternalErrorHandlerCustomMsg(w, "Couldn't get user from JWT token.")
+		log.WithError(err).WithFields(log.Fields{"priority": "medium", "context": "task_execution", "task_id": taskId}).Error("Couldn't get user from JWT token during task execution.")
 		return
 	}
 
@@ -116,6 +117,7 @@ func executeTask(w http.ResponseWriter, r *http.Request) {
 	taskExecution, err := markTaskExecutionStartForUserId(taskId, userId, solutionCode)
 	if err != nil {
 		api.InternalErrorHandlerGenericMsg(w, err)
+		log.WithError(err).WithFields(log.Fields{"priority": "medium", "context": "task_execution", "task_id": taskId}).Error("Couldn't mark execution as started!")
 		return
 	}
 
@@ -131,6 +133,7 @@ func executeTask(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		api.InternalErrorHandlerCustomMsg(w, fmt.Sprintf("Couldn't check code syntax: %v", err))
 		setTaskExecutionStatusFailed(taskExecution)
+		log.WithError(err).WithFields(log.Fields{"priority": "medium", "context": "task_execution", "task_id": taskId}).Error("Couldn't check code syntax!")
 		return
 	} else if len(reportedErrors) != 0 {
 		sendTaskExecutionFailedResponse(taskExecution, w, EXEC_ERR_BAD_SYNTAX, reportedErrors)
@@ -141,6 +144,7 @@ func executeTask(w http.ResponseWriter, r *http.Request) {
 	if len(tests) == 0 {
 		api.InternalErrorHandlerCustomMsg(w, fmt.Sprintf("No tests defined for task %d!", taskId))
 		setTaskExecutionStatusFailed(taskExecution)
+		log.WithError(err).WithFields(log.Fields{"priority": "medium", "context": "task_execution", "task_id": taskId}).Error("Couldn't test the solution!")
 		return
 	}
 
@@ -152,6 +156,7 @@ func executeTask(w http.ResponseWriter, r *http.Request) {
 		var tempDirPath = filepath.Dir(cppFile.Name())
 		if err != nil {
 			handleTestExecutionInternalFail(w, tempDirPath, err, taskExecution)
+			log.WithError(err).WithFields(log.Fields{"priority": "high", "context": "task_execution", "task_id": taskId}).Error("Couldn't store temp files during testing!")
 			return
 		}
 
@@ -174,15 +179,17 @@ func executeTask(w http.ResponseWriter, r *http.Request) {
 			default:
 				{
 					handleTestExecutionInternalFail(w, tempDirPath, err, taskExecution)
+					log.WithError(err).WithFields(log.Fields{"priority": "high", "context": "task_execution", "task_id": taskId, "temp_dir": tempDirPath}).Error("Task runner failed to run in Docker!")
 				}
 			}
 			return
 		}
 
-		actualOutputs, err := getOutputs(tempDirPath)
+		outputPath := filepath.Join(tempDirPath, "stdout.txt")
+		actualOutputs, err := getOutputs(outputPath)
 		if err != nil {
-			log.Error(err)
 			handleTestExecutionInternalFail(w, tempDirPath, err, taskExecution)
+			log.WithError(err).WithFields(log.Fields{"priority": "high", "context": "task_execution", "task_id": taskId, "file": outputPath}).Error("Couldn't read output file!")
 			return
 		}
 
@@ -191,8 +198,8 @@ func executeTask(w http.ResponseWriter, r *http.Request) {
 		if hasArtefacts {
 			hashMatches, err := checkHashMatch(test, tempDirPath)
 			if err != nil {
-				log.Error(err)
 				handleTestExecutionInternalFail(w, tempDirPath, err, taskExecution)
+				log.WithError(err).WithFields(log.Fields{"priority": "high", "context": "task_execution", "task_id": taskId}).Error("Artefact SHA256 comparison failed!")
 				return
 			} else if !hashMatches {
 				sendTaskExecutionFailedResponse(taskExecution, w, EXEC_ERR_ARTEFACT_CONTENT_MISMATCH, testDataMismatchReason{TestInput: testInput})
@@ -220,25 +227,27 @@ func executeTask(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		api.InternalErrorHandlerGenericMsg(w, err)
 		setTaskExecutionStatusFailed(taskExecution)
+		log.WithError(err).WithFields(log.Fields{"priority": "high", "context": "task_execution", "task_id": taskId}).Error("Artefact SHA256 comparison failed!")
 		return
 	}
 
-	var solvedTask = database.GetSingleFullTasks(taskExecution.TaskID)
+	var solvedTask = database.GetSingleFullTasks(taskId)
 	numbericComplexity, err := strconv.Atoi(solvedTask.BasicInfo.Complexity)
 	if err != nil {
-		log.Errorf("Complexity of task %d (%s) could not be converted to integer!", solvedTask.BasicInfo.ID, solvedTask.BasicInfo.Name)
 		numbericComplexity = 0
+		log.WithFields(log.Fields{"priority": "medium", "context": "task_execution", "task_id": taskId}).Error("Task complexity could not be converted to integer!")
 	}
 
 	score, err := lizard.CalculateScore(cppFileForScoreCalculation, numbericComplexity)
 	if err != nil {
 		api.InternalErrorHandlerCustomMsg(w, fmt.Sprintf("Could not calculate score: %v", err))
 		setTaskExecutionStatusFailed(taskExecution)
+		log.WithError(err).WithFields(log.Fields{"priority": "medium", "context": "task_execution", "task_id": taskId}).Error("Could not calculate score after task execution.")
 		return
 	}
 	err = os.Remove(cppFileForScoreCalculation.Name())
 	if err != nil {
-		log.Errorf("Could not delete temp file created for scoring! %v", err)
+		log.WithError(err).WithFields(log.Fields{"priority": "medium", "context": "task_execution", "task_id": taskId}).Error("Could not delete temp file created for scoring!")
 	}
 
 	setTaskExecutionStatusSucceeded(taskExecution, solvedTask, *score)
@@ -428,7 +437,6 @@ func storeTempFiles(cppCode string, inputs string) (*os.File, error) {
 
 	createdTempInputsFile, err := os.Create(fullPathToNewTempDir + "/stdin.txt")
 	if err != nil {
-		log.Error("Failed to create temp inputs file!", err)
 		os.Remove(createdTempCppFile.Name())
 		return nil, err
 	}
@@ -447,7 +455,6 @@ func createTempCppFile(path string, code string) (*os.File, error) {
 	createdTempCppFile, err := os.CreateTemp(path, "solution_*.cpp")
 
 	if err != nil {
-		log.Error("Failed to create temp cpp file!", err)
 		return nil, err
 	}
 
@@ -462,9 +469,6 @@ func createTempCppFile(path string, code string) (*os.File, error) {
 
 func fillFileWithData(tempFile *os.File, inputs string) error {
 	_, err := tempFile.Write([]byte(inputs))
-	if err != nil {
-		log.Errorf("Failed to insert data in the temp file (%s)\n%s", tempFile.Name(), err)
-	}
 	return err
 }
 
@@ -485,14 +489,11 @@ func runFileInIsolatedDockerContainerTask(timeoutContext context.Context, cppFil
 
 		err := removeRunningDockerContainer(containerName)
 		if err != nil {
-			log.Error(err)
+			log.WithError(err).WithFields(log.Fields{"priority": "medium", "context": "task_execution"}).Error("Could not delete temp container after task execution timeout!")
 		}
 
 		return errors.New(CONTAINER_TIMEOUT_MARK)
 	case err := <-errChan:
-		if err != nil {
-			log.Errorf("Ran into trouble while running a Docker container: %v", err)
-		}
 		return err
 	}
 }
@@ -537,7 +538,7 @@ func runDockerRunnerImage(containerName string, fullFilePath string, allowBuildi
 				buildRunnerImage(dockerPath)
 				return runDockerRunnerImage(containerName, fullFilePath, false)
 			} else {
-				log.Errorf("Failed to build Docker container: %s", err)
+				log.WithError(err).WithFields(log.Fields{"priority": "high", "context": "task_execution"}).Error("Failed to build Docker container!")
 			}
 		} else if strings.Contains(stringOutput, "Killed") {
 			return errors.New(CONTAINER_FORCEFULLY_KILLED_MARK)
@@ -583,8 +584,8 @@ func removeRunningDockerContainer(containerName string) error {
 	return nil
 }
 
-func getOutputs(tempDirPath string) (string, error) {
-	bytes, err := os.ReadFile(filepath.Join(tempDirPath, "stdout.txt"))
+func getOutputs(outputFilePath string) (string, error) {
+	bytes, err := os.ReadFile(outputFilePath)
 	var stringOutput = string(bytes)
 	stringOutput = strings.TrimFunc(stringOutput, func(r rune) bool { return r == '\n' || r == ' ' })
 	return stringOutput, err

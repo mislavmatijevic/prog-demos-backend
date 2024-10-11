@@ -140,6 +140,6 @@ func getFieldValueFromLizardOutput(output string, fieldIndex int) (float64, erro
 		}
 	}
 
-	log.Errorf("Problematic lizard output: %s", lines)
+	log.WithFields(log.Fields{"priority": "medium", "context": "task_execution", "problematic_lizard_output": output, "failed_at_field_index": fieldIndex}).Error("Lizard's output could not be parsed!")
 	return 0, fmt.Errorf("unable to parse lizard's field %d", fieldIndex)
 }

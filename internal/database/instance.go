@@ -29,7 +29,7 @@ func Initialize() {
 	if err == nil {
 		log.Info("Successfully connected to the database!")
 	} else {
-		log.Panicf("GORM failed to connect to the database! %s", err.Error())
+		log.WithError(err).WithFields(log.Fields{"priority": "high", "context": "database"}).Panic("GORM failed to connect to the database!")
 	}
 
 	err = Instance.db.AutoMigrate(
@@ -45,6 +45,6 @@ func Initialize() {
 	)
 
 	if err != nil {
-		log.Warningf("Failed to do auto migration. Reason: %s", err)
+		log.WithError(err).WithFields(log.Fields{"priority": "medium", "context": "task_execution"}).Error("Failed to do auto migration!")
 	}
 }

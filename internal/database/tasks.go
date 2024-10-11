@@ -10,7 +10,7 @@ func GetAllTasksPerTopic() []Topic {
 	result := Instance.db.Model(&Topic{}).Preload("Subtopics.Tasks").Find(&topics)
 
 	if result.Error != nil {
-		log.Error("Error fetching tasks: ", result.Error)
+		log.WithError(result.Error).WithFields(log.Fields{"priority": "high", "context": "tasks"}).Error("Couldn't fetch all tasks!")
 	}
 
 	return topics
@@ -22,7 +22,6 @@ func GetSingleFullTasks(taskId int) *FullTask {
 	result := Instance.db.Preload("Subtopic").Preload("HelpSteps").First(&task, taskId)
 
 	if result.Error != nil {
-		log.Error("Error fetching task: ", result.Error)
 		return nil
 	}
 
@@ -41,7 +40,7 @@ func GetTestsForTask(taskId int) []TaskTest {
 	result := Instance.db.Where("id_task=?", taskId).Find(&TaskTest{}).Scan(&tests)
 
 	if result.Error != nil {
-		log.Error("Error fetching task: ", result.Error)
+		log.WithError(result.Error).WithFields(log.Fields{"priority": "medium", "context": "tasks"}).Errorf("Couldn't fetch tests for task %d!", taskId)
 		return nil
 	}
 

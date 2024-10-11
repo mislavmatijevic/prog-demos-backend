@@ -66,6 +66,7 @@ func registerUser(w http.ResponseWriter, r *http.Request) {
 	hashPassword, err := utils.CreateSecureHash(userReqBody.Password)
 	if err != nil {
 		api.InternalErrorHandlerGenericMsg(w, err)
+		log.WithError(err).WithFields(log.Fields{"priority": "high", "context": "registration", "username": username, "email": email}).Error("Couldn't create hashed password.")
 		return
 	}
 
@@ -83,9 +84,9 @@ func registerUser(w http.ResponseWriter, r *http.Request) {
 
 	err = mailing.SendRegistrationMail(*newUser)
 	if err != nil {
-		log.Errorf("Error sending mail: %v", err)
 		database.DeleteUser(newUser)
 		api.InternalErrorHandlerCustomMsg(w, "Failed to send registration mail, rollbacked registration.")
+		log.WithError(err).WithFields(log.Fields{"priority": "high", "context": "registration", "mail_address": newUser.Email, "username": newUser.Username}).Error("Couldn't send mail to user.")
 		return
 	}
 

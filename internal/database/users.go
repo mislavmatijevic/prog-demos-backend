@@ -4,8 +4,6 @@ import (
 	"database/sql"
 	"errors"
 	"time"
-
-	log "github.com/sirupsen/logrus"
 )
 
 func RegisterNewUser(userInfo User) (*User, error) {
@@ -38,7 +36,6 @@ func getUserByCondition(query interface{}, args ...interface{}) *User {
 	var result = Instance.db.Where(query, args).First(&foundUser)
 
 	if result.Error != nil {
-		log.Error("Error fetching user: ", result.Error)
 		return nil
 	}
 
