@@ -23,6 +23,7 @@ func Handler(r *chi.Mux) {
 	r.Use(chimiddle.StripSlashes)
 	r.Use(chimiddle.RequestID)
 	r.Use(chimiddle.RealIP)
+	r.Use(chimiddle.Recoverer)
 	r.Use(authentication.AttachTokenToRequest)
 	r.Use(logging.HandleSecureEndpoints)
 	r.Use(logging_requests.LogRequest)
