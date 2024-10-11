@@ -31,10 +31,10 @@ func LogRequest(next http.Handler) http.Handler {
 		var authedUser string = "NO_AUTH"
 		userId, _ := authentication.GetUserIdFromRequest(r)
 		if userId != 0 {
-			authedUser = "USER: " + strconv.Itoa(userId)
+			authedUser = strconv.Itoa(userId)
 		}
 
-		log.Tracef("%s %s %s %s", r.Method, r.URL, authedUser, jsonReqBody)
+		log.WithFields(log.Fields{"context": "request", "method": r.Method, "url": r.URL, "user": authedUser, "body": jsonReqBody}).Trace()
 		next.ServeHTTP(w, r.WithContext(r.Context()))
 	})
 }

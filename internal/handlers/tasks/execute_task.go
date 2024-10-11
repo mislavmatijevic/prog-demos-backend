@@ -558,7 +558,7 @@ func buildRunnerImage(dockerPath string) error {
 		buildCommand += "./Docker/task-runner/task-runner.Dockerfile ./Docker/task-runner/"
 	}
 
-	log.Infof("Building Docker image using command: %s", buildCommand)
+	log.Tracef("Building Docker image using command: %s", buildCommand)
 
 	cmd := exec.Command("bash", "-c", buildCommand)
 	return cmd.Run()

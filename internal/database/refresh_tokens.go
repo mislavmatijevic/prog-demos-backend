@@ -1,7 +1,6 @@
 package database
 
 import (
-	"fmt"
 	"time"
 
 	log "github.com/sirupsen/logrus"
@@ -29,7 +28,7 @@ func deleteExpiredRefreshTokensForUser(user *User) {
 		for _, token := range expiredRefreshTokens {
 			Instance.db.Delete(token)
 		}
-		log.Trace(fmt.Sprintf("Deleted %d expired refresh tokens belonging to user %s.", expiredRefreshTokensCount, user.Username))
+		log.Tracef("Deleted %d expired refresh tokens belonging to user %s.", expiredRefreshTokensCount, user.Username)
 	}
 }
 

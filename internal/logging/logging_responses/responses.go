@@ -11,5 +11,5 @@ func LogResponse(status int, jsonRes []byte) {
 	if bodyOutputLimit > resBodyLength {
 		bodyOutputLimit = resBodyLength - 1
 	}
-	log.Tracef("HTTP %d %s", status, string(jsonRes[0:bodyOutputLimit]))
+	log.WithFields(log.Fields{"context": "response", "status": status, "body": string(jsonRes[0:bodyOutputLimit])}).Trace()
 }
