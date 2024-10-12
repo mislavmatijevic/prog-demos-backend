@@ -18,7 +18,7 @@ RUN apt-get update && apt-get install -y g++ curl && rm -rf /var/lib/apt/lists/*
 COPY --from=builder /app/prog-demos-backend /usr/local/bin/prog-demos-backend
 COPY .env /app/.
 
-ENV DOCKERVERSION=27.1.1
+ENV DOCKERVERSION=27.2.0
 RUN curl -fsSLO https://download.docker.com/linux/static/stable/x86_64/docker-${DOCKERVERSION}.tgz \
     && tar xzvf docker-${DOCKERVERSION}.tgz --strip 1 -C /usr/local/bin docker/docker \
     && rm docker-${DOCKERVERSION}.tgz
