@@ -153,7 +153,10 @@ func executeTask(w http.ResponseWriter, r *http.Request) {
 		testInput := test.Input
 
 		cppFile, err := storeTempFiles(solutionCode, testInput)
-		var tempDirPath = filepath.Dir(cppFile.Name())
+		var tempDirPath = ""
+		if cppFile != nil {
+			tempDirPath = filepath.Dir(cppFile.Name())
+		}
 		if err != nil {
 			handleTestExecutionInternalFail(w, tempDirPath, err, taskExecution)
 			log.WithError(err).WithFields(log.Fields{"priority": "high", "context": "task_execution", "task_id": taskId}).Error("Couldn't store temp files during testing!")
@@ -427,7 +430,11 @@ func getRequestBody(r *http.Request) (*taskExecutionRequest, error) {
 // If it fails, the function deletes whatever it created.
 // Returns: new CPP file
 func storeTempFiles(cppCode string, inputs string) (*os.File, error) {
-	createdTempPath, _ := os.MkdirTemp(tempTasksFolderPath, "temp_cpp_solutions_*")
+	createdTempPath, err := os.MkdirTemp(tempTasksFolderPath, "temp_cpp_solutions_*")
+	if err != nil {
+		return nil, err
+	}
+
 	createdTempCppFile, err := createTempCppFile(createdTempPath, cppCode)
 	if err != nil {
 		return nil, err
