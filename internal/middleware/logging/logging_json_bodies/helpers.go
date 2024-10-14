@@ -3,6 +3,7 @@ package logging_json_bodies
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"io"
 	"maps"
 	"net/http"
@@ -56,16 +57,20 @@ func findAndChangeFields(data map[string]interface{}, maxFirstBytesToLeave int, 
 func changeFieldValue(field string, data map[string]interface{}, maxFirstBytesToLeave int) (changedData map[string]interface{}) {
 	changedData = maps.Clone(data)
 
-	if maxFirstBytesToLeave > 0 && data[field] != nil {
-		var firstBytesToLeave = len(data[field].(string))
-		if firstBytesToLeave > maxFirstBytesToLeave {
-			firstBytesToLeave = maxFirstBytesToLeave
+	if data[field] != nil {
+		if maxFirstBytesToLeave == 0 {
+			changedData[field] = "[HIDDEN]"
+		} else if maxFirstBytesToLeave > 0 {
+			if maxFirstBytesToLeave > 0 {
+				totalFieldLength := len(data[field].(string))
+				var firstBytesToLeave = totalFieldLength
+				if firstBytesToLeave > maxFirstBytesToLeave {
+					firstBytesToLeave = maxFirstBytesToLeave
+					changedData[field] = fmt.Sprintf("%s... [%d HIDDEN]", data[field].(string)[0:firstBytesToLeave], totalFieldLength)
+				}
+			}
 		}
-		changedData[field] = data[field].(string)[0:firstBytesToLeave] + "... "
-	} else {
-		changedData[field] = ""
 	}
-	changedData[field] = changedData[field].(string) + "[HIDDEN]"
 
 	return changedData
 }
