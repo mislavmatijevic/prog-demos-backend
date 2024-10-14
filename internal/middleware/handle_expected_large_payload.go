@@ -19,7 +19,7 @@ var largePayloadRouteHandlers = map[*regexp.Regexp]func(*http.Request) context.C
 func HandleExpectedLargePayload(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != "POST" {
-			return
+			next.ServeHTTP(w, r)
 		}
 
 		var requestContext context.Context = r.Context()
