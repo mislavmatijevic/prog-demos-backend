@@ -46,7 +46,7 @@ type responseBody struct {
 
 func (body newTaskRequestBody) mapToEntity() (newFullTaskEntity *database.FullTask) {
 	return &database.FullTask{
-		BasicInfo: database.Task{
+		BasicTask: database.BasicTask{
 			ID:           0,
 			SubtopicID:   body.SubtopicID,
 			Name:         body.Name,
@@ -114,7 +114,7 @@ func createTask(w http.ResponseWriter, r *http.Request) {
 
 	var res = responseBody{
 		Success: true,
-		Message: fmt.Sprintf("Created new task with ID %v", taskEntity.BasicInfo.ID),
+		Message: fmt.Sprintf("Created new task with ID %v", taskEntity.BasicTask.ID),
 	}
 
 	api.RespondOk(w, res)

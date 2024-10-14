@@ -37,12 +37,12 @@ type Topic struct {
 }
 
 type Subtopic struct {
-	ID      int      `gorm:"primaryKey" json:"id"`
-	TopicID int      `gorm:"not null;column:id_topic" json:"-"`
-	Name    string   `gorm:"size:100;not null" json:"name"`
-	Topic   *Topic   `gorm:"foreignKey:TopicID" json:"topic,omitempty"`
-	Videos  []*Video `gorm:"foreignKey:SubtopicID" json:"videos,omitempty"`
-	Tasks   []*Task  `gorm:"foreignKey:SubtopicID" json:"tasks,omitempty"`
+	ID      int          `gorm:"primaryKey" json:"id"`
+	TopicID int          `gorm:"not null;column:id_topic" json:"-"`
+	Name    string       `gorm:"size:100;not null" json:"name"`
+	Topic   *Topic       `gorm:"foreignKey:TopicID" json:"topic,omitempty"`
+	Videos  []*Video     `gorm:"foreignKey:SubtopicID" json:"videos,omitempty"`
+	Tasks   []*BasicTask `gorm:"foreignKey:SubtopicID" json:"tasks,omitempty"`
 }
 
 type Video struct {
@@ -53,7 +53,7 @@ type Video struct {
 	Subtopic   *Subtopic `gorm:"foreignKey:SubtopicID" json:"subtopic,omitempty"`
 }
 
-type Task struct {
+type BasicTask struct {
 	ID                   int            `gorm:"primaryKey" json:"id"`
 	Name                 string         `gorm:"not null;column:name" json:"name"`
 	SubtopicID           int            `gorm:"not null;column:id_subtopic" json:"-"`
@@ -62,8 +62,12 @@ type Task struct {
 	IsBossBattle         bool           `gorm:"not null;default:false" json:"isBossBattle"`
 }
 
+func (BasicTask) TableName() string {
+	return "tasks"
+}
+
 type FullTask struct {
-	BasicInfo          Task             `gorm:"embedded"`
+	BasicTask          `gorm:"embedded"`
 	CreatorID          int              `gorm:"not null;column:id_user" json:"-"`
 	Input              string           `gorm:"size:512;not null" json:"input"`
 	Output             string           `gorm:"size:512;not null" json:"output"`
