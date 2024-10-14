@@ -52,6 +52,10 @@ type StreamsData struct {
 }
 
 func (hook *LokiHook) Fire(entry *log.Entry) error {
+	if entry.Level == log.DebugLevel {
+		return nil
+	}
+
 	logData, err := getLokiIngestCompatibleStream(entry)
 	if err != nil {
 		return err
