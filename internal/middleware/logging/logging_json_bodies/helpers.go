@@ -9,7 +9,7 @@ import (
 	"strings"
 )
 
-func ReadRequestBodyWithoutClosing(r *http.Request) []byte {
+func LimitRequestBodySize(r *http.Request) []byte {
 	return ReadRequestBodyWithoutClosingWithCustomLimit(r, 1024)
 }
 

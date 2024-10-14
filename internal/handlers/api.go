@@ -26,6 +26,7 @@ func Handler(r *chi.Mux) {
 	r.Use(authentication.AttachTokenToRequest)
 	r.Use(middleware.HandleExpectedLargePayload)
 	r.Use(middleware.HandleSecureEndpoints)
+	r.Use(middleware.LimitNonHandledRequestBody)
 	r.Use(middleware.LogRequest)
 
 	log.Debug("Setting up /auth handler...")
