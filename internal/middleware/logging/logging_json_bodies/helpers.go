@@ -61,10 +61,11 @@ func changeFieldValue(field string, data map[string]interface{}, maxFirstBytesTo
 		if firstBytesToLeave > maxFirstBytesToLeave {
 			firstBytesToLeave = maxFirstBytesToLeave
 		}
-		changedData[field] = data[field].(string)[0:firstBytesToLeave] + "... [HIDDEN]"
+		changedData[field] = data[field].(string)[0:firstBytesToLeave] + "... "
 	} else {
-		delete(changedData, field)
+		changedData[field] = ""
 	}
+	changedData[field] = changedData[field].(string) + "[HIDDEN]"
 
 	return changedData
 }
