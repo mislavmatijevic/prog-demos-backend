@@ -16,7 +16,9 @@ func LogRequest(next http.Handler) http.Handler {
 		var jsonReqBody string = ""
 
 		if censoredBody := r.Context().Value(CensoredBodyCtxKey); censoredBody != nil {
-			jsonReqBody = censoredBody.(*ContextValue).Name
+			jsonReqBody = censoredBody.(*specialRequestContextValue).Name
+		} else if largePayloadBody := r.Context().Value(LargePayloadBodyCtxKey); largePayloadBody != nil {
+			jsonReqBody = largePayloadBody.(*specialRequestContextValue).Name
 		} else {
 			var reqBody = logging_json_bodies.ReadRequestBodyWithoutClosing(r)
 			if reqBody != nil {

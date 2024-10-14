@@ -24,6 +24,7 @@ func Handler(r *chi.Mux) {
 	r.Use(chimiddle.RealIP)
 	r.Use(chimiddle.Recoverer)
 	r.Use(authentication.AttachTokenToRequest)
+	r.Use(middleware.HandleExpectedLargePayload)
 	r.Use(middleware.HandleSecureEndpoints)
 	r.Use(middleware.LogRequest)
 
