@@ -37,6 +37,6 @@ func HandleExpectedLargePayload(next http.Handler) http.Handler {
 
 func getBodyForTaskExecutionRequest(r *http.Request) context.Context {
 	var reqBody = logging_json_bodies.ReadRequestBodyWithoutClosingWithCustomLimit(r, 1024<<4)
-	jsonReqBody := logging_json_bodies.HideFieldsFromJsonBody(reqBody, 128, "solutionCode")
+	jsonReqBody := logging_json_bodies.GetJsonBodyWithFieldsRemoved(reqBody, 128, "solutionCode")
 	return context.WithValue(r.Context(), LargePayloadBodyCtxKey, &specialRequestContextValue{jsonReqBody})
 }

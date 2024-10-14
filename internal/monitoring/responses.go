@@ -16,7 +16,7 @@ func LogResponse(status int, header http.Header, jsonRes []byte) {
 		level = log.WarnLevel
 	}
 
-	resBody := logging_json_bodies.HideFieldsFromJsonBody(jsonRes, 10, "tokens.accessToken", "tokens.refreshToken.value")
+	resBody := logging_json_bodies.GetJsonBodyWithFieldsRemoved(jsonRes, 10, "tokens.accessToken", "tokens.refreshToken.value")
 
 	log.WithFields(
 		log.Fields{

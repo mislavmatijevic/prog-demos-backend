@@ -21,7 +21,7 @@ func ReadRequestBodyWithoutClosingWithCustomLimit(r *http.Request, maxBytes int6
 	return bodyBuffer.Bytes()
 }
 
-func HideFieldsFromJsonBody(jsonBody []byte, maxFirstBytesToLeave int, fieldNames ...string) string {
+func GetJsonBodyWithFieldsRemoved(jsonBody []byte, maxFirstBytesToLeave int, fieldNames ...string) string {
 	var jsonReqBody string
 	var data map[string]interface{}
 
