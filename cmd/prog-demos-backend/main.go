@@ -26,8 +26,6 @@ func main() {
 		log.WithError(err).WithFields(log.Fields{"priority": "high", "context": "main"}).Panic("Couldn't load env file!")
 	}
 	setupLogging()
-	var r *chi.Mux = chi.NewRouter()
-	handlers.Handler(r)
 
 	database.Initialize()
 
@@ -37,6 +35,9 @@ func main() {
 	port := os.Getenv("PORT")
 	var listeningAddress = fmt.Sprintf("0.0.0.0:%s", port)
 	log.Infof("I'm rockin' at %s!", listeningAddress)
+
+	var r *chi.Mux = chi.NewRouter()
+	handlers.Handler(r)
 	err = http.ListenAndServe(listeningAddress, r)
 	if err != nil {
 		log.WithError(err).WithFields(log.Fields{"priority": "high", "context": "main", "ip_address": listeningAddress}).Error("Failed while running.")
@@ -58,7 +59,7 @@ func setupLogging() {
 	} else {
 		log.SetLevel(log.TraceLevel)
 		formatter = &log.TextFormatter{ForceColors: true, TimestampFormat: time.StampMilli}
-		log.SetReportCaller(false)
+		log.SetReportCaller(true)
 	}
 
 	log.SetFormatter(formatter)
