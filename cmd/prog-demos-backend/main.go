@@ -13,8 +13,8 @@ import (
 	"github.com/mislavmatijevic/prog-demos-backend/internal/authentication"
 	"github.com/mislavmatijevic/prog-demos-backend/internal/database"
 	"github.com/mislavmatijevic/prog-demos-backend/internal/handlers"
-	"github.com/mislavmatijevic/prog-demos-backend/internal/logging/loki"
 	"github.com/mislavmatijevic/prog-demos-backend/internal/mailing"
+	"github.com/mislavmatijevic/prog-demos-backend/internal/monitoring/loki"
 	"github.com/mislavmatijevic/prog-demos-backend/internal/utils"
 )
 

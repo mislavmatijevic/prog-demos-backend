@@ -13,8 +13,7 @@ import (
 	"github.com/mislavmatijevic/prog-demos-backend/internal/handlers/tasks"
 	"github.com/mislavmatijevic/prog-demos-backend/internal/handlers/topics"
 	videos "github.com/mislavmatijevic/prog-demos-backend/internal/handlers/videos"
-	"github.com/mislavmatijevic/prog-demos-backend/internal/logging"
-	"github.com/mislavmatijevic/prog-demos-backend/internal/logging/logging_requests"
+	"github.com/mislavmatijevic/prog-demos-backend/internal/middleware"
 )
 
 func Handler(r *chi.Mux) {
@@ -25,8 +24,8 @@ func Handler(r *chi.Mux) {
 	r.Use(chimiddle.RealIP)
 	r.Use(chimiddle.Recoverer)
 	r.Use(authentication.AttachTokenToRequest)
-	r.Use(logging.HandleSecureEndpoints)
-	r.Use(logging_requests.LogRequest)
+	r.Use(middleware.HandleSecureEndpoints)
+	r.Use(middleware.LogRequest)
 
 	log.Debug("Setting up /auth handler...")
 	auth.HandleAuth(r)

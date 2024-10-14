@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/mislavmatijevic/prog-demos-backend/internal/logging/logging_responses"
+	"github.com/mislavmatijevic/prog-demos-backend/internal/monitoring"
 )
 
 func RespondOk(w http.ResponseWriter, res interface{}) {
@@ -17,5 +17,5 @@ func RespondWithStatus(w http.ResponseWriter, res interface{}, status int) {
 	jsonRes, _ := json.Marshal(res)
 	w.Write(jsonRes)
 
-	logging_responses.LogResponse(status, w.Header(), jsonRes)
+	monitoring.LogResponse(status, w.Header(), jsonRes)
 }

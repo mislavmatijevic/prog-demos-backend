@@ -1,4 +1,4 @@
-package logging
+package logging_json_bodies
 
 import (
 	"bytes"

@@ -1,8 +1,10 @@
-package logging
+package middleware
 
 import (
 	"context"
 	"net/http"
+
+	"github.com/mislavmatijevic/prog-demos-backend/internal/middleware/logging/logging_json_bodies"
 )
 
 type ContextKey struct {
@@ -37,19 +39,19 @@ func HandleSecureEndpoints(next http.Handler) http.Handler {
 }
 
 func getBodyForRequestWithPassword(r *http.Request) context.Context {
-	var reqBody = ReadRequestBodyWithoutClosing(r)
-	jsonReqBody := HideFieldsFromJsonBody(reqBody, false, "password")
+	var reqBody = logging_json_bodies.ReadRequestBodyWithoutClosing(r)
+	jsonReqBody := logging_json_bodies.HideFieldsFromJsonBody(reqBody, false, "password")
 	return context.WithValue(r.Context(), CensoredBodyCtxKey, &ContextValue{jsonReqBody})
 }
 
 func getBodyForPasswordResetRequest(r *http.Request) context.Context {
-	var reqBody = ReadRequestBodyWithoutClosing(r)
-	jsonReqBody := HideFieldsFromJsonBody(reqBody, false, "newPassword")
+	var reqBody = logging_json_bodies.ReadRequestBodyWithoutClosing(r)
+	jsonReqBody := logging_json_bodies.HideFieldsFromJsonBody(reqBody, false, "newPassword")
 	return context.WithValue(r.Context(), CensoredBodyCtxKey, &ContextValue{jsonReqBody})
 }
 
 func getBodyForTokenRefreshRequest(r *http.Request) context.Context {
-	var reqBody = ReadRequestBodyWithoutClosing(r)
-	jsonReqBody := HideFieldsFromJsonBody(reqBody, true, "accessToken", "refreshToken")
+	var reqBody = logging_json_bodies.ReadRequestBodyWithoutClosing(r)
+	jsonReqBody := logging_json_bodies.HideFieldsFromJsonBody(reqBody, true, "accessToken", "refreshToken")
 	return context.WithValue(r.Context(), CensoredBodyCtxKey, &ContextValue{jsonReqBody})
 }

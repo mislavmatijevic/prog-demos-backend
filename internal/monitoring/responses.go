@@ -1,10 +1,10 @@
-package logging_responses
+package monitoring
 
 import (
 	"net/http"
 
 	chimiddle "github.com/go-chi/chi/v5/middleware"
-	"github.com/mislavmatijevic/prog-demos-backend/internal/logging"
+	"github.com/mislavmatijevic/prog-demos-backend/internal/middleware/logging/logging_json_bodies"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -16,7 +16,7 @@ func LogResponse(status int, header http.Header, jsonRes []byte) {
 		level = log.WarnLevel
 	}
 
-	resBody := logging.HideFieldsFromJsonBody(jsonRes, true, "tokens.accessToken", "tokens.refreshToken.value")
+	resBody := logging_json_bodies.HideFieldsFromJsonBody(jsonRes, true, "tokens.accessToken", "tokens.refreshToken.value")
 
 	log.WithFields(
 		log.Fields{
