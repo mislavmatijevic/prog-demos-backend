@@ -208,16 +208,24 @@ func checkForValidHelpSteps(newTask newTaskRequestBody) error {
 		return errors.New("too many help steps")
 	}
 
+	sort.SliceStable(newTask.HelpSteps, func(i, j int) bool {
+		return newTask.HelpSteps[i].Step < newTask.HelpSteps[j].Step
+	})
+
 	for index, helpStep := range newTask.HelpSteps {
 		containsCode, _ := utils.GetTrimmedStringWithValue(helpStep.HelperCode)
 		containsText, _ := utils.GetTrimmedStringWithValue(helpStep.HelperText)
 
+		if index+1 != helpStep.Step {
+			return fmt.Errorf(fmt.Sprintf("help step #%d does not have an expected index %d", helpStep.Step, index+1))
+		}
+
 		if !(containsCode || containsText) {
-			return fmt.Errorf(fmt.Sprintf("help step #%d is not well defined", index+1))
+			return fmt.Errorf(fmt.Sprintf("help step #%d is not well defined", helpStep.Step))
 		}
 
 		if !(helpStep.Step > 0 && helpStep.Step <= helpStepsCount) {
-			return fmt.Errorf(fmt.Sprintf("help step #%d has a weird step number: %d", index+1, helpStep.Step))
+			return fmt.Errorf(fmt.Sprintf("help step #%d has a weird step number: %d", helpStep.Step, helpStep.Step))
 		}
 	}
 
