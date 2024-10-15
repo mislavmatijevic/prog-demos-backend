@@ -75,7 +75,6 @@ type FullTask struct {
 	Subtopic           *Subtopic        `gorm:"foreignKey:SubtopicID" json:"subtopic"`
 	Tests              []TaskTest       `gorm:"foreignKey:IDTask" json:"-"`
 	Creator            *User            `gorm:"foreignKey:CreatorID" json:"creator,omitempty"`
-	HelpSteps          []TaskHelpStep   `gorm:"foreignKey:IDTask" json:"helpSteps"`
 	AllTimeBestScore   lizard.CodeScore `gorm:"embedded;embeddedPrefix:best_" json:"allTimeBestScore"`
 	AverageScore       lizard.CodeScore `gorm:"embedded;embeddedPrefix:avg_" json:"averageScore"`
 	ScoresCount        int              `json:"-"`

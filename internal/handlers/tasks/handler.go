@@ -12,6 +12,7 @@ func HandleTasks(r *chi.Mux) {
 	r.Route("/tasks", func(router chi.Router) {
 		router.Get("/", getAllTasksPerTopics)
 		router.Get("/{taskId}", getSingleTask)
+		router.Get("/{taskId}/help/{helpStep}", getHelpStep)
 
 		router.Group(func(protectedRouter chi.Router) {
 			protectedRouter.Use(authentication.RequireAccessToken)

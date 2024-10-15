@@ -6,12 +6,14 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"sort"
 	"strconv"
 
 	"github.com/mislavmatijevic/prog-demos-backend/internal/authentication"
 	"github.com/mislavmatijevic/prog-demos-backend/internal/database"
 	"github.com/mislavmatijevic/prog-demos-backend/internal/handlers/api"
 	"github.com/mislavmatijevic/prog-demos-backend/internal/utils"
+	log "github.com/sirupsen/logrus"
 )
 
 type taskTestBody struct {
@@ -88,6 +90,12 @@ func createTask(w http.ResponseWriter, r *http.Request) {
 	err = attachCreatorIdToTask(r, taskEntity)
 	if err != nil {
 		api.InternalErrorHandlerGenericMsg(w, err)
+		log.WithError(err).
+			WithFields(log.Fields{"priority": "medium",
+				"context":                "tasks",
+				"problematic_task":       fmt.Sprintf("%v", taskEntity),
+				"problematic_creator_id": taskEntity.CreatorID}).
+			Error("Failed while attaching creator ID to task.")
 		return
 	}
 
@@ -103,13 +111,33 @@ func createTask(w http.ResponseWriter, r *http.Request) {
 			api.RequestErrorHandlerCustomMsg(w, err.Error())
 			return
 		}
-		attachHelpStepsToTask(newTask.HelpSteps, taskEntity)
 	}
 
 	err = storeTaskInDatabase(taskEntity)
 	if err != nil {
 		api.InternalErrorHandlerGenericMsg(w, err)
+		log.WithError(err).
+			WithFields(log.Fields{
+				"priority":         "medium",
+				"context":          "tasks",
+				"problematic_task": fmt.Sprintf("%v", taskEntity),
+			}).
+			Error("Failed while persisting task entity in database.")
 		return
+	}
+
+	if !newTask.IsBossBattle {
+		err = attachHelpStepsToTask(newTask.HelpSteps, taskEntity)
+		if err != nil {
+			api.InternalErrorHandlerCustomMsg(w, "Created task, but couldn't attach help steps!")
+			log.WithError(err).
+				WithFields(log.Fields{"priority": "medium",
+					"context":                "tasks",
+					"problematic_task":       fmt.Sprintf("%v", taskEntity),
+					"problematic_help_steps": newTask.HelpSteps}).
+				Error("Failed while attaching help steps to a created task.")
+			return
+		}
 	}
 
 	var res = responseBody{
@@ -263,17 +291,23 @@ func attachTestsToTask(newTestDefinition []taskTestBody, taskEntity *database.Fu
 	return nil
 }
 
-func attachHelpStepsToTask(taskHelpStepBody []taskHelpBody, taskEntity *database.FullTask) {
+func attachHelpStepsToTask(taskHelpStepBody []taskHelpBody, taskEntity *database.FullTask) error {
 	for _, helpStep := range taskHelpStepBody {
 		containsCode, trimmedHelperCode := utils.GetTrimmedStringWithValue(helpStep.HelperCode)
 		containsText, trimmedHelperText := utils.GetTrimmedStringWithValue(helpStep.HelperText)
 
 		var helpStepEntity = database.TaskHelpStep{
+			IDTask:     taskEntity.ID,
 			Step:       helpStep.Step,
 			HelperCode: database.WrappedNullString{NullString: sql.NullString{String: trimmedHelperCode, Valid: containsCode}},
 			HelperText: database.WrappedNullString{NullString: sql.NullString{String: trimmedHelperText, Valid: containsText}},
 		}
 
-		taskEntity.HelpSteps = append(taskEntity.HelpSteps, helpStepEntity)
+		err := database.SaveHelpStep(&helpStepEntity)
+		if err != nil {
+			return err
+		}
 	}
+
+	return nil
 }
