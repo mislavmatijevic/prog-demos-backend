@@ -85,3 +85,27 @@ func TestCalculateScore_GivenDifferentTaskComplexity_ScoreComparisonReportsHighe
 		t.Fatalf("Difference between the task complexity levels score awards not same (%v != %v)!", basicVsBoosted, boostedVsMoreBoosted)
 	}
 }
+
+func TestCalculateScore_GivenLizardKeywordComments_LizardGivesSameScore(t *testing.T) {
+	var codeWithoutLizardComment = "#include<iostream>\n\nusing namespace std;\n\nint main() {\n        int N;\n    cout << \"Unesite pozitivan cijeli broj N: \";\n    cin >> N;\n\n    float rezultat = 0;\n    for (int i = 1; i <= N; i++) {\n        rezultat += (float)1/i;\n    }\n\n    cout << \"N-ti clan harmonijskog niza a_N = 1+1/2...+1/N iznosi: \" << rezultat << endl;\n\n    return 0;\n}\n"
+	var codeWithCommentGenerated = "//GENERATED CODE\n" + codeWithoutLizardComment
+	var codeWithCommentForgives = "#include<iostream>\n\nusing namespace std;\n\nint main() {// #lizard forgives\n        int N;\n    cout << \"Unesite pozitivan cijeli broj N: \";\n    cin >> N;\n\n    float rezultat = 0;\n    for (int i = 1; i <= N; i++) {\n        rezultat += (float)1/i;\n    }\n\n    cout << \"N-ti clan harmonijskog niza a_N = 1+1/2...+1/N iznosi: \" << rezultat << endl;\n\n    return 0;\n}\n"
+	fileWithoutComment, _ := os.CreateTemp("", "solution_*.cpp")
+	fileWithoutComment.Write([]byte(codeWithoutLizardComment))
+	fileWithCommentGenerated, _ := os.CreateTemp("", "solution_*.cpp")
+	fileWithCommentGenerated.Write([]byte(codeWithCommentGenerated))
+	fileWithCommentForgives, _ := os.CreateTemp("", "solution_*.cpp")
+	fileWithCommentForgives.Write([]byte(codeWithCommentForgives))
+
+	var scoreWithoutComment, _ = CalculateScore(fileWithoutComment, 0)
+	var scoreWithCommentGenerated, _ = CalculateScore(fileWithCommentGenerated, 0)
+	var scoreWithCommentForgives, _ = CalculateScore(fileWithCommentForgives, 0)
+
+	t.Logf("Score without comment: %v", scoreWithoutComment)
+	t.Logf("Score with comment GENERATED CODE: %v", scoreWithCommentGenerated)
+	t.Logf("Score with comment #lizard forgives: %v", scoreWithCommentForgives)
+
+	if scoreWithoutComment.TotalScore != scoreWithCommentGenerated.TotalScore || scoreWithoutComment.TotalScore != scoreWithCommentForgives.TotalScore {
+		t.Fatalf("Score %v different based on comment alone from one of: '%v' '%v'!", scoreWithoutComment, scoreWithCommentGenerated, scoreWithCommentForgives)
+	}
+}

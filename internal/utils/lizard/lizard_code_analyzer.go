@@ -33,8 +33,13 @@ func (comparedWith *CodeScore) HasBetterScoreThan(compareTo *CodeScore) bool {
 My system of calculating solution scores promotes usage of many smaller functions.
 I think it's great and therefore I encourage usage of them in code.
 */
-func CalculateScore(solutionCode *os.File, taskComplexity int) (*CodeScore, error) {
-	lizardOutput, err := getLizardOutput(solutionCode.Name())
+func CalculateScore(fileWithCode *os.File, taskComplexity int) (*CodeScore, error) {
+	err := sanitizeFileContents(fileWithCode)
+	if err != nil {
+		return nil, err
+	}
+
+	lizardOutput, err := getLizardOutput(fileWithCode.Name())
 	if err != nil {
 		return nil, err
 	}
@@ -66,6 +71,18 @@ func CalculateScore(solutionCode *os.File, taskComplexity int) (*CodeScore, erro
 	var roundedScore = utils.RoundNumberDownToTwoDecimals(score)
 
 	return &CodeScore{Complexity: int(totalCcn), Tokens: int(totalTokens), TotalScore: roundedScore}, nil
+}
+
+func sanitizeFileContents(fileWithCode *os.File) error {
+	contents, err := os.ReadFile(fileWithCode.Name())
+	if err != nil {
+		return err
+	}
+
+	var sanatizedContents = strings.ReplaceAll(string(contents), "GENERATED CODE", "")
+	sanatizedContents = strings.ReplaceAll(string(sanatizedContents), "#lizard forgives", "")
+
+	return os.WriteFile(fileWithCode.Name(), []byte(sanatizedContents), 0444)
 }
 
 func awardManyFunctions(score float64, functionCount float64) float64 {
