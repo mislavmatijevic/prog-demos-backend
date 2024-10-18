@@ -28,7 +28,7 @@ func getSingleTask(w http.ResponseWriter, r *http.Request) {
 
 	task := database.GetSingleFullTasks(taskId)
 
-	if err := authentication.ValidateJwtTokenFromRequest(r); err == nil {
+	if err := authentication.CheckJwtTokenSignature(r); err == nil {
 		fillTaskWithPersonalizedInfo(r, task)
 	}
 

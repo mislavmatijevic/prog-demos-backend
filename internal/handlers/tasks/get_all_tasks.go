@@ -17,7 +17,7 @@ type tasksResponse struct {
 func getAllTasksPerTopics(w http.ResponseWriter, r *http.Request) {
 	topics := database.GetAllTasksPerTopic()
 
-	if err := authentication.ValidateJwtTokenFromRequest(r); err == nil {
+	if err := authentication.CheckJwtTokenSignature(r); err == nil {
 		fillBasicTasksWithPersonalizedInfo(r, topics)
 	}
 
