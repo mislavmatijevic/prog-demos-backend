@@ -16,16 +16,22 @@ func LogResponse(status int, header http.Header, jsonRes []byte) {
 		level = log.WarnLevel
 	}
 
-	var resBody string
-	resBody = logging_json_bodies.GetJsonBodyWithFieldsRemoved(jsonRes, 10, "tokens.accessToken", "tokens.refreshToken.value")
-	resBody = logging_json_bodies.GetJsonBodyWithFieldsRemoved([]byte(resBody), 0, "helpStep.helperCode", "helpStep.helperText")
+	resBodyForLogging := hideUnnecessaryPropertiesFromBody(jsonRes)
 
 	log.WithFields(
 		log.Fields{
 			"context":    "response",
 			"request_id": requestId,
 			"status":     status,
-			"body":       resBody,
+			"body":       resBodyForLogging,
 		},
 	).Log(level, http.StatusText(status))
+}
+
+func hideUnnecessaryPropertiesFromBody(jsonRes []byte) string {
+	var optimizedResBody = string(jsonRes)
+	optimizedResBody = logging_json_bodies.GetJsonBodyWithFieldsRemoved([]byte(optimizedResBody), 0, "topics")
+	optimizedResBody = logging_json_bodies.GetJsonBodyWithFieldsRemoved([]byte(optimizedResBody), 10, "tokens.accessToken", "tokens.refreshToken.value")
+	optimizedResBody = logging_json_bodies.GetJsonBodyWithFieldsRemoved([]byte(optimizedResBody), 0, "helpStep.helperCode", "helpStep.helperText")
+	return optimizedResBody
 }
