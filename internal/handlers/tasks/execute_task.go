@@ -314,10 +314,12 @@ func setTaskExecutionStatusSucceeded(taskExecution *database.TaskExecution, solv
 	if newUsersBestScore {
 		taskExecution.BestScore = true
 		increaseAverageScoreOnTaskItself(solvedTask, score)
+		increaseUserTotalScore(taskExecution)
 
 		if previousBestScoreExecutionFromThisUserForThisTask != nil {
 			previousBestScoreExecutionFromThisUserForThisTask.BestScore = false
 			database.SaveTaskExecution(*previousBestScoreExecutionFromThisUserForThisTask)
+			decreaseUserTotalScore(previousBestScoreExecutionFromThisUserForThisTask)
 		}
 	}
 
@@ -373,6 +375,36 @@ func setAverageTaskScore(task *database.FullTask, newScoresCount int, tokensSum 
 		task.AverageScore.Tokens = tokensSum / newScoresCount
 		task.AverageScore.TotalScore = utils.RoundNumberDownToTwoDecimals(scoresSum / float32(newScoresCount))
 		task.AverageScore.Complexity = complexitySum / newScoresCount
+	}
+}
+
+func increaseUserTotalScore(taskExecution *database.TaskExecution) {
+	user, err := database.GetUserById(taskExecution.InitiatorID)
+	if err != nil {
+		logFailedToSaveUserTotalScore(err, taskExecution)
+		return
+	}
+
+	user.TotalScore += taskExecution.TotalScore
+
+	err = database.SaveUser(*user)
+	if err != nil {
+		logFailedToSaveUserTotalScore(err, taskExecution)
+	}
+}
+
+func decreaseUserTotalScore(taskExecution *database.TaskExecution) {
+	user, err := database.GetUserById(taskExecution.InitiatorID)
+	if err != nil {
+		logFailedToSaveUserTotalScore(err, taskExecution)
+		return
+	}
+
+	user.TotalScore -= taskExecution.TotalScore
+
+	err = database.SaveUser(*user)
+	if err != nil {
+		logFailedToSaveUserTotalScore(err, taskExecution)
 	}
 }
 
@@ -637,4 +669,15 @@ func readOutputFilesFromDir(tempDirPath string) ([]byte, error) {
 	}
 
 	return allBytes, errMain
+}
+
+func logFailedToSaveUserTotalScore(err error, taskExecution *database.TaskExecution) {
+	log.WithError(err).WithFields(
+		log.Fields{"priority": "high",
+			"context": "task_execution",
+			"task_id": taskExecution.TaskID,
+			"user_id": taskExecution.InitiatorID,
+			"scored":  taskExecution.TotalScore,
+		},
+	).Error("Failed to save user total score!")
 }

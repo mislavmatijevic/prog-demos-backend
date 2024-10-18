@@ -15,26 +15,6 @@ type SolutionAttemptsPerSubtopic struct {
 	TotalTriesPerThisSubtopic       int `json:"totalTries"`
 }
 
-func GetTotalScore(userId int) (float32, error) {
-	var taskExecutions []TaskExecution
-	var totalScore float32 = 0
-
-	Instance.db.
-		Where("id_user = @userId", sql.Named("userId", userId)).
-		Where("best_score = @bestScore", sql.Named("bestScore", true)).
-		Find(&taskExecutions)
-
-	if taskExecutions == nil {
-		return 0, nil
-	}
-
-	for _, bestExecution := range taskExecutions {
-		totalScore += bestExecution.CodeScore.TotalScore
-	}
-
-	return totalScore, nil
-}
-
 func GetAllSolutionAttempts(userId int) (*SolutionAttemptsDto, error) {
 	var taskExecutions []TaskExecution
 	var aggregateObject SolutionAttemptsDto

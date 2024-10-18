@@ -20,13 +20,13 @@ func GetTotalScore(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	totalScore, err := database.GetTotalScore(userId)
+	user, err := database.GetUserById(userId)
 	if err != nil {
 		api.RequestErrorHandlerCustomMsg(w, err.Error())
 		return
 	}
 
-	totalScore = utils.RoundNumberDownToTwoDecimals(totalScore)
+	var totalScore = utils.RoundNumberDownToTwoDecimals(user.TotalScore)
 
 	api.RespondOk(w, &totalScoreBody{TotalScore: totalScore})
 }

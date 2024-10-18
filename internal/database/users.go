@@ -22,6 +22,12 @@ func RegisterNewUser(userInfo User) (*User, error) {
 	return &userInfo, nil
 }
 
+func GetUserById(id int) (*User, error) {
+	var user User
+	result := Instance.db.First(&user, id)
+	return &user, result.Error
+}
+
 func GetUserByEmail(email string) *User {
 	return getUserByCondition("email = ?", email)
 }
