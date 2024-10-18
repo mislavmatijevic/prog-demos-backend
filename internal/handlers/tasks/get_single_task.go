@@ -57,7 +57,4 @@ func fillTaskWithPersonalizedInfo(r *http.Request, task *database.FullTask) {
 
 func fillInfoOnCompletedTask(userId int, task *database.FullTask) {
 	task.BasicTask.BestExecutionForUser = database.GetBestScoreExecutionForUserAndTask(userId, task.BasicTask.ID)
-	if task.BasicTask.BestExecutionForUser != nil {
-		task.BasicTask.BestExecutionForUser.SubmittedCode = ""
-	}
 }
