@@ -42,6 +42,7 @@ func Initialize() {
 		&RefreshToken{},
 		&TaskExecution{},
 		&TaskHelpStep{},
+		&News{},
 	)
 
 	if err != nil {

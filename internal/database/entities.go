@@ -136,3 +136,10 @@ type TaskExecution struct {
 	Initiator         *User     `gorm:"foreignKey:InitiatorID" json:"-"`
 	Task              *FullTask `gorm:"foreignKey:TaskID" json:"-"`
 }
+
+type News struct {
+	ID    int       `gorm:"primaryKey" json:"-"`
+	Title string    `gorm:"size:100" json:"title,omitempty"`
+	Text  string    `gorm:"type:text" json:"text,omitempty"`
+	Date  time.Time `gorm:"default:current_timestamp" json:"time"`
+}
