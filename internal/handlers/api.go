@@ -9,6 +9,7 @@ import (
 	"github.com/mislavmatijevic/prog-demos-backend/internal/authentication"
 	"github.com/mislavmatijevic/prog-demos-backend/internal/handlers/auth"
 	health "github.com/mislavmatijevic/prog-demos-backend/internal/handlers/health"
+	"github.com/mislavmatijevic/prog-demos-backend/internal/handlers/misc"
 	"github.com/mislavmatijevic/prog-demos-backend/internal/handlers/statistics"
 	"github.com/mislavmatijevic/prog-demos-backend/internal/handlers/tasks"
 	"github.com/mislavmatijevic/prog-demos-backend/internal/handlers/topics"
@@ -29,6 +30,8 @@ func Handler(r *chi.Mux) {
 	r.Use(middleware.LimitNonHandledRequestBody)
 	r.Use(middleware.LogRequest)
 
+	log.Debug("Setting up / handler...")
+	misc.HandleMiscRoutes(r)
 	log.Debug("Setting up /auth handler...")
 	auth.HandleAuth(r)
 	log.Debug("Setting up /videos handler...")
