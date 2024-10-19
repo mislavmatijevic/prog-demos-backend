@@ -60,7 +60,7 @@ func SendMailToUser(user database.User, templateHtmlFilename string, subject str
 	}
 
 	m := mail.NewMsg()
-	m.From("no-reply@prog_demos.com")
+	m.From("no-reply@progdemos.com")
 	m.To(user.Email)
 	m.Subject(subject)
 
