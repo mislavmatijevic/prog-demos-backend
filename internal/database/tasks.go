@@ -37,7 +37,7 @@ func CheckTaskExists(taskId int) bool {
 func GetTestsForTask(taskId int) []TaskTest {
 	var tests []TaskTest = make([]TaskTest, 0)
 
-	result := Instance.db.Where("id_task=?", taskId).Find(&TaskTest{}).Scan(&tests)
+	result := Instance.db.Where("id_task=?", taskId).Find(&[]TaskTest{}).Scan(&tests)
 
 	if result.Error != nil {
 		log.WithError(result.Error).WithFields(log.Fields{"priority": "medium", "context": "tasks"}).Errorf("Couldn't fetch tests for task %d!", taskId)
