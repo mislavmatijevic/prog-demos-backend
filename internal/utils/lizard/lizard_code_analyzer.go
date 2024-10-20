@@ -17,12 +17,12 @@ const mainScoreMultiplier = 50
 const maxFunctionsAwardMultiplier = 1
 const manyFunctionsAward = 5
 const longFunctionPenalty = 5
-const awardPerTaskComplexityPoint = 500
+const awardPerTaskComplexityPoint = 50
 
 type CodeScore struct {
-	Tokens     int     `json:"tokens"`
-	Complexity int     `json:"complexity"`
-	TotalScore float32 `json:"totalScore"`
+	Tokens     int `json:"tokens"`
+	Complexity int `json:"complexity"`
+	TotalScore int `json:"totalScore"`
 }
 
 func (comparedWith *CodeScore) HasBetterScoreThan(compareTo *CodeScore) bool {
@@ -62,13 +62,13 @@ func CalculateScore(fileWithCode *os.File, taskComplexity int) (*CodeScore, erro
 	var totalTokens = averageTokensPerFunction * functionCount
 	var totalCcn = averageCcnPerFunction * functionCount
 
-	var score = (complexityWeight/(totalCcn+1) + tokenWeight/(totalTokens+1)) * mainScoreMultiplier
+	var score = ((complexityWeight/(totalCcn+1) + tokenWeight/(totalTokens+1)) * mainScoreMultiplier) / 10
 	log.Debugf("Original score: %v", score)
 	score = awardManyFunctions(score, functionCount)
 	score = punishHighAverageTokenCountPerFunction(score, averageTokensPerFunction)
 	score = awardForComplexity(score, taskComplexity)
 
-	var roundedScore = utils.RoundNumberDownToTwoDecimals(score)
+	var roundedScore = utils.FloatToInt(score)
 
 	return &CodeScore{Complexity: int(totalCcn), Tokens: int(totalTokens), TotalScore: roundedScore}, nil
 }

@@ -357,15 +357,15 @@ func increaseAverageScoreOnTaskItself(fullTask *database.FullTask, score lizard.
 	setAverageTaskScore(fullTask, scoresCountSoFar, tokensSum, scoresSum, complexitySum)
 }
 
-func getTaskScoreSums(task *database.FullTask) (int, int, float32, int) {
+func getTaskScoreSums(task *database.FullTask) (int, int, int, int) {
 	var scoresCountSoFar = task.ScoresCount
 	var tokensSum = task.AverageScore.Tokens * scoresCountSoFar
-	var scoresSum = task.AverageScore.TotalScore * float32(scoresCountSoFar)
+	var scoresSum = task.AverageScore.TotalScore * scoresCountSoFar
 	var complexitySum = task.AverageScore.Complexity * scoresCountSoFar
 	return scoresCountSoFar, tokensSum, scoresSum, complexitySum
 }
 
-func setAverageTaskScore(task *database.FullTask, newScoresCount int, tokensSum int, scoresSum float32, complexitySum int) {
+func setAverageTaskScore(task *database.FullTask, newScoresCount int, tokensSum int, scoresSum int, complexitySum int) {
 	task.ScoresCount = newScoresCount
 	if newScoresCount == 0 {
 		task.AverageScore.Tokens = 0
@@ -373,7 +373,7 @@ func setAverageTaskScore(task *database.FullTask, newScoresCount int, tokensSum 
 		task.AverageScore.Complexity = 0
 	} else {
 		task.AverageScore.Tokens = tokensSum / newScoresCount
-		task.AverageScore.TotalScore = utils.RoundNumberDownToTwoDecimals(scoresSum / float32(newScoresCount))
+		task.AverageScore.TotalScore = utils.FloatToInt(float32(scoresSum) / float32(newScoresCount))
 		task.AverageScore.Complexity = complexitySum / newScoresCount
 	}
 }

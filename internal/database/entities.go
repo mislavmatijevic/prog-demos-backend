@@ -111,7 +111,7 @@ type User struct {
 	DateRegistered      time.Time         `gorm:"not null" json:"-"`
 	PasswordResetToken  WrappedNullString `gorm:"type:char(128);null;default:null" json:"-"`
 	PasswordResetExpiry WrappedNullTime   `gorm:"null;default:null" json:"-"`
-	TotalScore          float32           `gorm:"not null;default:0" json:"totalScore"`
+	TotalScore          int               `gorm:"not null;default:0" json:"totalScore"`
 }
 
 type RefreshToken struct {
