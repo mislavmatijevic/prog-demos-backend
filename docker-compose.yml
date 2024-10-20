@@ -12,8 +12,6 @@ services:
             - db_data:/var/lib/postgresql/data
         networks:
             - backend-network
-        ports:
-            - '5432:5432'
         healthcheck:
             test: 'pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB'
             interval: 2s
@@ -41,7 +39,7 @@ services:
             - /var/run/docker.sock:/var/run/docker.sock
             - tasks:/var/temp_tasks/
         ports:
-            - '8080:8080'
+            - '127.0.0.1:8080:8080'
         networks:
             - backend-network
 
