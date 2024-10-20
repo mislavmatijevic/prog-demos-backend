@@ -7,7 +7,7 @@ import (
 func GetAllVideosPerTopics() []Topic {
 	var topics []Topic
 
-	result := Instance.db.Model(&Topic{}).Preload("Subtopics.Videos").Find(&topics)
+	result := Instance.db.Model(&[]Topic{}).Preload("Subtopics.Videos").Find(&topics)
 
 	if result.Error != nil {
 		log.WithError(result.Error).WithFields(log.Fields{"priority": "high", "context": "videos"}).Error("Couldn't fetch videos per topics!")
