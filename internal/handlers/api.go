@@ -15,6 +15,7 @@ import (
 	"github.com/mislavmatijevic/prog-demos-backend/internal/handlers/topics"
 	videos "github.com/mislavmatijevic/prog-demos-backend/internal/handlers/videos"
 	"github.com/mislavmatijevic/prog-demos-backend/internal/middleware"
+	"github.com/mislavmatijevic/prog-demos-backend/internal/utils"
 )
 
 func Handler(r *chi.Mux) {
@@ -47,8 +48,16 @@ func Handler(r *chi.Mux) {
 }
 
 func setupCors(r *chi.Mux) {
+	var allowedOrigins []string
+
+	if utils.IsProd() {
+		allowedOrigins = []string{"https://progdemos.com", "https://www.progdemos.com"}
+	} else {
+		allowedOrigins = []string{"https://localhost:*", "http://localhost:*"}
+	}
+
 	r.Use(cors.Handler(cors.Options{
-		AllowedOrigins:   []string{"https://localhost:*", "http://localhost:*"},
+		AllowedOrigins:   allowedOrigins,
 		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
 		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type"},
 		ExposedHeaders:   []string{"Link"},
