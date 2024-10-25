@@ -15,26 +15,6 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-type registrationErrorCode int
-
-const (
-	EXEC_ERR_INFO_INVALID registrationErrorCode = iota + 1
-	EXEC_ERR_USERNAME_TAKEN
-	EXEC_ERR_RECAPTCHA_REQUIRES_CHALLENGE
-)
-
-func (execErrCode registrationErrorCode) String() string {
-	return [...]string{
-		"Given information is not valid for registration.",
-		"Username or email already taken.",
-		"Login did not score well at ReCaptcha, challenge user.",
-	}[execErrCode-1]
-}
-
-func (execErrCode registrationErrorCode) EnumIndex() int {
-	return int(execErrCode)
-}
-
 type userRegisterBody struct {
 	Email          string `json:"email"`
 	Username       string `json:"username"`
@@ -45,12 +25,6 @@ type userRegisterBody struct {
 type successResponse struct {
 	Success bool `json:"success"`
 	NewId   int  `json:"newId"`
-}
-
-type errorResponse struct {
-	Success   bool   `json:"success"`
-	Message   string `json:"message"`
-	ErrorCode int    `json:"errorCode"`
 }
 
 func registerUser(w http.ResponseWriter, r *http.Request) {
@@ -106,29 +80,6 @@ func registerUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	api.RespondWithStatus(w, res, http.StatusCreated)
-}
-
-func handleRecaptchaError(w http.ResponseWriter, err error) {
-	switch err.Error() {
-	case security.ErrFailedToProcess.Error():
-		api.InternalErrorHandlerCustomMsg(w, "Recaptcha is not available.")
-	case security.ErrMustChallenge.Error():
-		respondForErrorCode(w, EXEC_ERR_RECAPTCHA_REQUIRES_CHALLENGE)
-	case security.ErrInvalid.Error():
-		fallthrough
-	default:
-		api.RequestErrorHandlerCustomMsg(w, "Failed recaptcha.")
-	}
-}
-
-func respondForErrorCode(w http.ResponseWriter, errorCode registrationErrorCode) {
-	var res = errorResponse{
-		Success:   false,
-		Message:   errorCode.String(),
-		ErrorCode: errorCode.EnumIndex(),
-	}
-
-	api.RespondWithStatus(w, res, http.StatusBadRequest)
 }
 
 func checkIfUserInfoValid(username, email, password string, recaptchaToken string) bool {
