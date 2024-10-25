@@ -11,6 +11,7 @@ import (
 	"github.com/mislavmatijevic/prog-demos-backend/internal/handlers/api"
 	"github.com/mislavmatijevic/prog-demos-backend/internal/mailing"
 	"github.com/mislavmatijevic/prog-demos-backend/internal/utils"
+	"github.com/mislavmatijevic/prog-demos-backend/internal/utils/security"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -19,12 +20,14 @@ type registrationErrorCode int
 const (
 	EXEC_ERR_INFO_INVALID registrationErrorCode = iota + 1
 	EXEC_ERR_USERNAME_TAKEN
+	EXEC_ERR_RECAPTCHA_REQUIRES_CHALLENGE
 )
 
 func (execErrCode registrationErrorCode) String() string {
 	return [...]string{
 		"Given information is not valid for registration.",
 		"Username or email already taken.",
+		"Login did not score well at ReCaptcha, challenge user.",
 	}[execErrCode-1]
 }
 
@@ -33,9 +36,10 @@ func (execErrCode registrationErrorCode) EnumIndex() int {
 }
 
 type userRegisterBody struct {
-	Email    string `json:"email"`
-	Username string `json:"username"`
-	Password string `json:"password"`
+	Email          string `json:"email"`
+	Username       string `json:"username"`
+	Password       string `json:"password"`
+	RecaptchaToken string `json:"recaptchaToken"`
 }
 
 type successResponse struct {
@@ -56,10 +60,16 @@ func registerUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	username, email := strings.Trim(userReqBody.Username, " "), strings.Trim(userReqBody.Email, " ")
-	var infoIsValid bool = checkIfUserInfoValid(username, email, userReqBody.Password)
+	username, email, recaptchaToken := strings.Trim(userReqBody.Username, " "), strings.Trim(userReqBody.Email, " "), strings.Trim(userReqBody.RecaptchaToken, " ")
+	var infoIsValid bool = checkIfUserInfoValid(username, email, userReqBody.Password, recaptchaToken)
 	if !infoIsValid {
 		respondForErrorCode(w, EXEC_ERR_INFO_INVALID)
+		return
+	}
+
+	err := security.VerifyRecaptcha("register", recaptchaToken, r.RemoteAddr)
+	if err != nil {
+		handleRecaptchaError(w, err)
 		return
 	}
 
@@ -98,6 +108,19 @@ func registerUser(w http.ResponseWriter, r *http.Request) {
 	api.RespondWithStatus(w, res, http.StatusCreated)
 }
 
+func handleRecaptchaError(w http.ResponseWriter, err error) {
+	switch err.Error() {
+	case security.ErrFailedToProcess.Error():
+		api.InternalErrorHandlerCustomMsg(w, "Recaptcha is not available.")
+	case security.ErrMustChallenge.Error():
+		respondForErrorCode(w, EXEC_ERR_RECAPTCHA_REQUIRES_CHALLENGE)
+	case security.ErrInvalid.Error():
+		fallthrough
+	default:
+		api.RequestErrorHandlerCustomMsg(w, "Failed recaptcha.")
+	}
+}
+
 func respondForErrorCode(w http.ResponseWriter, errorCode registrationErrorCode) {
 	var res = errorResponse{
 		Success:   false,
@@ -108,7 +131,7 @@ func respondForErrorCode(w http.ResponseWriter, errorCode registrationErrorCode)
 	api.RespondWithStatus(w, res, http.StatusBadRequest)
 }
 
-func checkIfUserInfoValid(username, email, password string) bool {
+func checkIfUserInfoValid(username, email, password string, recaptchaToken string) bool {
 	var usernameAtLeast2Characters = len(username) >= 2
 	var usernameAtMost15Characters = len(username) <= 20
 	var emailAtLeast4Characters = len(email) >= 4
@@ -116,7 +139,13 @@ func checkIfUserInfoValid(username, email, password string) bool {
 	var usernameDoesNotContainAt = !strings.Contains(username, "@")
 	var passwordAtLeast8Chars = len(password) >= 8
 	var passwordNotLongerThan72Chars = len(password) < 72
-	return usernameAtLeast2Characters && usernameAtMost15Characters && emailAtLeast4Characters && isEmailValid && usernameDoesNotContainAt && passwordAtLeast8Chars && passwordNotLongerThan72Chars
+	var recaptchaTokenNotEmpty = len(recaptchaToken) > 0
+
+	return usernameAtLeast2Characters && usernameAtMost15Characters &&
+		emailAtLeast4Characters && isEmailValid &&
+		usernameDoesNotContainAt &&
+		passwordAtLeast8Chars && passwordNotLongerThan72Chars &&
+		recaptchaTokenNotEmpty
 }
 
 func createUser(username, email, hashPassword string) database.User {

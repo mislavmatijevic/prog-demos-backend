@@ -16,6 +16,7 @@ import (
 	"github.com/mislavmatijevic/prog-demos-backend/internal/mailing"
 	"github.com/mislavmatijevic/prog-demos-backend/internal/monitoring/loki"
 	"github.com/mislavmatijevic/prog-demos-backend/internal/utils"
+	"github.com/mislavmatijevic/prog-demos-backend/internal/utils/security"
 )
 
 func main() {
@@ -28,7 +29,7 @@ func main() {
 	setupLogging()
 
 	database.Initialize()
-
+	security.Initialize()
 	authentication.Initialize()
 	mailing.Initialize()
 
