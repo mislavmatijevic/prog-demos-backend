@@ -126,6 +126,8 @@ func VerifyRecaptcha(action string, clientToken string, fullRemoteAddress string
 		return ErrMustChallenge
 	}
 
+	log.Debugf("RECAPTCHA OK %f!", response.RiskAnalysis.Score)
+
 	return nil
 }
 

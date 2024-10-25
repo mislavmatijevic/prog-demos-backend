@@ -11,10 +11,12 @@ import (
 	"github.com/mislavmatijevic/prog-demos-backend/internal/handlers/api"
 	"github.com/mislavmatijevic/prog-demos-backend/internal/mailing"
 	"github.com/mislavmatijevic/prog-demos-backend/internal/utils"
+	"github.com/mislavmatijevic/prog-demos-backend/internal/utils/security"
 )
 
 type requestPasswordResetBody struct {
-	Email string `json:"email,omitempty"`
+	Email          string `json:"email,omitempty"`
+	RecaptchaToken string `json:"recaptchaToken"`
 }
 
 func requestPasswordReset(w http.ResponseWriter, r *http.Request) {
@@ -23,8 +25,15 @@ func requestPasswordReset(w http.ResponseWriter, r *http.Request) {
 		api.RequestErrorHandlerGenericMsg(w, err)
 		return
 	}
+
 	if !utils.IsEmailValid(requestBody.Email) {
 		api.RequestErrorHandlerCustomMsg(w, "Valid email not procured.")
+		return
+	}
+
+	err := security.VerifyRecaptcha("request_password_reset", requestBody.RecaptchaToken, r.RemoteAddr)
+	if err != nil {
+		handleRecaptchaError(w, err)
 		return
 	}
 
@@ -39,7 +48,7 @@ func requestPasswordReset(w http.ResponseWriter, r *http.Request) {
 	}
 
 	setPasswordResetToken(user)
-	err := mailing.SendPasswordRequestMail(*user)
+	err = mailing.SendPasswordRequestMail(*user)
 	if err != nil {
 		api.InternalErrorHandlerCustomMsg(w, "Could not send email for password reset!")
 		return
