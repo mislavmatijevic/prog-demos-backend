@@ -116,6 +116,13 @@ func VerifyRecaptcha(action string, clientToken string, fullRemoteAddress string
 	}
 
 	if response.RiskAnalysis.Score < 0.5 {
+		log.WithFields(
+			log.Fields{
+				"priority": "medium",
+				"action":   action,
+				"ip":       pureIp,
+				"context":  "recaptcha"},
+		).Warning("Low Recaptcha score!")
 		return ErrMustChallenge
 	}
 
