@@ -3,6 +3,7 @@ package security
 import (
 	"errors"
 	"os"
+	"strconv"
 	"strings"
 
 	"context"
@@ -17,9 +18,10 @@ import (
 )
 
 var (
-	recaptchaSiteKey = ""
-	recaptchaApiKey  = ""
-	projectID        = "prog-demos-website"
+	recaptchaSiteKey     = ""
+	recaptchaApiKey      = ""
+	projectID            = "prog-demos-website"
+	minScoreForChallenge float32
 )
 
 var (
@@ -31,6 +33,13 @@ var (
 func Initialize() {
 	recaptchaSiteKey = os.Getenv("RECAPTCHA_SITE_KEY")
 	recaptchaApiKey = os.Getenv("RECAPTCHA_API_KEY")
+
+	challengeScore, err := strconv.ParseFloat(os.Getenv("RECAPTCHA_CHALLENGE_SCORE"), 32)
+	if err != nil {
+		log.WithError(err).WithFields(log.Fields{"priority": "high", "context": "recaptcha"}).Panic("Minimal recaptcha score not set!")
+	}
+	minScoreForChallenge = float32(challengeScore)
+	log.WithField("min_score_for_challenge", minScoreForChallenge).Info("Minimal reCAPTCHA score set!")
 }
 
 func VerifyRecaptcha(action string, clientToken string, fullRemoteAddress string) error {
@@ -115,15 +124,19 @@ func VerifyRecaptcha(action string, clientToken string, fullRemoteAddress string
 		return ErrInvalid
 	}
 
-	if response.RiskAnalysis.Score < 0.5 {
+	if response.RiskAnalysis.Score < 0.7 {
 		log.WithFields(
 			log.Fields{
 				"priority": "medium",
 				"action":   action,
 				"ip":       pureIp,
-				"context":  "recaptcha"},
+				"context":  "recaptcha",
+				"score":    response.RiskAnalysis.Score},
 		).Warning("Low Recaptcha score!")
-		return ErrMustChallenge
+
+		if response.RiskAnalysis.Score <= minScoreForChallenge {
+			return ErrMustChallenge
+		}
 	}
 
 	log.Debugf("RECAPTCHA OK %f!", response.RiskAnalysis.Score)
