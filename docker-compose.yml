@@ -5,13 +5,11 @@ services:
             dockerfile: ./Docker/db.Dockerfile
         container_name: database
         environment:
-            POSTGRES_USER: root
-            POSTGRES_PASSWORD: root
+            POSTGRES_USER: ${DB_USER}
+            POSTGRES_PASSWORD: ${DB_PASSWORD}
             POSTGRES_DB: prog_demos
         volumes:
             - db_data:/var/lib/postgresql/data
-        ports:
-            - '127.0.0.1:5432:5432'
         networks:
             - backend-network
         healthcheck:
@@ -30,8 +28,8 @@ services:
                 condition: service_healthy
         environment:
             DB_HOST: database
-            DB_USER: root
-            DB_PASSWORD: root
+            DB_USER: ${DB_USER}
+            DB_PASSWORD: ${DB_PASSWORD}
             DB_NAME: prog_demos
             PORT: 8080
             TASKS_VOLUME_NAME: prog-demos-backend_tasks
@@ -44,10 +42,25 @@ services:
             - '127.0.0.1:8080:8080'
         networks:
             - backend-network
-
+    pgadmin:
+        image: dpage/pgadmin4
+        container_name: pgadmin4_container
+        restart: always
+        environment:
+            POSTGRES_USER: ${DB_USER}
+            POSTGRES_PASSWORD: ${DB_PASSWORD}
+            PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL}
+            PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD}
+        volumes:
+            - pgadmin:/var/lib/pgadmin
+        ports:
+            - '8888:80'
+        networks:
+            - backend-network
 volumes:
     db_data:
     tasks:
+    pgadmin:
 
 networks:
     backend-network:
