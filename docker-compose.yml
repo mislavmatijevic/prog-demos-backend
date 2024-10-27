@@ -33,8 +33,8 @@ services:
             DB_NAME: prog_demos
             PORT: 8080
             TASKS_VOLUME_NAME: prog-demos-backend_tasks
-            PROD: 1
-            USE_LOKI: 1
+            PROD: ${IS_PROD}
+            USE_LOKI: ${IS_PROD}
         volumes:
             - /var/run/docker.sock:/var/run/docker.sock
             - tasks:/var/temp_tasks/
@@ -51,6 +51,7 @@ services:
             POSTGRES_PASSWORD: ${DB_PASSWORD}
             PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL}
             PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD}
+            PGADMIN_CONFIG_WTF_CSRF_ENABLED: 'False'
         volumes:
             - pgadmin:/var/lib/pgadmin
         ports:
