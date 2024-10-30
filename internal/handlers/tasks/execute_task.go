@@ -163,7 +163,7 @@ func executeTask(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		ctx, cancel := context.WithTimeout(r.Context(), 10*time.Second)
+		ctx, cancel := context.WithTimeout(r.Context(), 30*time.Second)
 		defer cancel()
 
 		err = runFileInIsolatedDockerContainerTask(ctx, cppFile)
@@ -560,7 +560,7 @@ func runDockerRunnerImage(containerName string, fullFilePath string, allowBuildi
 		"%s run --rm "+
 			"--name %s "+
 			"-v %s:%s "+
-			"--memory 50m --cpus 0.15 "+
+			"--memory 50m --cpus 0.5 "+
 			"--security-opt no-new-privileges --network none "+
 			"-e SOURCE_CODE_FOLDER=%s "+
 			"-e SOURCE_FILE_NAME=%s "+

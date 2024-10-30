@@ -16,7 +16,7 @@ func HandleTasks(r *chi.Mux) {
 
 		router.Group(func(protectedRouter chi.Router) {
 			protectedRouter.Use(authentication.RequireAccessToken)
-			protectedRouter.Use(chimiddle.ThrottleBacklog(10, 20, 30*time.Second))
+			protectedRouter.Use(chimiddle.ThrottleBacklog(2, 20, 60*time.Second))
 
 			protectedRouter.Post("/{taskId}/run", executeTask)
 		})
