@@ -46,6 +46,18 @@ func GetSingleFullTaskByIdentifier(taskIdentifier int) *FullTask {
 	return &task
 }
 
+func GetLargestStoredTaskIdentifier() (int, error) {
+	var task BasicTask
+	result := Instance.db.Order("identifier DESC").First(&task)
+	if result.Error != nil {
+		log.WithError(result.Error).
+			WithFields(log.Fields{"priority": "medium", "context": "tasks"}).
+			Error("Couldn't find task with biggest identifier!")
+		return 0, result.Error
+	}
+	return task.Identifier, nil
+}
+
 func CheckTaskExists(taskId int) bool {
 	var task BasicTask
 	Instance.db.Find(&task, taskId)
@@ -58,7 +70,9 @@ func GetTestsForTask(taskId int) []TaskTest {
 	result := Instance.db.Where("id_task=?", taskId).Find(&[]TaskTest{}).Scan(&tests)
 
 	if result.Error != nil {
-		log.WithError(result.Error).WithFields(log.Fields{"priority": "medium", "context": "tasks"}).Errorf("Couldn't fetch tests for task %d!", taskId)
+		log.WithError(result.Error).
+			WithFields(log.Fields{"priority": "medium", "context": "tasks", "problematic_task": taskId}).
+			Errorf("Couldn't fetch tests for task!")
 		return nil
 	}
 

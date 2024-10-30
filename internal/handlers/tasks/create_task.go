@@ -75,7 +75,7 @@ func createTask(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = validateNewTask(*newTask)
+	err = validateNewTask(newTask)
 	if err != nil {
 		api.RequestErrorHandlerCustomMsg(w, err.Error())
 		return
@@ -167,9 +167,18 @@ func getNewTaskFromBody(r *http.Request) (*newTaskRequestBody, error) {
 	return &requestBody, nil
 }
 
-func validateNewTask(newTask newTaskRequestBody) error {
-	if newTask.Identifier <= 0 {
+func validateNewTask(newTask *newTaskRequestBody) error {
+	if newTask.Identifier < 0 {
 		return errors.New("desired identifier invalid")
+	}
+
+	if newTask.Identifier == 0 {
+		largestIdentifierYet, err := database.GetLargestStoredTaskIdentifier()
+		if err != nil {
+			return err
+		}
+		newlyAssignedIdentifier := largestIdentifierYet + 1
+		newTask.Identifier = newlyAssignedIdentifier
 	}
 
 	identifierUsed := checkIfIdentifierUsed(newTask.Identifier)
@@ -177,7 +186,7 @@ func validateNewTask(newTask newTaskRequestBody) error {
 		return errors.New("desired identifier already in use")
 	}
 
-	hasRequiredPropertiesSet := checkRequiredProperties(newTask)
+	hasRequiredPropertiesSet := checkRequiredProperties(*newTask)
 	if !hasRequiredPropertiesSet {
 		return errors.New("task is not completely defined")
 	}
