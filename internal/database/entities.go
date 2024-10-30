@@ -54,7 +54,8 @@ type Video struct {
 }
 
 type BasicTask struct {
-	ID                   int            `gorm:"primaryKey" json:"id"`
+	ID                   int            `gorm:"primaryKey;" json:"id"`
+	Identifier           int            `gorm:"index:idx_tsk_id,unique" json:"identifier"`
 	Name                 string         `gorm:"not null;column:name" json:"name"`
 	SubtopicID           int            `gorm:"not null;column:id_subtopic" json:"-"`
 	Complexity           string         `gorm:"type:char(1);not null" json:"complexity"`

@@ -29,6 +29,7 @@ type taskHelpBody struct {
 }
 
 type newTaskRequestBody struct {
+	Identifier         int            `json:"identifier"`
 	SubtopicID         int            `json:"idSubtopic"`
 	Name               string         `json:"name"`
 	Complexity         string         `json:"complexity"`
@@ -50,6 +51,7 @@ func (body newTaskRequestBody) mapToEntity() (newFullTaskEntity *database.FullTa
 	return &database.FullTask{
 		BasicTask: database.BasicTask{
 			ID:           0,
+			Identifier:   body.Identifier,
 			SubtopicID:   body.SubtopicID,
 			Name:         body.Name,
 			Complexity:   body.Complexity,
@@ -142,7 +144,11 @@ func createTask(w http.ResponseWriter, r *http.Request) {
 
 	var res = responseBody{
 		Success: true,
-		Message: fmt.Sprintf("Created new task with ID %v", taskEntity.BasicTask.ID),
+		Message: fmt.Sprintf(
+			"Created new task (Identifier: %v, ID %v)",
+			taskEntity.BasicTask.Identifier,
+			taskEntity.BasicTask.ID,
+		),
 	}
 
 	api.RespondOk(w, res)
@@ -162,6 +168,15 @@ func getNewTaskFromBody(r *http.Request) (*newTaskRequestBody, error) {
 }
 
 func validateNewTask(newTask newTaskRequestBody) error {
+	if newTask.Identifier <= 0 {
+		return errors.New("desired identifier invalid")
+	}
+
+	identifierUsed := checkIfIdentifierUsed(newTask.Identifier)
+	if identifierUsed {
+		return errors.New("desired identifier already in use")
+	}
+
 	hasRequiredPropertiesSet := checkRequiredProperties(newTask)
 	if !hasRequiredPropertiesSet {
 		return errors.New("task is not completely defined")
@@ -199,6 +214,11 @@ func checkRequiredProperties(newTask newTaskRequestBody) bool {
 func checkIfSubtopicExists(subtopicID int) bool {
 	var foundSubtopic = database.GetSubtopicById(subtopicID)
 	return (foundSubtopic != nil)
+}
+
+func checkIfIdentifierUsed(desiredIdentifier int) bool {
+	var foundTaskByIdentifier = database.GetSingleFullTaskByIdentifier(desiredIdentifier)
+	return foundTaskByIdentifier != nil
 }
 
 func checkForValidTests(newTask newTaskRequestBody) error {

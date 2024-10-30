@@ -234,7 +234,7 @@ func executeTask(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var solvedTask = database.GetSingleFullTasks(taskId)
+	var solvedTask = database.GetSingleFullTask(taskId)
 	numbericComplexity, err := strconv.Atoi(solvedTask.BasicTask.Complexity)
 	if err != nil {
 		numbericComplexity = 0

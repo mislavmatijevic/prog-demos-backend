@@ -1,6 +1,8 @@
 package database
 
 import (
+	"database/sql"
+
 	log "github.com/sirupsen/logrus"
 )
 
@@ -16,12 +18,28 @@ func GetAllTasksPerTopic() []Topic {
 	return topics
 }
 
-func GetSingleFullTasks(taskId int) *FullTask {
+func GetSingleFullTask(taskId int) *FullTask {
 	var task FullTask
 
 	result := Instance.db.Preload("Subtopic").First(&task, taskId)
 
 	if result.Error != nil {
+		return nil
+	}
+
+	return &task
+}
+
+func GetSingleFullTaskByIdentifier(taskIdentifier int) *FullTask {
+	var task FullTask
+
+	result := Instance.db.Preload("Subtopic").
+		Where("identifier = @Identifier",
+			sql.Named("Identifier", taskIdentifier),
+		).
+		Find(&task)
+
+	if result.Error != nil || task.ID == 0 {
 		return nil
 	}
 

@@ -18,23 +18,23 @@ type taskResponse struct {
 }
 
 func getSingleTask(w http.ResponseWriter, r *http.Request) {
-	var originalParamId = chi.URLParam(r, "taskId")
-	taskId, err := strconv.Atoi(originalParamId)
+	var originalParamId = chi.URLParam(r, "taskIdentifier")
+	taskIdentifier, err := strconv.Atoi(originalParamId)
 
 	if err != nil {
 		api.RequestErrorHandlerGenericMsg(w, err)
 		return
 	}
 
-	task := database.GetSingleFullTasks(taskId)
+	task := database.GetSingleFullTaskByIdentifier(taskIdentifier)
+
+	if task == nil {
+		api.NotFoundHandlerCustomMsg(w, fmt.Sprintf("Task with identifier %s not found!", originalParamId))
+		return
+	}
 
 	if err := authentication.CheckJwtTokenSignature(r); err == nil {
 		fillTaskWithPersonalizedInfo(r, task)
-	}
-
-	if task == nil {
-		api.NotFoundHandlerCustomMsg(w, fmt.Sprintf("Task with id %s not found!", originalParamId))
-		return
 	}
 
 	var res = taskResponse{
