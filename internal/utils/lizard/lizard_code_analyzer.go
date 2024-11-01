@@ -2,6 +2,7 @@ package lizard
 
 import (
 	"fmt"
+	"math"
 	"os"
 	"os/exec"
 	"strconv"
@@ -11,13 +12,13 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-const complexityWeight = 13
-const tokenWeight = 17
-const mainScoreMultiplier = 50
+const scoreComplexityMultiplier = 1.75
 const maxFunctionsAwardMultiplier = 1
-const manyFunctionsAward = 5
-const longFunctionPenalty = 5
-const awardPerTaskComplexityPoint = 50
+const manyFunctionsAward = 20
+const awardPerTaskComplexityPoint = 20
+const impactOfTokenCountOnFinalScore = 0.6
+const impactOfCcnOnTokenCount = 0.95
+const finalScoreComplexityDivider = 2.5
 
 type CodeScore struct {
 	Tokens     int `json:"tokens"`
@@ -62,11 +63,11 @@ func CalculateScore(fileWithCode *os.File, taskComplexity int) (*CodeScore, erro
 	var totalTokens = averageTokensPerFunction * functionCount
 	var totalCcn = averageCcnPerFunction * functionCount
 
-	var score = ((complexityWeight/(totalCcn+1) + tokenWeight/(totalTokens+1)) * mainScoreMultiplier) / 10
+	var score = calculateBasicScore(totalTokens, totalCcn) * 50
 	log.Debugf("Original score: %v", score)
 	score = awardManyFunctions(score, functionCount)
-	score = punishHighAverageTokenCountPerFunction(score, averageTokensPerFunction)
 	score = awardForComplexity(score, taskComplexity)
+	score /= (finalScoreComplexityDivider - (finalScoreComplexityDivider * float64(taskComplexity) / 10))
 
 	var roundedScore = utils.FloatToInt(score)
 
@@ -97,18 +98,12 @@ func awardManyFunctions(score float64, functionCount float64) float64 {
 	return score
 }
 
-func punishHighAverageTokenCountPerFunction(score float64, averageTokensPerFunction float64) float64 {
-	var punishmentForLongFunctions = float64(longFunctionPenalty * int(averageTokensPerFunction/40))
-	score -= punishmentForLongFunctions
-	return score
-}
-
 func awardForComplexity(score float64, taskComplexity int) float64 {
-	var awardMultiplier = taskComplexity - 1
+	var awardMultiplier = taskComplexity
 
 	if awardMultiplier > 0 {
-		var awardForTaskComplexity = awardPerTaskComplexityPoint * (awardMultiplier)
-		score += float64(awardForTaskComplexity)
+		var awardForTaskComplexity = float64(awardPerTaskComplexityPoint*(awardMultiplier)) * scoreComplexityMultiplier
+		score += awardForTaskComplexity
 	}
 
 	return score
@@ -159,4 +154,8 @@ func getFieldValueFromLizardOutput(output string, fieldIndex int) (float64, erro
 
 	log.WithFields(log.Fields{"priority": "medium", "context": "task_execution", "problematic_lizard_output": output, "failed_at_field_index": fieldIndex}).Error("Lizard's output could not be parsed!")
 	return 0, fmt.Errorf("unable to parse lizard's field %d", fieldIndex)
+}
+
+func calculateBasicScore(totalTokens, totalCcn float64) float64 {
+	return math.Pow(totalTokens, impactOfTokenCountOnFinalScore) * (1 / (math.Pow(totalCcn, impactOfCcnOnTokenCount)))
 }
