@@ -1,10 +1,9 @@
 FROM gcc:14.2.0
 
-RUN useradd -m tester
+RUN useradd -m -s /bin/false tester
 
 WORKDIR /home/tester/
-COPY ./entrypoint.sh /home/tester/entrypoint.sh
-RUN chmod +x /home/tester/entrypoint.sh
-RUN chmod +x /home/tester/entrypoint.sh
+COPY ./entrypoint.sh /entrypoint.sh
+RUN chmod 500 /entrypoint.sh
 
-ENTRYPOINT ["bash", "/home/tester/entrypoint.sh"]
+ENTRYPOINT ["bash", "/entrypoint.sh"]

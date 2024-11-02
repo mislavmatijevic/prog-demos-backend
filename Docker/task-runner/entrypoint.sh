@@ -1,24 +1,57 @@
 #!/bin/bash
 
-tempTasksPath="/var/temp_tasks"
-tempFolderPath="$tempTasksPath/$SOURCE_CODE_FOLDER"
+homeDirectory="/home/tester"
 
+sourceFileName="$SOURCE_FILE_NAME"
+executionDirectory="$SOURCE_CODE_FOLDER"
+solutionFile="$executionDirectory/$sourceFileName"
+errorFile="$executionDirectory/error.txt"
+outputFile="$executionDirectory/solution.out"
+stdinFilenamePrefix="$STDIN_FILENAME_PREFIX"
+stdoutFilenamePrefix="$STDOUT_FILENAME_PREFIX"
+artefactsFilenamePrefix="$ARTEFACTS_FILENAME_PREFIX"
 
-stdinFileName=$tempFolderPath/stdin.txt
-stdoutFileName=$tempFolderPath/stdout.txt
-artefactsFileName=$tempFolderPath/artefacts.txt
-errorFileName=$tempFolderPath/error.txt
+rm .bash_logout .bashrc .profile
 
-touch $stdoutFileName
-touch $artefactsFileName
-touch $errorFileName
+g++ "$solutionFile" -o "$outputFile" 2> "$errorFile"
 
-cd /home/tester
-g++ $tempFolderPath/$SOURCE_FILE_NAME -o ./code.out
-
-if [ $? -eq 0 ]; then
-  runuser tester -c ./code.out < $stdinFileName > $stdoutFileName
-  find . -maxdepth 1 -type f -name 'output*' -exec echo {} > $artefactsFileName \; -exec mv {} "$tempFolderPath" \;
-else
-  echo "Compilation failed" > $errorFileName
+if [ $? -ne 0 ]; then
+    cat "$errorFile"
+    exit 1
 fi
+
+chmod 701 "$outputFile"
+
+find "$executionDirectory" -type f -name "${stdinFilenamePrefix}*" | while read -r stdinFile; do
+    taskId=$(basename "$stdinFile" | sed -E 's/[^0-9]*([0-9]+).*/\1/')
+
+    stdoutFile="$executionDirectory/${stdoutFilenamePrefix}${taskId}.txt"
+    touch "$stdoutFile"
+    chmod 600 "$stdoutFile"
+
+    (cd $homeDirectory && exec runuser -u tester -- "$outputFile" < "$stdinFile" > "$stdoutFile" 2>> "$errorFile")
+
+    if [ -s "$errorFile" ]; then
+        cat "$errorFile"
+        exit 1
+    else
+        rm -f "$errorFile"
+    fi
+
+    files=($(find "$homeDirectory" -type f | sort))
+
+    if [[ ${#files[@]} -gt 0 ]]; then
+        tempConcatFile="$executionDirectory/artefacts_concat.txt"
+        artefactsFile="$executionDirectory/${artefactsFilenamePrefix}${taskId}.txt"
+        touch "$tempConcatFile" "$artefactsFile"
+        chmod 600 "$tempConcatFile" "$artefactsFile"
+
+        for file in "${files[@]}"; do
+            cat "$file" >> "$tempConcatFile"
+        done
+
+        sha256sum "$tempConcatFile" | awk '{print $1}' > "$artefactsFile"
+        rm -f "$tempConcatFile"
+    fi
+done
+

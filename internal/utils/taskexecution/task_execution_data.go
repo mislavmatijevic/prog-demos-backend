@@ -1,6 +1,7 @@
 package taskexecution
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"sort"
@@ -19,10 +20,6 @@ type TaskExecutionData struct {
 	Tests                    []database.TaskTest
 	CreatedInputFile         *os.File
 	tempFolderPath           string
-}
-
-func (executionData *TaskExecutionData) GetOutputFilePath() string {
-	return filepath.Join(executionData.tempFolderPath, "/stdout.txt")
 }
 
 func (executionData *TaskExecutionData) ReadAllArtefactFiles() ([]byte, error) {
@@ -54,8 +51,27 @@ func (executionData *TaskExecutionData) ReadAllArtefactFiles() ([]byte, error) {
 }
 
 func (executionData *TaskExecutionData) CreateInputFile(test database.TaskTest) (err error) {
-	executionData.CreatedInputFile, err = createFile(executionData.tempFolderPath, "stdin.txt", test.Input)
+	var inputFileName = getFilenameBasedOnTest(STDIN_FILENAME_PREFIX, test.ID)
+	executionData.CreatedInputFile, err = createFile(executionData.tempFolderPath, inputFileName, test.Input)
 	return err
+}
+
+func (executionData *TaskExecutionData) ReadOutputFile(test database.TaskTest) (contents []byte, err error) {
+	return executionData.readContentsFromTestOutputFile(STDOUT_FILENAME_PREFIX, test.ID)
+}
+
+func (executionData *TaskExecutionData) ReadSha256FromArtefactFile(test database.TaskTest) (contents []byte, err error) {
+	return executionData.readContentsFromTestOutputFile(ARTEFACTS_FILENAME_PREFIX, test.ID)
+}
+
+func (executionData *TaskExecutionData) readContentsFromTestOutputFile(filenamePrefix string, testId int) (contents []byte, err error) {
+	var expectedOutputFileName = getFilenameBasedOnTest(filenamePrefix, testId)
+	var testOutputPath = filepath.Join(executionData.tempFolderPath, expectedOutputFileName)
+	return os.ReadFile(testOutputPath)
+}
+
+func getFilenameBasedOnTest(prefix string, testId int) string {
+	return fmt.Sprintf("%s%d.txt", prefix, testId)
 }
 
 func (executionData *TaskExecutionData) CleanupTempFolder() {

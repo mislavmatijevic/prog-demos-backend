@@ -22,7 +22,6 @@ WORKDIR /app
 
 COPY --from=builder /app/prog-demos-backend ./
 COPY .env ./
-COPY ./Docker/task-runner/task-runner.Dockerfile ./Docker/task-runner/entrypoint.sh ./
 COPY ./internal/mailing/templates/ ./internal/mailing/templates/
 
 CMD ["./prog-demos-backend"]

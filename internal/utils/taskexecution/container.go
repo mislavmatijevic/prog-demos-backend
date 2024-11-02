@@ -18,10 +18,22 @@ var (
 	ErrContainerForcefullyKilledMark = errors.New("forcefully killed")
 )
 
-const CONTAINER_TIMEOUT_MARK = "timeout"
-const CONTAINER_FORCEFULLY_KILLED_MARK = "forcefully killed"
+const (
+	CONTAINER_TIMEOUT_MARK           = "timeout"
+	CONTAINER_FORCEFULLY_KILLED_MARK = "forcefully killed"
+	STDIN_FILENAME_PREFIX            = "stdin_"
+	STDOUT_FILENAME_PREFIX           = "stdout_"
+	ARTEFACTS_FILENAME_PREFIX        = "artefacts_"
+)
+
+type TestDataMismatchReason struct {
+	TestInput      string `json:"testInput,omitempty"`
+	Output         string `json:"output,omitempty"`
+	ExpectedOutput string `json:"expectedOutput,omitempty"`
+}
 
 type TaskExecutionContainer struct {
+	name             string
 	executionData    *TaskExecutionData
 	executionContext context.Context
 	cancelFunc       *context.CancelFunc
@@ -31,6 +43,7 @@ func CreateTaskExecutionContainer(data *TaskExecutionData, timeoutContext contex
 	ctx, cancel := context.WithTimeout(timeoutContext, 30*time.Second)
 
 	var container = &TaskExecutionContainer{
+		name:             utils.CreateShortHash(data.tempFolderPath),
 		executionData:    data,
 		executionContext: ctx,
 		cancelFunc:       &cancel,
@@ -39,57 +52,9 @@ func CreateTaskExecutionContainer(data *TaskExecutionData, timeoutContext contex
 	return container
 }
 
-func (container *TaskExecutionContainer) RunTests() error {
-	var errChan = make(chan error, 1)
-	var sourceCodePath = container.executionData.File.Name()
-	var containerName = utils.CreateShortHash(sourceCodePath)
-
-	log.Debugf("Source code path: %s", sourceCodePath)
-
-	go func() {
-		errChan <- runDockerRunnerImage(containerName, sourceCodePath)
-	}()
-
-	select {
-	case <-container.executionContext.Done():
-		log.WithFields(log.Fields{"context": "task_execution"}).Warning("Timeout reached - forcefully removing Docker container!")
-
-		err := removeRunningDockerContainer(containerName)
-		if err != nil {
-			log.WithError(err).WithFields(log.Fields{"priority": "medium", "context": "task_execution"}).Error("Could not delete temp container after task execution timeout!")
-		}
-
-		return errors.New(CONTAINER_TIMEOUT_MARK)
-	case err := <-errChan:
-		return err
-	}
-}
-
-func removeRunningDockerContainer(containerName string) error {
-	dockerPath, err := exec.LookPath("docker")
-	if err != nil {
-		return err
-	}
-
-	cmd := exec.Command("bash", "-c", fmt.Sprintf(dockerPath+" rm --force "+containerName))
-	output, err := cmd.CombinedOutput()
-	var stringOutputs = strings.Trim(string(output), "\n")
-	if stringOutputs != containerName {
-		if err == nil {
-			return fmt.Errorf("container %s could not be stopped: %s", containerName, stringOutputs)
-		} else {
-			return fmt.Errorf("container %s could not be stopped: error:%v, output:%s", containerName, err, stringOutputs)
-		}
-	}
-
-	return nil
-}
-
-func runDockerRunnerImage(containerName string, fullFilePath string) error {
-	volumeName := ""
-	tempDirectory := filepath.Dir(fullFilePath)
-	sourceFileName := filepath.Base(fullFilePath)
-	parentFolderName := filepath.Base(tempDirectory)
+func (container *TaskExecutionContainer) runDockerRunnerImage() error {
+	var volumeName string
+	var tempDir string = container.executionData.tempFolderPath
 
 	dockerPath, err := exec.LookPath("docker")
 	if err != nil {
@@ -99,14 +64,32 @@ func runDockerRunnerImage(containerName string, fullFilePath string) error {
 	if utils.IsProd() {
 		volumeName = TASKS_VOLUME_NAME
 	} else {
-		volumeName = filepath.Dir(tempDirectory)
+		volumeName = filepath.Dir(tempDir)
 	}
 
-	var options = "--rm --memory 50m --cpus 0.5 --security-opt no-new-privileges --network none task-runner:latest"
-	var name = fmt.Sprintf("--name %s", containerName)
+	sourceCodeFolderInContainer := filepath.Join(TASK_RUNNER_TEMP_TASKS_DIRECTORY, filepath.Base(tempDir))
+
+	var name = fmt.Sprintf("--name %s", container.name)
 	var volumeAttachment = fmt.Sprintf("-v %s:%s", volumeName, TASK_RUNNER_TEMP_TASKS_DIRECTORY)
-	var environmentVars = fmt.Sprintf("-e SOURCE_CODE_FOLDER=%s -e SOURCE_FILE_NAME=%s", parentFolderName, sourceFileName)
-	var dockerRunArguments = strings.Join([]string{dockerPath, "run", name, volumeAttachment, environmentVars, options}, " ")
+	var envFolder = fmt.Sprintf("-e SOURCE_CODE_FOLDER=%s", sourceCodeFolderInContainer)
+	var envFile = fmt.Sprintf("-e SOURCE_FILE_NAME=%s", CPP_FILE_NAME)
+	var envPrefixStdin = fmt.Sprintf("-e STDIN_FILENAME_PREFIX=%s", STDIN_FILENAME_PREFIX)
+	var envPrefixStdout = fmt.Sprintf("-e STDOUT_FILENAME_PREFIX=%s", STDOUT_FILENAME_PREFIX)
+	var envPrefixArtefacts = fmt.Sprintf("-e ARTEFACTS_FILENAME_PREFIX=%s", ARTEFACTS_FILENAME_PREFIX)
+	var securityOptions = "--rm --memory 50m --cpus 0.5 --security-opt no-new-privileges --network none"
+
+	var dockerRunArguments = strings.Join([]string{dockerPath,
+		"run",
+		name,
+		volumeAttachment,
+		envFolder,
+		envFile,
+		envPrefixStdin,
+		envPrefixStdout,
+		envPrefixArtefacts,
+		securityOptions,
+		"task-runner:latest",
+	}, " ")
 
 	var cmd = exec.Command("bash", "-c", dockerRunArguments)
 
@@ -118,9 +101,29 @@ func runDockerRunnerImage(containerName string, fullFilePath string) error {
 		} else if strings.Contains(stringOutput, "Killed") {
 			return errors.New(CONTAINER_FORCEFULLY_KILLED_MARK)
 		} else {
-			log.WithFields(log.Fields{"suspicious_output": stringOutput, "context": "task_execution"}).Warning("Suspicious output from task-runner container!")
+			log.WithFields(log.Fields{"unexpected_output": stringOutput, "context": "task_execution"}).Warning("Unexpected output from task-runner container!")
 		}
 	}
 
 	return err
+}
+
+func (container *TaskExecutionContainer) removeRunningDockerContainer() error {
+	dockerPath, err := exec.LookPath("docker")
+	if err != nil {
+		return err
+	}
+
+	cmd := exec.Command("bash", "-c", fmt.Sprintf(dockerPath+" rm --force "+container.name))
+	output, err := cmd.CombinedOutput()
+	var stringOutputs = strings.Trim(string(output), "\n")
+	if stringOutputs != container.name {
+		if err == nil {
+			return fmt.Errorf("container %s could not be stopped: %s", container.name, stringOutputs)
+		} else {
+			return fmt.Errorf("container %s could not be stopped: error:%v, output:%s", container.name, err, stringOutputs)
+		}
+	}
+
+	return nil
 }

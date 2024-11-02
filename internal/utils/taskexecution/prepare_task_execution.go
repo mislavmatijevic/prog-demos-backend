@@ -12,7 +12,7 @@ import (
 )
 
 var (
-	ErrUserHasRunningTasks   = errors.New("user has running tasks")
+	ErrUserHasRunningTasks   = errors.New("user has running task")
 	ErrTaskExecutionStartErr = errors.New("couldn't mark execution as started")
 	ErrTempFileCreationErr   = errors.New("couldn't mark execution as started")
 	ErrNoTests               = errors.New("no tests")
@@ -41,7 +41,6 @@ func PrepareTaskExecution(requestInfo TaskExecutionRequestInfo) (*TaskExecutionD
 
 	newData.File, err = createCppFileInNewTempDirectory(requestInfo.Code)
 	if err != nil {
-		newData.SetTaskExecutionStatusFailed()
 		return newData, ErrTempFileCreationErr
 	}
 	newData.tempFolderPath = path.Dir(newData.File.Name())
@@ -49,7 +48,6 @@ func PrepareTaskExecution(requestInfo TaskExecutionRequestInfo) (*TaskExecutionD
 	newData.Tests = database.GetTestsForTask(requestInfo.TaskId)
 	if len(newData.Tests) == 0 {
 		log.WithError(err).WithFields(log.Fields{"priority": "medium", "context": "task_execution", "task_id": requestInfo.TaskId}).Error("No tests defined for task!")
-		newData.SetTaskExecutionStatusFailed()
 		return newData, ErrNoTests
 	}
 
@@ -80,7 +78,7 @@ func createCppFileInNewTempDirectory(cppCode string) (*os.File, error) {
 		return nil, err
 	}
 
-	createdTempCppFile, err := createFile(createdTempPath, "solution.cpp", cppCode)
+	createdTempCppFile, err := createFile(createdTempPath, CPP_FILE_NAME, cppCode)
 	if err != nil {
 		return nil, err
 	}
@@ -95,7 +93,7 @@ func createFile(path string, name string, contents string) (*os.File, error) {
 		return nil, err
 	}
 
-	newFile.Chmod(0644)
+	newFile.Chmod(0640)
 
 	_, err = newFile.Write([]byte(contents))
 	if err != nil {

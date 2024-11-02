@@ -1,14 +1,11 @@
 package tasks
 
 import (
-	"crypto/sha256"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
-	"os"
 	"strconv"
-	"strings"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/mislavmatijevic/prog-demos-backend/internal/authentication"
@@ -46,12 +43,6 @@ func (execErrCode ExecutionErrorCode) EnumIndex() int {
 
 type taskExecutionRequest struct {
 	SolutionCode string `json:"solutionCode"`
-}
-
-type testDataMismatchReason struct {
-	TestInput      string `json:"testInput,omitempty"`
-	Output         string `json:"output,omitempty"`
-	ExpectedOutput string `json:"expectedOutput,omitempty"`
 }
 
 type taskExecutionFailedResponse struct {
@@ -106,8 +97,10 @@ func executeTask(w http.ResponseWriter, r *http.Request) {
 		case taskexecution.ErrTaskExecutionStartErr.Error():
 			api.InternalErrorHandlerGenericMsg(w, err)
 		case taskexecution.ErrTempFileCreationErr.Error():
+			execution.SetTaskExecutionStatusFailed()
 			api.RequestErrorHandlerGenericMsg(w, err)
 		case taskexecution.ErrNoTests.Error():
+			execution.SetTaskExecutionStatusFailed()
 			api.InternalErrorHandlerCustomMsg(w, err.Error())
 		}
 		return
@@ -133,57 +126,50 @@ func executeTask(w http.ResponseWriter, r *http.Request) {
 			handleTestExecutionInternalFail(w, err, execution)
 			return
 		}
+	}
 
-		err = taskexecution.CreateTaskExecutionContainer(execution, r.Context()).RunTests()
-		if err != nil {
-			execution.SetTaskExecutionStatusFailed()
+	var container = taskexecution.CreateTaskExecutionContainer(execution, r.Context())
 
-			switch err.Error() {
-			case taskexecution.ErrContainerTimeoutMark.Error():
-				sendTaskExecutionFailedResponse(w, EXEC_ERR_TIMEOUT, nil)
-			case taskexecution.ErrContainerForcefullyKilledMark.Error():
-				sendTaskExecutionFailedResponse(w, EXEC_ERR_KILLED, nil)
-			default:
-				log.WithError(err).WithFields(log.Fields{"priority": "high", "context": "task_execution", "task_id": taskId}).Error("Task runner failed to run in Docker!")
-				handleTestExecutionInternalFail(w, err, execution)
-			}
-			return
-		}
+	err = container.RunTests()
+	if err != nil {
+		execution.SetTaskExecutionStatusFailed()
 
-		var hasArtefacts bool = test.ArtefactSHA256.Valid
-
-		if hasArtefacts {
-			hashMatches, err := checkHashMatch(test, execution)
-			if err != nil {
-				execution.SetTaskExecutionStatusFailed()
-				log.WithError(err).WithFields(log.Fields{"priority": "high", "context": "task_execution", "task_id": taskId}).Error("Artefact SHA256 comparison failed!")
-				handleTestExecutionInternalFail(w, err, execution)
-				return
-			} else if !hashMatches {
-				execution.SetTaskExecutionStatusFailed()
-				sendTaskExecutionFailedResponse(w, EXEC_ERR_ARTEFACT_CONTENT_MISMATCH, testDataMismatchReason{TestInput: test.Input})
-				return
-			}
-		}
-
-		outputPath := execution.GetOutputFilePath()
-		actualOutputs, err := getOutputs(outputPath)
-		if err != nil {
-			execution.SetTaskExecutionStatusFailed()
-			log.WithError(err).WithFields(log.Fields{"priority": "high", "context": "task_execution", "task_id": taskId, "file": outputPath}).Error("Couldn't read output file!")
+		switch err.Error() {
+		case taskexecution.ErrContainerTimeoutMark.Error():
+			sendTaskExecutionFailedResponse(w, EXEC_ERR_TIMEOUT, nil)
+		case taskexecution.ErrContainerForcefullyKilledMark.Error():
+			sendTaskExecutionFailedResponse(w, EXEC_ERR_KILLED, nil)
+		default:
+			log.WithError(err).WithFields(log.Fields{"priority": "high", "context": "task_execution", "task_id": taskId}).Error("Task runner failed to run in Docker!")
 			handleTestExecutionInternalFail(w, err, execution)
-			return
 		}
+		return
+	}
 
-		if actualOutputs != test.ExpectedOutput {
-			execution.SetTaskExecutionStatusFailed()
-			sendTaskExecutionFailedResponse(w, EXEC_ERR_TEST_FAILED, testDataMismatchReason{
-				TestInput:      test.Input,
-				Output:         actualOutputs,
-				ExpectedOutput: test.ExpectedOutput,
-			})
-			return
-		}
+	testDataMismatchReason, err := container.CheckOutputs()
+	if err != nil {
+		execution.SetTaskExecutionStatusFailed()
+		log.WithError(err).WithFields(log.Fields{"priority": "high", "context": "task_execution", "task_id": taskId}).Error("Couldn't read output file!")
+		handleTestExecutionInternalFail(w, err, execution)
+		return
+	}
+	if testDataMismatchReason != nil {
+		execution.SetTaskExecutionStatusFailed()
+		sendTaskExecutionFailedResponse(w, EXEC_ERR_TEST_FAILED, testDataMismatchReason)
+		return
+	}
+
+	artefactMismatchReason, err := container.CheckArtefacts()
+	if err != nil {
+		execution.SetTaskExecutionStatusFailed()
+		log.WithError(err).WithFields(log.Fields{"priority": "high", "context": "task_execution", "task_id": taskId}).Error("Artefact SHA256 comparison failed!")
+		handleTestExecutionInternalFail(w, err, execution)
+		return
+	}
+	if artefactMismatchReason != nil {
+		execution.SetTaskExecutionStatusFailed()
+		sendTaskExecutionFailedResponse(w, EXEC_ERR_ARTEFACT_CONTENT_MISMATCH, artefactMismatchReason)
+		return
 	}
 
 	var solvedTask = database.GetSingleFullTask(taskId)
@@ -219,22 +205,6 @@ func handleTestExecutionInternalFail(w http.ResponseWriter, err error, data *tas
 	data.SetTaskExecutionStatusFailed()
 }
 
-func checkHashMatch(test database.TaskTest, executionData *taskexecution.TaskExecutionData) (hashMatches bool, err error) {
-	rawContents, err := executionData.ReadAllArtefactFiles()
-	if err != nil {
-		return false, err
-	}
-	h := sha256.New()
-	h.Write(rawContents)
-	var hashedContents string = fmt.Sprintf("%x", h.Sum(nil))
-
-	if hashedContents != test.ArtefactSHA256.String {
-		return false, nil
-	}
-
-	return true, nil
-}
-
 func getRequestBody(r *http.Request) (*taskExecutionRequest, error) {
 	if r.Body == nil {
 		return nil, errors.New("body is missing task's data")
@@ -246,11 +216,4 @@ func getRequestBody(r *http.Request) (*taskExecutionRequest, error) {
 		return nil, errors.New("body is not in correct format")
 	}
 	return &requestBody, nil
-}
-
-func getOutputs(outputFilePath string) (string, error) {
-	bytes, err := os.ReadFile(outputFilePath)
-	var stringOutput = string(bytes)
-	stringOutput = strings.TrimFunc(stringOutput, func(r rune) bool { return r == '\n' || r == ' ' })
-	return stringOutput, err
 }

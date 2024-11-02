@@ -1,0 +1,1 @@
+`docker build -t task-runner:latest -f ./Docker/task-runner/task-runner.Dockerfile ./Docker/task-runner/`
