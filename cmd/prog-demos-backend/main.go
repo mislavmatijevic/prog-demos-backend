@@ -17,6 +17,7 @@ import (
 	"github.com/mislavmatijevic/prog-demos-backend/internal/monitoring/loki"
 	"github.com/mislavmatijevic/prog-demos-backend/internal/utils"
 	"github.com/mislavmatijevic/prog-demos-backend/internal/utils/security"
+	"github.com/mislavmatijevic/prog-demos-backend/internal/utils/taskexecution"
 )
 
 func main() {
@@ -32,6 +33,7 @@ func main() {
 	security.Initialize()
 	authentication.Initialize()
 	mailing.Initialize()
+	taskexecution.Initialize()
 
 	port := os.Getenv("PORT")
 	var listeningAddress = fmt.Sprintf("0.0.0.0:%s", port)

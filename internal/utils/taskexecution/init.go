@@ -1,0 +1,17 @@
+package taskexecution
+
+import (
+	"os"
+)
+
+var (
+	TASKS_VOLUME_NAME                = ""
+	LOCAL_TEMP_TASKS_DIRECTORY       = ""
+	TASK_RUNNER_TEMP_TASKS_DIRECTORY = ""
+)
+
+func Initialize() {
+	TASKS_VOLUME_NAME = os.Getenv("TASKS_VOLUME_NAME")
+	LOCAL_TEMP_TASKS_DIRECTORY = os.Getenv("LOCAL_TEMP_TASKS_DIRECTORY")
+	TASK_RUNNER_TEMP_TASKS_DIRECTORY = os.Getenv("TASK_RUNNER_TEMP_TASKS_DIRECTORY")
+}
