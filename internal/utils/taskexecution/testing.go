@@ -42,6 +42,8 @@ func (container *TaskExecutionContainer) checkForErrors() (detectedError error) 
 
 	switch generatedError {
 	case "Failed to run commandSegmentation fault":
+		fallthrough
+	case "Couldn't start command.":
 		detectedError = ErrIllegalOperation
 	case "File size limit exceeded":
 		detectedError = ErrFileSizeExceeded
