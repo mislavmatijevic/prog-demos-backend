@@ -27,6 +27,7 @@ const (
 	EXEC_ERR_ARTEFACT_CONTENT_MISMATCH
 	EXEC_RUNTIME_ERROR
 	EXEC_ERR_ILLEGAL_OPERATION
+	EXEC_ERR_FILE_SIZE_EXCEEDED
 )
 
 func (execErrCode ExecutionErrorCode) String() string {
@@ -38,6 +39,7 @@ func (execErrCode ExecutionErrorCode) String() string {
 		"Artefact files did not contain expected contents.",
 		"Attempted interaction with the system.",
 		"Run of compiled code inside task-runner failed.",
+		"The size of generated file(s) exceeded the allowed limits.",
 	}[execErrCode-1]
 }
 
@@ -148,6 +150,8 @@ func executeTask(w http.ResponseWriter, r *http.Request) {
 		case taskexecution.ErrIllegalOperation.Error():
 			log.WithError(err).WithFields(log.Fields{"priority": "medium", "context": "task_execution", "task_id": taskId}).Error("System interaction detected - possible shell use attempt.")
 			sendTaskExecutionFailedResponse(w, EXEC_ERR_ILLEGAL_OPERATION, err.Error())
+		case taskexecution.ErrFileSizeExceeded.Error():
+			sendTaskExecutionFailedResponse(w, EXEC_ERR_FILE_SIZE_EXCEEDED, err.Error())
 		case taskexecution.ErrRunFailed.Error():
 			log.WithError(err).WithFields(log.Fields{"priority": "medium", "context": "task_execution", "task_id": taskId}).Error("Task runner failed at executing compiled software!")
 			sendTaskExecutionFailedResponse(w, EXEC_RUNTIME_ERROR, err.Error())

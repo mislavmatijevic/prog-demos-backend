@@ -13,6 +13,8 @@ artefactsFilenamePrefix="$ARTEFACTS_FILENAME_PREFIX"
 
 g++ "$solutionFile" -o "$outputFile" 2> "$errorFile"
 
+ulimit -u 1 -f 2
+
 if [ $? -ne 0 ]; then
     cat "$errorFile"
     exit 0

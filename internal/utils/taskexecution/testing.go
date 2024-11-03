@@ -40,10 +40,15 @@ func (container *TaskExecutionContainer) RunTests() error {
 func (container *TaskExecutionContainer) checkForErrors() (detectedError error) {
 	var generatedError = container.ReadError()
 
-	if generatedError == "Failed to run commandSegmentation fault" {
+	switch generatedError {
+	case "Failed to run commandSegmentation fault":
 		detectedError = ErrIllegalOperation
-	} else if generatedError != "" {
-		detectedError = ErrRunFailed
+	case "File size limit exceeded":
+		detectedError = ErrFileSizeExceeded
+	default:
+		if generatedError != "" {
+			detectedError = ErrRunFailed
+		}
 	}
 
 	return

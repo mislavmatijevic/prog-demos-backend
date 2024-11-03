@@ -19,6 +19,7 @@ var (
 	ErrContainerForcefullyKilledMark = errors.New("forcefully killed")
 	ErrIllegalOperation              = errors.New("attempted interaction with the system")
 	ErrRunFailed                     = errors.New("run of compiled code failed")
+	ErrFileSizeExceeded              = errors.New("file size limit exceeded")
 )
 
 const (
