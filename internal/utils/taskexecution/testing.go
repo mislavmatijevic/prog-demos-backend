@@ -29,8 +29,24 @@ func (container *TaskExecutionContainer) RunTests() error {
 
 		return errors.New(CONTAINER_TIMEOUT_MARK)
 	case err := <-errChan:
+		if err == nil {
+			err = container.checkForErrors()
+		}
+
 		return err
 	}
+}
+
+func (container *TaskExecutionContainer) checkForErrors() (detectedError error) {
+	var generatedError = container.ReadError()
+
+	if generatedError == "Failed to run commandSegmentation fault" {
+		detectedError = ErrIllegalOperation
+	} else if generatedError != "" {
+		detectedError = ErrRunFailed
+	}
+
+	return
 }
 
 func (container *TaskExecutionContainer) CheckOutputs() (*TestDataMismatchReason, error) {

@@ -25,6 +25,8 @@ const (
 	EXEC_ERR_TIMEOUT
 	EXEC_ERR_KILLED
 	EXEC_ERR_ARTEFACT_CONTENT_MISMATCH
+	EXEC_RUNTIME_ERROR
+	EXEC_ERR_ILLEGAL_OPERATION
 )
 
 func (execErrCode ExecutionErrorCode) String() string {
@@ -34,6 +36,8 @@ func (execErrCode ExecutionErrorCode) String() string {
 		"Execution took too long.",
 		"Execution was forcefully killed. Most probably a memory leak.",
 		"Artefact files did not contain expected contents.",
+		"Attempted interaction with the system.",
+		"Run of compiled code inside task-runner failed.",
 	}[execErrCode-1]
 }
 
@@ -141,6 +145,12 @@ func executeTask(w http.ResponseWriter, r *http.Request) {
 			sendTaskExecutionFailedResponse(w, EXEC_ERR_TIMEOUT, nil)
 		case taskexecution.ErrContainerForcefullyKilledMark.Error():
 			sendTaskExecutionFailedResponse(w, EXEC_ERR_KILLED, nil)
+		case taskexecution.ErrIllegalOperation.Error():
+			log.WithError(err).WithFields(log.Fields{"priority": "medium", "context": "task_execution", "task_id": taskId}).Error("System interaction detected - possible shell use attempt.")
+			sendTaskExecutionFailedResponse(w, EXEC_ERR_ILLEGAL_OPERATION, err.Error())
+		case taskexecution.ErrRunFailed.Error():
+			log.WithError(err).WithFields(log.Fields{"priority": "medium", "context": "task_execution", "task_id": taskId}).Error("Task runner failed at executing compiled software!")
+			sendTaskExecutionFailedResponse(w, EXEC_RUNTIME_ERROR, err.Error())
 		default:
 			log.WithError(err).WithFields(log.Fields{"priority": "high", "context": "task_execution", "task_id": taskId}).Error("Task runner failed to run in Docker!")
 			handleTestExecutionInternalFail(w, err, execution)

@@ -70,6 +70,11 @@ func (executionData *TaskExecutionData) readContentsFromTestOutputFile(filenameP
 	return os.ReadFile(testOutputPath)
 }
 
+func (executionData *TaskExecutionData) ReadErrorFile() (contents []byte, err error) {
+	var testOutputPath = filepath.Join(executionData.tempFolderPath, ERROR_FILENAME)
+	return os.ReadFile(testOutputPath)
+}
+
 func getFilenameBasedOnTest(prefix string, testId int) string {
 	return fmt.Sprintf("%s%d.txt", prefix, testId)
 }

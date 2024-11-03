@@ -15,7 +15,7 @@ g++ "$solutionFile" -o "$outputFile" 2> "$errorFile"
 
 if [ $? -ne 0 ]; then
     cat "$errorFile"
-    exit 1
+    exit 0
 fi
 
 chmod 701 "$mainDirectory"
@@ -32,7 +32,7 @@ find "$mainDirectory" -type f -name "${stdinFilenamePrefix}*" | while read -r st
 
     if [ -s "$errorFile" ]; then
         cat "$errorFile"
-        exit 1
+        exit 0
     else
         rm -f "$errorFile"
     fi

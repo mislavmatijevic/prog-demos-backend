@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
+	"unicode"
 
 	"github.com/mislavmatijevic/prog-demos-backend/internal/utils"
 	log "github.com/sirupsen/logrus"
@@ -16,6 +17,8 @@ import (
 var (
 	ErrContainerTimeoutMark          = errors.New("timeout")
 	ErrContainerForcefullyKilledMark = errors.New("forcefully killed")
+	ErrIllegalOperation              = errors.New("attempted interaction with the system")
+	ErrRunFailed                     = errors.New("run of compiled code failed")
 )
 
 const (
@@ -24,6 +27,7 @@ const (
 	STDIN_FILENAME_PREFIX            = "stdin_"
 	STDOUT_FILENAME_PREFIX           = "stdout_"
 	ARTEFACTS_FILENAME_PREFIX        = "artefacts_"
+	ERROR_FILENAME                   = "error.txt"
 )
 
 type TestDataMismatchReason struct {
@@ -76,7 +80,9 @@ func (container *TaskExecutionContainer) runDockerRunnerImage() error {
 	var envPrefixStdin = fmt.Sprintf("-e STDIN_FILENAME_PREFIX=%s", STDIN_FILENAME_PREFIX)
 	var envPrefixStdout = fmt.Sprintf("-e STDOUT_FILENAME_PREFIX=%s", STDOUT_FILENAME_PREFIX)
 	var envPrefixArtefacts = fmt.Sprintf("-e ARTEFACTS_FILENAME_PREFIX=%s", ARTEFACTS_FILENAME_PREFIX)
-	var securityOptions = "--rm --memory 50m --cpus 0.5 --security-opt no-new-privileges --network none"
+	var envErrorFilename = fmt.Sprintf("-e ERROR_FILENAME=%s", ERROR_FILENAME)
+	var containerOptions = "--memory 50m --cpus 0.5"
+	var securityOptions = "--rm --security-opt no-new-privileges --network none"
 
 	var dockerRunArguments = strings.Join([]string{dockerPath,
 		"run",
@@ -87,6 +93,8 @@ func (container *TaskExecutionContainer) runDockerRunnerImage() error {
 		envPrefixStdin,
 		envPrefixStdout,
 		envPrefixArtefacts,
+		envErrorFilename,
+		containerOptions,
 		securityOptions,
 		"task-runner:latest",
 	}, " ")
@@ -126,4 +134,12 @@ func (container *TaskExecutionContainer) removeRunningDockerContainer() error {
 	}
 
 	return nil
+}
+
+func (container *TaskExecutionContainer) ReadError() string {
+	contents, err := container.executionData.ReadErrorFile()
+	if len(contents) == 0 || err != nil {
+		return ""
+	}
+	return strings.TrimFunc(string(contents), func(r rune) bool { return unicode.IsSpace(r) })
 }
