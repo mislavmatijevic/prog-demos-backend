@@ -1,12 +1,12 @@
 #!/bin/bash
 
-homeDirectory="/home/tester"
+executionDirectory="/playground"
 
 sourceFileName="$SOURCE_FILE_NAME"
-executionDirectory="$SOURCE_CODE_FOLDER"
-solutionFile="$executionDirectory/$sourceFileName"
-errorFile="$executionDirectory/error.txt"
-outputFile="$executionDirectory/solution.out"
+mainDirectory="$SOURCE_CODE_FOLDER"
+solutionFile="$mainDirectory/$SOURCE_FILE_NAME"
+errorFile="$mainDirectory/$ERROR_FILENAME"
+outputFile="$mainDirectory/solution.out"
 stdinFilenamePrefix="$STDIN_FILENAME_PREFIX"
 stdoutFilenamePrefix="$STDOUT_FILENAME_PREFIX"
 artefactsFilenamePrefix="$ARTEFACTS_FILENAME_PREFIX"
@@ -18,17 +18,17 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-chmod 701 "$executionDirectory"
+chmod 701 "$mainDirectory"
 chmod 701 "$outputFile"
 
-find "$executionDirectory" -type f -name "${stdinFilenamePrefix}*" | while read -r stdinFile; do
+find "$mainDirectory" -type f -name "${stdinFilenamePrefix}*" | while read -r stdinFile; do
     taskId=$(basename "$stdinFile" | sed -E 's/[^0-9]*([0-9]+).*/\1/')
 
-    stdoutFile="$executionDirectory/${stdoutFilenamePrefix}${taskId}.txt"
+    stdoutFile="$mainDirectory/${stdoutFilenamePrefix}${taskId}.txt"
     touch "$stdoutFile"
     chmod 600 "$stdoutFile"
 
-    (cd $homeDirectory && exec runuser -u tester -- "$outputFile" < "$stdinFile" > "$stdoutFile" 2>> "$errorFile")
+    (cd $executionDirectory && exec runuser -u tester -- "$outputFile" < "$stdinFile" > "$stdoutFile" 2>> "$errorFile")
 
     if [ -s "$errorFile" ]; then
         cat "$errorFile"
@@ -37,11 +37,11 @@ find "$executionDirectory" -type f -name "${stdinFilenamePrefix}*" | while read 
         rm -f "$errorFile"
     fi
 
-    files=($(find "$homeDirectory" -type f | sort))
+    files=($(find "$executionDirectory" -type f | sort))
 
     if [[ ${#files[@]} -gt 0 ]]; then
-        tempConcatFile="$executionDirectory/artefacts_concat.txt"
-        artefactsFile="$executionDirectory/${artefactsFilenamePrefix}${taskId}.txt"
+        tempConcatFile="$mainDirectory/artefacts_concat.txt"
+        artefactsFile="$mainDirectory/${artefactsFilenamePrefix}${taskId}.txt"
         touch "$tempConcatFile" "$artefactsFile"
         chmod 600 "$tempConcatFile" "$artefactsFile"
 
