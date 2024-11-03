@@ -11,8 +11,6 @@ stdinFilenamePrefix="$STDIN_FILENAME_PREFIX"
 stdoutFilenamePrefix="$STDOUT_FILENAME_PREFIX"
 artefactsFilenamePrefix="$ARTEFACTS_FILENAME_PREFIX"
 
-rm .bash_logout .bashrc .profile
-
 g++ "$solutionFile" -o "$outputFile" 2> "$errorFile"
 
 if [ $? -ne 0 ]; then
