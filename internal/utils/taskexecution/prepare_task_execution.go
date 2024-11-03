@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/mislavmatijevic/prog-demos-backend/internal/database"
-	log "github.com/sirupsen/logrus"
 )
 
 var (
@@ -35,7 +34,6 @@ func PrepareTaskExecution(requestInfo TaskExecutionRequestInfo) (*TaskExecutionD
 
 	newData.InitializedTaskExecution, err = markTaskExecutionStartForUserId(requestInfo.TaskId, requestInfo.UserId, requestInfo.Code)
 	if err != nil {
-		log.WithError(err).WithFields(log.Fields{"priority": "medium", "context": "task_execution", "task_id": requestInfo.TaskId}).Error("Couldn't save task execution!")
 		return newData, ErrTaskExecutionStartErr
 	}
 
@@ -47,7 +45,6 @@ func PrepareTaskExecution(requestInfo TaskExecutionRequestInfo) (*TaskExecutionD
 
 	newData.Tests = database.GetTestsForTask(requestInfo.TaskId)
 	if len(newData.Tests) == 0 {
-		log.WithError(err).WithFields(log.Fields{"priority": "medium", "context": "task_execution", "task_id": requestInfo.TaskId}).Error("No tests defined for task!")
 		return newData, ErrNoTests
 	}
 

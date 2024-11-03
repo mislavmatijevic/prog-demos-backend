@@ -95,12 +95,14 @@ func executeTask(w http.ResponseWriter, r *http.Request) {
 		case taskexecution.ErrUserHasRunningTasks.Error():
 			api.TooEarlyErrorHandlerCustomMsg(w, err.Error())
 		case taskexecution.ErrTaskExecutionStartErr.Error():
+			log.WithError(err).WithFields(log.Fields{"priority": "medium", "context": "task_execution", "task_id": taskId}).Error("Failed to start task execution.")
 			api.InternalErrorHandlerGenericMsg(w, err)
 		case taskexecution.ErrTempFileCreationErr.Error():
 			execution.SetTaskExecutionStatusFailed()
 			api.RequestErrorHandlerGenericMsg(w, err)
 		case taskexecution.ErrNoTests.Error():
 			execution.SetTaskExecutionStatusFailed()
+			log.WithError(err).WithFields(log.Fields{"priority": "medium", "context": "task_execution", "task_id": taskId}).Error("No tests defined for task!")
 			api.InternalErrorHandlerCustomMsg(w, err.Error())
 		}
 		return
@@ -143,6 +145,7 @@ func executeTask(w http.ResponseWriter, r *http.Request) {
 			log.WithError(err).WithFields(log.Fields{"priority": "high", "context": "task_execution", "task_id": taskId}).Error("Task runner failed to run in Docker!")
 			handleTestExecutionInternalFail(w, err, execution)
 		}
+
 		return
 	}
 
