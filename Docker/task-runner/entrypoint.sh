@@ -20,6 +20,7 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
+chmod 701 "$executionDirectory"
 chmod 701 "$outputFile"
 
 find "$executionDirectory" -type f -name "${stdinFilenamePrefix}*" | while read -r stdinFile; do
