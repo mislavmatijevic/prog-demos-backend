@@ -37,7 +37,7 @@ services:
             USE_LOKI: ${IS_PROD}
         volumes:
             - /var/run/docker.sock:/var/run/docker.sock
-            - tasks:/var/temp_tasks/
+            - tasks:${MOUNTED_TEMP_TASKS_DIRECTORY}
         ports:
             - '127.0.0.1:8080:8080'
         networks:

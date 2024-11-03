@@ -67,10 +67,10 @@ func (container *TaskExecutionContainer) runDockerRunnerImage() error {
 		volumeName = filepath.Dir(tempDir)
 	}
 
-	sourceCodeFolderInContainer := filepath.Join(TASK_RUNNER_TEMP_TASKS_DIRECTORY, filepath.Base(tempDir))
+	sourceCodeFolderInContainer := filepath.Join(MOUNTED_TEMP_TASKS_DIRECTORY, filepath.Base(tempDir))
 
 	var name = fmt.Sprintf("--name %s", container.name)
-	var volumeAttachment = fmt.Sprintf("-v %s:%s", volumeName, TASK_RUNNER_TEMP_TASKS_DIRECTORY)
+	var volumeAttachment = fmt.Sprintf("-v %s:%s", volumeName, MOUNTED_TEMP_TASKS_DIRECTORY)
 	var envFolder = fmt.Sprintf("-e SOURCE_CODE_FOLDER=%s", sourceCodeFolderInContainer)
 	var envFile = fmt.Sprintf("-e SOURCE_FILE_NAME=%s", CPP_FILE_NAME)
 	var envPrefixStdin = fmt.Sprintf("-e STDIN_FILENAME_PREFIX=%s", STDIN_FILENAME_PREFIX)
