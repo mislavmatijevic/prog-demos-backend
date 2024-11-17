@@ -80,19 +80,11 @@ func (container *TaskExecutionContainer) CheckOutputs() (*TestDataMismatchReason
 	return nil, nil
 }
 
-func compareExpectedAndActualTestOutputs(expected, actual string) (theyMatch bool) {
-	theyMatch = true
-	var expectedOutputs = strings.Split(expected, "\n")
+func compareExpectedAndActualTestOutputs(expected, actual string) bool {
+	var expectedOutputs = strings.ReplaceAll(expected, "\n", "")
 	var actualNoNewlines = strings.ReplaceAll(actual, "\n", "")
 
-	for _, expected := range expectedOutputs {
-		theyMatch = strings.Contains(actualNoNewlines, expected)
-		if !theyMatch {
-			return
-		}
-	}
-
-	return
+	return strings.HasSuffix(actualNoNewlines, expectedOutputs)
 }
 
 func (container *TaskExecutionContainer) CheckArtefacts() (*TestDataMismatchReason, error) {
