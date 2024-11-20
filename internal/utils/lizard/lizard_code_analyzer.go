@@ -112,7 +112,8 @@ func awardForComplexity(score float64, taskComplexity int) float64 {
 func getLizardOutput(file string) (string, error) {
 	log.Debugf("Lizard for file %s", file)
 	lizardPath, _ := exec.LookPath("lizard")
-	cmd := exec.Command(lizardPath, "-l cpp", "--ignore_warnings 999", file)
+	lizardLanguageAndIgnoreWarningsOptions := "-l cpp -i -1"
+	cmd := exec.Command("bash", "-c", fmt.Sprintf("%s %s %s", lizardPath, lizardLanguageAndIgnoreWarningsOptions, file))
 
 	output, err := cmd.CombinedOutput()
 	if err != nil {

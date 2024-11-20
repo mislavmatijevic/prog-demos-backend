@@ -2,6 +2,7 @@ package taskexecution
 
 import (
 	"bufio"
+	"fmt"
 	"os"
 	"os/exec"
 	"regexp"
@@ -37,7 +38,7 @@ func CheckSyntax(execution *TaskExecutionData) (reportedErrors []GppCompilerRepo
 }
 
 func findAllErrorsInSolutionCode(cppFile *os.File) ([]GppCompilerReportedSyntaxError, error) {
-	cmd := exec.Command("g++", "-fsyntax-only", "-o /dev/null", cppFile.Name())
+	cmd := exec.Command("bash", "-c", fmt.Sprintf("g++ -fsyntax-only -o /dev/null %s", cppFile.Name()))
 	output, err := cmd.CombinedOutput()
 
 	var foundErrors []GppCompilerReportedSyntaxError
