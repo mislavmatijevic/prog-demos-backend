@@ -1,12 +1,16 @@
-FROM gcc:14.2.0
+FROM alpine:latest
 
-RUN chmod 100 /bin/sh /usr/bin/sh /bin/bash /usr/bin/bash /bin/rbash /usr/bin/rbash /bin/dash /usr/bin/dash
+RUN apk update && \
+    apk add --no-cache clang libstdc++ bash util-linux
 
-RUN useradd -M -s /bin/false tester
+RUN chmod 100 /bin/sh /bin/bash
+
+RUN adduser -D -s /bin/false tester
 RUN mkdir /playground
 RUN chown tester:tester /playground
 
 COPY ./entrypoint.sh /entrypoint.sh
 RUN chmod 500 /entrypoint.sh
 
-ENTRYPOINT ["bash", "/entrypoint.sh"]
+# Set the entrypoint to bash (you can change this if you're not using bash)
+ENTRYPOINT ["/entrypoint.sh"]

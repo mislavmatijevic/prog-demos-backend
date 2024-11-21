@@ -11,7 +11,7 @@ stdinFilenamePrefix="$STDIN_FILENAME_PREFIX"
 stdoutFilenamePrefix="$STDOUT_FILENAME_PREFIX"
 artefactsFilenamePrefix="$ARTEFACTS_FILENAME_PREFIX"
 
-g++ "$solutionFile" -o "$outputFile" 2> "$errorFile"
+clang++ -O0 "$solutionFile" -o "$outputFile" 2> "$errorFile"
 
 ulimit -u 1 -f 2
 
@@ -55,4 +55,3 @@ find "$mainDirectory" -type f -name "${stdinFilenamePrefix}*" | while read -r st
         rm -f "$tempConcatFile"
     fi
 done
-

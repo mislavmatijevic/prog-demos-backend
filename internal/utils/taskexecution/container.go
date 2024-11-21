@@ -82,7 +82,7 @@ func (container *TaskExecutionContainer) runDockerRunnerImage() error {
 	var envPrefixStdout = fmt.Sprintf("-e STDOUT_FILENAME_PREFIX=%s", STDOUT_FILENAME_PREFIX)
 	var envPrefixArtefacts = fmt.Sprintf("-e ARTEFACTS_FILENAME_PREFIX=%s", ARTEFACTS_FILENAME_PREFIX)
 	var envErrorFilename = fmt.Sprintf("-e ERROR_FILENAME=%s", ERROR_FILENAME)
-	var containerOptions = "--memory 500m --cpus 1"
+	var containerOptions = "--memory 150m --cpus 0.5"
 	var securityOptions = "--rm --security-opt no-new-privileges --network none"
 
 	var dockerRunArguments = strings.Join([]string{dockerPath,
