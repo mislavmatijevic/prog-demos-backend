@@ -56,10 +56,18 @@ func (container *TaskExecutionContainer) checkForErrors() (detectedError error) 
 	return
 }
 
+/*
+Returns full expectedOutput only for the first half of the tests.
+Returns a filled object for all tests except the last one.
+This logic is in place to prevent someone printing only the expected test results.
+*/
 func (container *TaskExecutionContainer) CheckOutputs() (*TestDataMismatchReason, error) {
 	var ranTests = container.executionData.Tests
+	var totalTestsCount = len(ranTests)
+	var lastTestIndex = totalTestsCount - 1
+	var expectedOutputShownLimit = totalTestsCount / 2
 
-	for _, test := range ranTests {
+	for currentTestIndex, test := range ranTests {
 		outputFileContents, err := container.executionData.ReadOutputFile(test)
 		if err != nil {
 			return nil, err
@@ -69,10 +77,22 @@ func (container *TaskExecutionContainer) CheckOutputs() (*TestDataMismatchReason
 		var contentsAreSame = compareExpectedAndActualTestOutputs(test.ExpectedOutput, actualTestOutput)
 
 		if !contentsAreSame {
+			var givenInput = ""
+			var actualOutput = ""
+			var expectedOutput = ""
+
+			if currentTestIndex < expectedOutputShownLimit {
+				expectedOutput = test.ExpectedOutput
+			}
+			if currentTestIndex != lastTestIndex {
+				givenInput = test.Input
+				actualOutput = actualTestOutput
+			}
+
 			return &TestDataMismatchReason{
-				TestInput:      test.Input,
-				Output:         actualTestOutput,
-				ExpectedOutput: test.ExpectedOutput,
+				TestInput:      givenInput,
+				Output:         actualOutput,
+				ExpectedOutput: expectedOutput,
 			}, nil
 		}
 	}
