@@ -70,8 +70,8 @@ func (BasicTask) TableName() string {
 type FullTask struct {
 	BasicTask          `gorm:"embedded"`
 	CreatorID          int              `gorm:"not null;column:id_user" json:"-"`
-	Input              string           `gorm:"size:512;not null" json:"input"`
-	Output             string           `gorm:"size:512;not null" json:"output"`
+	Input              string           `gorm:"size:1024;not null" json:"input"`
+	Output             string           `gorm:"size:1024;not null" json:"output"`
 	InputOutputExample string           `gorm:"type:text" json:"inputOutputExample"`
 	Subtopic           *Subtopic        `gorm:"foreignKey:SubtopicID" json:"subtopic"`
 	Tests              []TaskTest       `gorm:"foreignKey:IDTask" json:"-"`
@@ -90,7 +90,7 @@ type TaskHelpStep struct {
 	IDTask     int               `gorm:"not null" json:"-"`
 	Step       int               `gorm:"int" json:"step"`
 	HelperCode WrappedNullString `gorm:"type:text" json:"helperCode,omitempty"`
-	HelperText WrappedNullString `gorm:"size:512" json:"helperText,omitempty"`
+	HelperText WrappedNullString `gorm:"size:1024" json:"helperText,omitempty"`
 }
 
 type TaskTest struct {
