@@ -9,10 +9,10 @@ RUN go mod download
 
 RUN CGO_ENABLED=0 GOOS=linux go build -o prog-demos-backend ./cmd/prog-demos-backend/main.go
 
-FROM python:3.9-slim
+FROM python:3.11-slim
 
-RUN pip install lizard
-RUN apt-get update && apt-get install -y g++ curl && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get upgrade -y && apt-get install -y g++ curl && rm -rf /var/lib/apt/lists/*
+RUN pip install --upgrade pip && pip install lizard
 ENV DOCKERVERSION=27.2.0
 RUN curl -fsSLO https://download.docker.com/linux/static/stable/x86_64/docker-${DOCKERVERSION}.tgz \
     && tar xzvf docker-${DOCKERVERSION}.tgz --strip 1 -C /usr/local/bin docker/docker \
