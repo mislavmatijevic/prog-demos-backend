@@ -204,6 +204,10 @@ func executeTask(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if solvedTask.IsBossBattle {
+		score.TotalScore = int(float64(score.TotalScore) * 1.5)
+	}
+
 	execution.CleanupTempFolder()
 
 	execution.SetTaskExecutionStatusSucceeded(solvedTask, *score)
