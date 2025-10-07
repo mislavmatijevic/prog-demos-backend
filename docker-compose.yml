@@ -13,7 +13,7 @@ services:
         networks:
             - backend-network
         healthcheck:
-            test: 'pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB'
+            test: "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"
             interval: 2s
             timeout: 5s
             retries: 5
@@ -39,7 +39,7 @@ services:
             - /var/run/docker.sock:/var/run/docker.sock
             - tasks:${MOUNTED_TEMP_TASKS_DIRECTORY}
         ports:
-            - '127.0.0.1:8080:8080'
+            - "127.0.0.1:8080:8080"
         networks:
             - backend-network
     pgadmin:
@@ -51,11 +51,11 @@ services:
             POSTGRES_PASSWORD: ${DB_PASSWORD}
             PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL}
             PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD}
-            PGADMIN_CONFIG_WTF_CSRF_ENABLED: 'False'
+            PGADMIN_CONFIG_WTF_CSRF_ENABLED: "False"
         volumes:
             - pgadmin:/var/lib/pgadmin
         ports:
-            - '8888:80'
+            - "8888:80"
         networks:
             - backend-network
 volumes:
