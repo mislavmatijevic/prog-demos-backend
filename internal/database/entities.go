@@ -40,6 +40,7 @@ type Subtopic struct {
 	ID      int          `gorm:"primaryKey" json:"id"`
 	TopicID int          `gorm:"not null;column:id_topic" json:"-"`
 	Name    string       `gorm:"size:100;not null" json:"name"`
+	Order   int          `json:"order"`
 	Topic   *Topic       `gorm:"foreignKey:TopicID" json:"topic,omitempty"`
 	Videos  []*Video     `gorm:"foreignKey:SubtopicID" json:"videos,omitempty"`
 	Tasks   []*BasicTask `gorm:"foreignKey:SubtopicID" json:"tasks,omitempty"`
