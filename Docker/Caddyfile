@@ -1,0 +1,19 @@
+:8889
+
+rate_limit {
+	distributed
+	zone dynamic_example {
+		key    {remote_host}
+		events 10
+		window 60s
+	}
+	log_key
+}
+
+root * /srv/files
+file_server browse
+
+@badbots {
+    header User-Agent *bot*
+}
+respond @badbots 403

@@ -58,6 +58,18 @@ services:
             - "8888:80"
         networks:
             - backend-network
+
+    caddy:
+        build:
+            context: .
+            dockerfile: ./Docker/caddy.Dockerfile
+        container_name: tasks-repository
+        ports:
+            - "8889:8889"
+        volumes:
+            - ./Docker/Caddyfile:/etc/caddy/Caddyfile
+            - ${TASKS_REPOSITORY_LOCATION}:/srv/files
+
 volumes:
     db_data:
     tasks:

@@ -8,7 +8,8 @@ The backend depends on it for correct running of the tasks.
 `sudo docker build -t task-runner:latest -f ./Docker/task-runner/task-runner.Dockerfile ./Docker/task-runner/`
 
 ### 2. build and run backend
-Run the command to build the backend: `docker compose up --build`
+If you want to host tasks repository, you need to put some content in `Docker/prog-demos-repository/files` or another location specified in .env's `TASKS_REPOSITORY_LOCATION`.
+Run the command to build and start the backend: `docker compose up --build`
 
 #### To run locally
 - use UNIX system (Linux/Mac) or proceed with Windows if you're not going to run tasks
