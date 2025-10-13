@@ -1,0 +1,49 @@
+name: Deploy
+
+on:
+    push:
+        branches:
+            - main
+
+jobs:
+    deploy:
+        name: Deploy via SSH
+        runs-on: ubuntu-latest
+        steps:
+            - name: Deploy backend services to Prog Demos server
+              uses: appleboy/ssh-action@v1.2.2
+              with:
+                  host: ${{ vars.SSH_HOST }}
+                  username: ${{ vars.SSH_USERNAME }}
+                  password: ${{ secrets.SSH_PASSWORD }}
+                  script: |
+                      cd ~/prog-demos-backend
+
+                      git checkout main
+
+                      git pull
+                      [[ $? != 0 ]] && echo "Failed to pull latest changes." && exit 1
+
+                      cat > .env << EOF
+                      ${{ secrets.PROD_ENV }}
+                      EOF
+
+                      [[ $? != 0 ]] && echo "Failed to write to .env!" && exit 1
+                      echo "Changed .env"
+
+                      if sudo docker compose -f down; then
+                        echo "Stopped backend-related Docker containers."
+                      else
+                        echo "Failed to stop backend-related Docker containers, but proceeding regardless."
+                      fi
+
+                      if sudo docker build -t task-runner:latest -f ./Docker/task-runner/task-runner.Dockerfile ./Docker/task-runner/; then
+                        echo "Failed to build task-runner!"
+                      fi
+
+                      if sudo docker compose up --build -d; then
+                        echo "Built and ran backend's Docker container successfully."
+                      else
+                        echo "Failed to build and run backend's Docker container!"
+                        exit 1
+                      fi
