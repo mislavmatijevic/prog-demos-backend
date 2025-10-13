@@ -31,17 +31,17 @@ jobs:
                       [[ $? != 0 ]] && echo "Failed to write to .env!" && exit 1
                       echo "Changed .env"
 
-                      if sudo docker compose -f down; then
+                      if docker compose -f down; then
                         echo "Stopped backend-related Docker containers."
                       else
                         echo "Failed to stop backend-related Docker containers, but proceeding regardless."
                       fi
 
-                      if sudo docker build -t task-runner:latest -f ./Docker/task-runner/task-runner.Dockerfile ./Docker/task-runner/; then
+                      if docker build -t task-runner:latest -f ./Docker/task-runner/task-runner.Dockerfile ./Docker/task-runner/; then
                         echo "Failed to build task-runner!"
                       fi
 
-                      if sudo docker compose up --build -d; then
+                      if docker compose up --build -d; then
                         echo "Built and ran backend's Docker container successfully."
                       else
                         echo "Failed to build and run backend's Docker container!"
