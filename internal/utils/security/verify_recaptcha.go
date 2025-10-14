@@ -9,7 +9,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/mislavmatijevic/prog-demos-backend/internal/utils"
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/api/option"
 
@@ -20,6 +19,7 @@ import (
 var (
 	recaptchaSiteKey     = ""
 	recaptchaApiKey      = ""
+	expectedHostname     = ""
 	projectID            = "prog-demos-website"
 	minScoreForChallenge float32
 )
@@ -33,6 +33,7 @@ var (
 func Initialize() {
 	recaptchaSiteKey = os.Getenv("RECAPTCHA_SITE_KEY")
 	recaptchaApiKey = os.Getenv("RECAPTCHA_API_KEY")
+	expectedHostname = os.Getenv("FRONT_HOSTNAME")
 
 	challengeScore, err := strconv.ParseFloat(os.Getenv("RECAPTCHA_CHALLENGE_SCORE"), 32)
 	if err != nil {
@@ -111,15 +112,14 @@ func VerifyRecaptcha(action string, clientToken string, fullRemoteAddress string
 	}
 
 	tokenHostname := response.TokenProperties.GetHostname()
-	myHostname := thisHost()
-	if tokenHostname != myHostname {
+	if tokenHostname != expectedHostname {
 		log.WithError(err).WithFields(
 			log.Fields{
 				"priority": "low",
 				"action":   action,
 				"ip":       pureIp,
 				"context":  "recaptcha",
-				"reason":   fmt.Sprintf("%s != %s", tokenHostname, myHostname)},
+				"reason":   fmt.Sprintf("%s != %s", tokenHostname, expectedHostname)},
 		).Error("Hostname attribute in reCAPTCHA tag did not match the hostname expected to be scored.")
 		return ErrInvalid
 	}
@@ -142,12 +142,4 @@ func VerifyRecaptcha(action string, clientToken string, fullRemoteAddress string
 	log.Debugf("RECAPTCHA OK %f!", response.RiskAnalysis.Score)
 
 	return nil
-}
-
-func thisHost() string {
-	if utils.IsProd() {
-		return "progdemos.com"
-	} else {
-		return "localhost"
-	}
 }
