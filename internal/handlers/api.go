@@ -51,9 +51,9 @@ func setupCors(r *chi.Mux) {
 	var allowedOrigins []string
 
 	if utils.IsProd() {
-		allowedOrigins = []string{"https://progdemos.com", "https://www.progdemos.com"}
+		allowedOrigins = []string{"https://www.progdemos.com"}
 	} else {
-		allowedOrigins = []string{"https://localhost:*", "http://localhost:*"}
+		allowedOrigins = []string{"http://localhost:*"}
 	}
 
 	r.Use(cors.Handler(cors.Options{
