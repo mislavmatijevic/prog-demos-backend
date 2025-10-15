@@ -34,6 +34,7 @@ func Initialize() {
 		mail.WithSMTPAuth(mail.SMTPAuthPlain),
 		mail.WithUsername(SMTP_USERNAME),
 		mail.WithPassword(SMTP_PASSWORD),
+		mail.WithSSL(),
 	)
 
 	if err == nil {
