@@ -1,0 +1,58 @@
+services:
+    database:
+        build:
+            context: .
+            dockerfile: ./Docker/db.Dockerfile
+        container_name: database-dev
+        environment:
+            POSTGRES_USER: ${DB_USER}
+            POSTGRES_PASSWORD: ${DB_PASSWORD}
+            POSTGRES_DB: prog_demos
+        volumes:
+            - db_data:/var/lib/postgresql/data
+        ports:
+            - "0.0.0.0:5432:5432"
+        networks:
+            - backend-network
+        healthcheck:
+            test: "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"
+            interval: 2s
+            timeout: 5s
+            retries: 5
+
+    pgadmin:
+        image: dpage/pgadmin4
+        container_name: pgadmin4_container-dev
+        restart: always
+        environment:
+            POSTGRES_USER: ${DB_USER}
+            POSTGRES_PASSWORD: ${DB_PASSWORD}
+            PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL}
+            PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD}
+            PGADMIN_CONFIG_WTF_CSRF_ENABLED: "False"
+        volumes:
+            - pgadmin:/var/lib/pgadmin
+        ports:
+            - "8888:80"
+        networks:
+            - backend-network
+
+    caddy:
+        build:
+            context: .
+            dockerfile: ./Docker/caddy.Dockerfile
+        container_name: tasks-repository-dev
+        ports:
+            - "8889:8889"
+        volumes:
+            - ./Docker/Caddyfile:/etc/caddy/Caddyfile
+            - ${TASKS_REPOSITORY_LOCATION}:/srv/files
+
+volumes:
+    db_data:
+    tasks:
+    pgadmin:
+
+networks:
+    backend-network:
+        driver: bridge

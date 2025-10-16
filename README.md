@@ -14,10 +14,7 @@ Run the command to build and start the backend: `docker compose up --build`
 #### To run locally
 - use UNIX system (Linux/Mac) or proceed with Windows if you're not going to run tasks
 - install `lizard` for solution code analysis (`pip install lizard`)
-- ensure to explicitly expose port 5432 of the DB container
-- run `docker compose up --build` with now exposed database on port 5432
-- delete the backend container
-- start the backend manually by running a VSCode task "Rock again!" (take a look at tasks.json what it does)
+- run command `cd ./prog-demos-backend && docker compose --project-name prog-demos-backend-dev -f dev.docker-compose.yml --env-file .env up -d && nodemon --watch './**/*.go' --signal SIGTERM --exec 'go' run ./cmd/prog-demos-backend/main.go`
 
 ## How to access running services?
 
