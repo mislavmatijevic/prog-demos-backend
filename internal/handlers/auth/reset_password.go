@@ -8,13 +8,13 @@ import (
 	"github.com/mislavmatijevic/prog-demos-backend/internal/database"
 	"github.com/mislavmatijevic/prog-demos-backend/internal/handlers/api"
 	"github.com/mislavmatijevic/prog-demos-backend/internal/utils"
-	"github.com/mislavmatijevic/prog-demos-backend/internal/utils/security"
+	"github.com/mislavmatijevic/prog-demos-backend/internal/utils/captcha"
 )
 
 type resetPasswordBody struct {
-	NewPassword    string `json:"newPassword"`
-	ResetToken     string `json:"resetToken"`
-	RecaptchaToken string `json:"recaptchaToken"`
+	NewPassword  string `json:"newPassword"`
+	ResetToken   string `json:"resetToken"`
+	CaptchaToken string `json:"captchaToken"`
 }
 
 type passwordResetResponse struct {
@@ -30,9 +30,9 @@ func resetPassword(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = security.VerifyRecaptcha("reset_password", resetPasswordBody.RecaptchaToken, r.RemoteAddr)
+	err = captcha.Verify("password-reset", resetPasswordBody.CaptchaToken, r.RemoteAddr)
 	if err != nil {
-		handleRecaptchaError(w, err)
+		handleCaptchaError(w, err)
 		return
 	}
 

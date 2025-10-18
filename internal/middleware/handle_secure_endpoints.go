@@ -33,20 +33,20 @@ func HandleSecureEndpoints(next http.Handler) http.Handler {
 
 func getBodyForRequestWithPassword(r *http.Request) context.Context {
 	var reqBody = logging_json_bodies.ReadRequestBodyWithoutClosingWithCustomLimit(r, 1024<<2)
-	jsonReqBody := logging_json_bodies.GetJsonBodyWithFieldsRemoved(reqBody, 0, "password", "recaptchaToken")
+	jsonReqBody := logging_json_bodies.GetJsonBodyWithFieldsRemoved(reqBody, 0, "password", "captchaToken")
 
 	return context.WithValue(r.Context(), CensoredBodyCtxKey, &specialRequestContextValue{jsonReqBody})
 }
 
 func getBodyForPasswordResetRequest(r *http.Request) context.Context {
 	var reqBody = logging_json_bodies.ReadRequestBodyWithoutClosingWithCustomLimit(r, 1024<<2)
-	jsonReqBody := logging_json_bodies.GetJsonBodyWithFieldsRemoved(reqBody, 0, "newPassword", "recaptchaToken")
+	jsonReqBody := logging_json_bodies.GetJsonBodyWithFieldsRemoved(reqBody, 0, "newPassword", "captchaToken")
 	return context.WithValue(r.Context(), CensoredBodyCtxKey, &specialRequestContextValue{jsonReqBody})
 }
 
 func getBodyForRequestPasswordReset(r *http.Request) context.Context {
 	var reqBody = logging_json_bodies.ReadRequestBodyWithoutClosingWithCustomLimit(r, 1024<<2)
-	jsonReqBody := logging_json_bodies.GetJsonBodyWithFieldsRemoved(reqBody, 0, "recaptchaToken")
+	jsonReqBody := logging_json_bodies.GetJsonBodyWithFieldsRemoved(reqBody, 0, "captchaToken")
 	return context.WithValue(r.Context(), CensoredBodyCtxKey, &specialRequestContextValue{jsonReqBody})
 }
 
