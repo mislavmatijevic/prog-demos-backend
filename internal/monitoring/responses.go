@@ -11,9 +11,14 @@ import (
 func LogResponse(status int, header http.Header, jsonRes []byte) {
 	requestId := header.Get(chimiddle.RequestIDHeader)
 
-	var level = log.InfoLevel
-	if status >= 400 {
+	var level log.Level
+
+	if status >= 500 {
+		level = log.ErrorLevel
+	} else if status >= 400 {
 		level = log.WarnLevel
+	} else {
+		level = log.InfoLevel
 	}
 
 	resBodyForLogging := hideUnnecessaryPropertiesFromBody(jsonRes)
