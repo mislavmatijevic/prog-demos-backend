@@ -36,6 +36,9 @@ func main() {
 	taskexecution.Initialize()
 
 	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080"
+	}
 	var listeningAddress = fmt.Sprintf("0.0.0.0:%s", port)
 	log.Infof("I'm rockin' at %s!", listeningAddress)
 
