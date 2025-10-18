@@ -9,14 +9,14 @@ import (
 	"github.com/mislavmatijevic/prog-demos-backend/internal/database"
 	"github.com/mislavmatijevic/prog-demos-backend/internal/handlers/api"
 	"github.com/mislavmatijevic/prog-demos-backend/internal/utils"
-	"github.com/mislavmatijevic/prog-demos-backend/internal/utils/security"
+	"github.com/mislavmatijevic/prog-demos-backend/internal/utils/captcha"
 	"golang.org/x/crypto/bcrypt"
 )
 
 type loginBody struct {
-	Identifier     string `json:"identifier"`
-	Password       string `json:"password"`
-	RecaptchaToken string `json:"recaptchaToken"`
+	Identifier   string `json:"identifier"`
+	Password     string `json:"password"`
+	CaptchaToken string `json:"captchaToken"`
 }
 
 type loginResponse struct {
@@ -27,21 +27,20 @@ type loginResponse struct {
 
 func loginUser(w http.ResponseWriter, r *http.Request) {
 	var loginBody loginBody
-	err := json.NewDecoder(r.Body).Decode(&loginBody)
-	if err != nil {
+	if err := json.NewDecoder(r.Body).Decode(&loginBody); err != nil {
 		api.RequestErrorHandlerGenericMsg(w, err)
+		return
+	}
+
+	err := captcha.Verify("login", loginBody.CaptchaToken, r.RemoteAddr)
+	if err != nil {
+		handleCaptchaError(w, err)
 		return
 	}
 
 	isIdentifierSet, trimmedIdentifier := utils.GetTrimmedStringWithValue(loginBody.Identifier)
 	if !isIdentifierSet || len(loginBody.Password) == 0 {
 		api.RequestErrorHandlerCustomMsg(w, "Login attributes not correctly set!")
-		return
-	}
-
-	err = security.VerifyRecaptcha("login", loginBody.RecaptchaToken, r.RemoteAddr)
-	if err != nil {
-		handleRecaptchaError(w, err)
 		return
 	}
 

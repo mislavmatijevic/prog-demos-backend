@@ -16,7 +16,7 @@ import (
 	"github.com/mislavmatijevic/prog-demos-backend/internal/mailing"
 	"github.com/mislavmatijevic/prog-demos-backend/internal/monitoring/loki"
 	"github.com/mislavmatijevic/prog-demos-backend/internal/utils"
-	"github.com/mislavmatijevic/prog-demos-backend/internal/utils/security"
+	"github.com/mislavmatijevic/prog-demos-backend/internal/utils/captcha"
 	"github.com/mislavmatijevic/prog-demos-backend/internal/utils/taskexecution"
 )
 
@@ -30,7 +30,7 @@ func main() {
 	setupLogging()
 
 	database.Initialize()
-	security.Initialize()
+	captcha.Initialize()
 	authentication.Initialize()
 	mailing.Initialize()
 	taskexecution.Initialize()

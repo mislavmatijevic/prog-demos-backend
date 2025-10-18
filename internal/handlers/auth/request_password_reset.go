@@ -11,12 +11,12 @@ import (
 	"github.com/mislavmatijevic/prog-demos-backend/internal/handlers/api"
 	"github.com/mislavmatijevic/prog-demos-backend/internal/mailing"
 	"github.com/mislavmatijevic/prog-demos-backend/internal/utils"
-	"github.com/mislavmatijevic/prog-demos-backend/internal/utils/security"
+	"github.com/mislavmatijevic/prog-demos-backend/internal/utils/captcha"
 )
 
 type requestPasswordResetBody struct {
-	Email          string `json:"email,omitempty"`
-	RecaptchaToken string `json:"recaptchaToken"`
+	Email        string `json:"email,omitempty"`
+	CaptchaToken string `json:"captchaToken"`
 }
 
 func requestPasswordReset(w http.ResponseWriter, r *http.Request) {
@@ -26,14 +26,14 @@ func requestPasswordReset(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if !utils.IsEmailValid(requestBody.Email) {
-		api.RequestErrorHandlerCustomMsg(w, "Valid email not procured.")
+	err := captcha.Verify("request_password_reset", requestBody.CaptchaToken, r.RemoteAddr)
+	if err != nil {
+		handleCaptchaError(w, err)
 		return
 	}
 
-	err := security.VerifyRecaptcha("request_password_reset", requestBody.RecaptchaToken, r.RemoteAddr)
-	if err != nil {
-		handleRecaptchaError(w, err)
+	if !utils.IsEmailValid(requestBody.Email) {
+		api.RequestErrorHandlerCustomMsg(w, "Valid email not procured.")
 		return
 	}
 

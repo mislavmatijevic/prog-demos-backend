@@ -4,7 +4,7 @@ import (
 	"net/http"
 
 	"github.com/mislavmatijevic/prog-demos-backend/internal/handlers/api"
-	"github.com/mislavmatijevic/prog-demos-backend/internal/utils/security"
+	"github.com/mislavmatijevic/prog-demos-backend/internal/utils/captcha"
 )
 
 type authInputErrorCode int
@@ -12,14 +12,14 @@ type authInputErrorCode int
 const (
 	EXEC_ERR_INFO_INVALID authInputErrorCode = iota + 1
 	EXEC_ERR_USERNAME_TAKEN
-	EXEC_ERR_RECAPTCHA_REQUIRES_CHALLENGE
+	EXEC_ERR_CAPTCHA_FAILED
 )
 
 func (execErrCode authInputErrorCode) String() string {
 	return [...]string{
 		"Given information is not valid for registration.",
 		"Username or email already taken.",
-		"Login did not score well at ReCaptcha, challenge user.",
+		"Captcha rejected request.",
 	}[execErrCode-1]
 }
 
@@ -33,16 +33,14 @@ type errorResponse struct {
 	ErrorCode int    `json:"errorCode"`
 }
 
-func handleRecaptchaError(w http.ResponseWriter, err error) {
+func handleCaptchaError(w http.ResponseWriter, err error) {
 	switch err.Error() {
-	case security.ErrFailedToProcess.Error():
-		api.InternalErrorHandlerCustomMsg(w, "Recaptcha is not available.")
-	case security.ErrMustChallenge.Error():
-		respondForErrorCode(w, EXEC_ERR_RECAPTCHA_REQUIRES_CHALLENGE)
-	case security.ErrInvalid.Error():
-		fallthrough
+	case captcha.ErrFailedToProcess.Error():
+		api.InternalErrorHandlerCustomMsg(w, "Error while trying to process captcha token.")
+	case captcha.ErrInvalid.Error():
+		respondForErrorCode(w, EXEC_ERR_CAPTCHA_FAILED)
 	default:
-		api.RequestErrorHandlerCustomMsg(w, "Failed recaptcha.")
+		api.InternalErrorHandlerCustomMsg(w, "Unknown captcha error.")
 	}
 }
 
