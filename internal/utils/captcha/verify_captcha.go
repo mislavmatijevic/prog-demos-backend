@@ -35,7 +35,7 @@ type TurnstileResponse struct {
 
 func Initialize() {
 	if utils.IsProd() {
-		expectedHostname = "progdemos.com"
+		expectedHostname = "www.progdemos.com"
 	} else {
 		expectedHostname = "example.com"
 	}
