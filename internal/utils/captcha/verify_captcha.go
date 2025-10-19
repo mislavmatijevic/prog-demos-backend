@@ -106,6 +106,8 @@ func Verify(action string, clientToken string, fullRemoteAddress string) error {
 		return ErrFailedToProcess
 	}
 
+	log.WithFields(log.Fields{"request": jsonRequestObject, "response": string(bodyBytes)}).Debug("Turnstile responded")
+
 	if !response.Success {
 		return handleFailedresponse(response, err, action, pureIp, bodyBytes)
 	}
@@ -113,11 +115,11 @@ func Verify(action string, clientToken string, fullRemoteAddress string) error {
 	if response.Hostname != expectedHostname {
 		log.WithFields(
 			log.Fields{
-				"priority":       "high",
-				"action":         action,
-				"reporterAction": response.Action,
-				"ip":             pureIp,
-				"context":        "captcha"},
+				"priority":        "high",
+				"action":          action,
+				"reporter_action": response.Action,
+				"ip":              pureIp,
+				"context":         "captcha"},
 		).Errorf("Turnstile's response contained unexpected hostname: '%s'", response.Hostname)
 		return ErrInvalid
 	}
