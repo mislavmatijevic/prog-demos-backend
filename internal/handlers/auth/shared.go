@@ -5,6 +5,7 @@ import (
 
 	"github.com/mislavmatijevic/prog-demos-backend/internal/handlers/api"
 	"github.com/mislavmatijevic/prog-demos-backend/internal/utils/captcha"
+	log "github.com/sirupsen/logrus"
 )
 
 type authInputErrorCode int
@@ -40,6 +41,7 @@ func handleCaptchaError(w http.ResponseWriter, err error) {
 	case captcha.ErrInvalid.Error():
 		respondForErrorCode(w, EXEC_ERR_CAPTCHA_FAILED)
 	default:
+		log.WithError(err).WithFields(log.Fields{"priority": "high", "context": "captcha", "full_error": err.Error()})
 		api.InternalErrorHandlerCustomMsg(w, "Unknown captcha error.")
 	}
 }

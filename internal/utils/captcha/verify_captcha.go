@@ -106,6 +106,8 @@ func Verify(action string, clientToken string, fullRemoteAddress string) error {
 		return ErrFailedToProcess
 	}
 
+	log.WithFields(log.Fields{"request": jsonRequestObject, "response": string(bodyBytes)}).Debug("Turnstile responded")
+
 	if !response.Success {
 		return handleFailedresponse(response, err, action, pureIp, bodyBytes)
 	}
