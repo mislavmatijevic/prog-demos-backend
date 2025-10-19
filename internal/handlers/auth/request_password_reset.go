@@ -26,7 +26,7 @@ func requestPasswordReset(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err := captcha.Verify("request_password_reset", requestBody.CaptchaToken, r.RemoteAddr)
+	err := captcha.Verify("login", requestBody.CaptchaToken, r.RemoteAddr)
 	if err != nil {
 		handleCaptchaError(w, err)
 		return
