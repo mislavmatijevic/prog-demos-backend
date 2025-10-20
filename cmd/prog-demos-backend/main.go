@@ -42,9 +42,9 @@ func main() {
 	var listeningAddress = fmt.Sprintf("0.0.0.0:%s", port)
 	log.Infof("I'm rockin' at %s!", listeningAddress)
 
-	var r *chi.Mux = chi.NewRouter()
-	handlers.Handler(r)
-	err = http.ListenAndServe(listeningAddress, r)
+	var router *chi.Mux = chi.NewRouter()
+	handlers.Handler(router)
+	err = http.ListenAndServe(listeningAddress, router)
 	if err != nil {
 		log.WithError(err).WithFields(log.Fields{"priority": "high", "context": "main", "ip_address": listeningAddress}).Error("Failed while running.")
 	}
