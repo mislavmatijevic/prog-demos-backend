@@ -4,7 +4,7 @@ import (
 	"net/http"
 
 	"github.com/mislavmatijevic/prog-demos-backend/internal/handlers/api"
-	"github.com/mislavmatijevic/prog-demos-backend/internal/utils/captcha"
+	"github.com/mislavmatijevic/prog-demos-backend/internal/utils/security/captcha"
 	log "github.com/sirupsen/logrus"
 )
 
