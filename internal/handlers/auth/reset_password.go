@@ -8,7 +8,7 @@ import (
 	"github.com/mislavmatijevic/prog-demos-backend/internal/database"
 	"github.com/mislavmatijevic/prog-demos-backend/internal/handlers/api"
 	"github.com/mislavmatijevic/prog-demos-backend/internal/utils"
-	"github.com/mislavmatijevic/prog-demos-backend/internal/utils/captcha"
+	"github.com/mislavmatijevic/prog-demos-backend/internal/utils/security/captcha"
 )
 
 type resetPasswordBody struct {

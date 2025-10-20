@@ -16,7 +16,7 @@ import (
 	"github.com/mislavmatijevic/prog-demos-backend/internal/mailing"
 	"github.com/mislavmatijevic/prog-demos-backend/internal/monitoring/loki"
 	"github.com/mislavmatijevic/prog-demos-backend/internal/utils"
-	"github.com/mislavmatijevic/prog-demos-backend/internal/utils/captcha"
+	"github.com/mislavmatijevic/prog-demos-backend/internal/utils/security/captcha"
 	"github.com/mislavmatijevic/prog-demos-backend/internal/utils/taskexecution"
 )
 
@@ -42,9 +42,9 @@ func main() {
 	var listeningAddress = fmt.Sprintf("0.0.0.0:%s", port)
 	log.Infof("I'm rockin' at %s!", listeningAddress)
 
-	var r *chi.Mux = chi.NewRouter()
-	handlers.Handler(r)
-	err = http.ListenAndServe(listeningAddress, r)
+	var router *chi.Mux = chi.NewRouter()
+	handlers.Handler(router)
+	err = http.ListenAndServe(listeningAddress, router)
 	if err != nil {
 		log.WithError(err).WithFields(log.Fields{"priority": "high", "context": "main", "ip_address": listeningAddress}).Error("Failed while running.")
 	}

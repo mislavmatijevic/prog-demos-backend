@@ -11,7 +11,7 @@ import (
 	"github.com/mislavmatijevic/prog-demos-backend/internal/handlers/api"
 	"github.com/mislavmatijevic/prog-demos-backend/internal/mailing"
 	"github.com/mislavmatijevic/prog-demos-backend/internal/utils"
-	"github.com/mislavmatijevic/prog-demos-backend/internal/utils/captcha"
+	"github.com/mislavmatijevic/prog-demos-backend/internal/utils/security/captcha"
 )
 
 type requestPasswordResetBody struct {
@@ -26,7 +26,7 @@ func requestPasswordReset(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err := captcha.Verify("login", requestBody.CaptchaToken, r.RemoteAddr)
+	err := captcha.Verify("request-password-reset", requestBody.CaptchaToken, r.RemoteAddr)
 	if err != nil {
 		handleCaptchaError(w, err)
 		return
