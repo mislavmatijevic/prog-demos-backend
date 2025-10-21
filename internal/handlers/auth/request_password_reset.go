@@ -3,7 +3,6 @@ package auth
 import (
 	"database/sql"
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"time"
 
@@ -33,13 +32,13 @@ func requestPasswordReset(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if !utils.IsEmailValid(requestBody.Email) {
-		api.RequestErrorHandlerCustomMsg(w, "Valid email not procured.")
+		api.NotFoundHandlerCustomMsg(w, "Valid email not procured.")
 		return
 	}
 
 	user := getActivatedUserByEmail(requestBody.Email)
 	if user == nil {
-		api.RequestErrorHandlerCustomMsg(w, fmt.Sprintf("User with email '%s' not found.", requestBody.Email))
+		api.NotFoundHandlerCustomMsg(w, "Valid email not procured.")
 		return
 	}
 	if userHasPasswordResetInProgress(user) {
