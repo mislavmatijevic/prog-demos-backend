@@ -8,23 +8,30 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-type authInputErrorCode int
+type authErrorCode int
 
 const (
-	EXEC_ERR_INFO_INVALID authInputErrorCode = iota + 1
-	EXEC_ERR_USERNAME_TAKEN
-	EXEC_ERR_CAPTCHA_FAILED
+	NO_ERROR authErrorCode = iota
+	ERR_INFO_INVALID
+	ERR_USERNAME_TAKEN
+	ERR_CAPTCHA_FAILED
+	ERR_TOKEN_NOT_VALID
+	ERR_TOKEN_NOT_FOUND
+	ERR_TOKEN_EXPIRED
 )
 
-func (execErrCode authInputErrorCode) String() string {
+func (execErrCode authErrorCode) String() string {
 	return [...]string{
-		"Given information is not valid for registration.",
-		"Username or email already taken.",
-		"Captcha rejected request.",
+		"given information is not valid for registration",
+		"username or email already taken",
+		"captcha rejected request",
+		"token not valid",
+		"token was not found",
+		"token expired",
 	}[execErrCode-1]
 }
 
-func (execErrCode authInputErrorCode) EnumIndex() int {
+func (execErrCode authErrorCode) EnumIndex() int {
 	return int(execErrCode)
 }
 
@@ -39,14 +46,14 @@ func handleCaptchaError(w http.ResponseWriter, err error) {
 	case captcha.ErrFailedToProcess.Error():
 		api.InternalErrorHandlerCustomMsg(w, "Error while trying to process captcha token.")
 	case captcha.ErrInvalid.Error():
-		respondForErrorCode(w, EXEC_ERR_CAPTCHA_FAILED)
+		respondForErrorCode(w, ERR_CAPTCHA_FAILED)
 	default:
 		log.WithError(err).WithFields(log.Fields{"priority": "high", "context": "captcha", "full_error": err.Error()})
 		api.InternalErrorHandlerCustomMsg(w, "Unknown captcha error.")
 	}
 }
 
-func respondForErrorCode(w http.ResponseWriter, errorCode authInputErrorCode) {
+func respondForErrorCode(w http.ResponseWriter, errorCode authErrorCode) {
 	var res = errorResponse{
 		Success:   false,
 		Message:   errorCode.String(),

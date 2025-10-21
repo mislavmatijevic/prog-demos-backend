@@ -10,6 +10,7 @@ func HandleAuth(r *chi.Mux) {
 		router.Post("/refresh", refreshAccess)
 		router.Post("/logout", logoutUser)
 		router.Post("/password/request-reset", requestPasswordReset)
+		router.Post("/password/reset/verify", checkPasswordResetToken)
 		router.Post("/password/reset", resetPassword)
 	})
 }

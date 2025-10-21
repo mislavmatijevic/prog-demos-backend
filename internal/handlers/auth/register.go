@@ -43,7 +43,7 @@ func registerUser(w http.ResponseWriter, r *http.Request) {
 	username, email := strings.TrimSpace(userReqBody.Username), strings.TrimSpace(userReqBody.Email)
 	var infoIsValid bool = checkIfUserInfoValid(username, email, userReqBody.Password)
 	if !infoIsValid {
-		respondForErrorCode(w, EXEC_ERR_INFO_INVALID)
+		respondForErrorCode(w, ERR_INFO_INVALID)
 		return
 	}
 
@@ -59,7 +59,7 @@ func registerUser(w http.ResponseWriter, r *http.Request) {
 	newUser, err := database.RegisterNewUser(user)
 	if err != nil {
 		if err.Error() == "user already exists" {
-			respondForErrorCode(w, EXEC_ERR_USERNAME_TAKEN)
+			respondForErrorCode(w, ERR_USERNAME_TAKEN)
 		} else {
 			api.RequestErrorHandlerCustomMsg(w, err.Error())
 		}
