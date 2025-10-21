@@ -3,7 +3,6 @@ package database
 import (
 	"database/sql"
 	"errors"
-	"time"
 )
 
 func RegisterNewUser(userInfo User) (*User, error) {
@@ -71,26 +70,22 @@ func DeleteUser(user *User) error {
 	return result.Error
 }
 
-func ChangeUserPassword(passwordResetToken string, newPasswordHash string) (*User, error) {
-	user := getUserByCondition("password_reset_token = ?", passwordResetToken)
-	if user == nil {
-		return nil, errors.New("password reset token does not exist")
-	}
-
-	if !user.PasswordResetExpiry.Valid || time.Now().After(user.PasswordResetExpiry.Time) {
-		removePasswordReset(user)
-		return nil, errors.New("password reset token has expired")
-	}
-
+func ChangeUserPassword(user *User, newPasswordHash string) error {
 	user.Password = newPasswordHash
-	removePasswordReset(user)
-
-	err := SaveUser(*user)
-	return user, err
+	RemovePasswordReset(user)
+	return SaveUser(*user)
 }
 
-func removePasswordReset(user *User) {
+func RemovePasswordReset(user *User) {
 	user.PasswordResetToken = WrappedNullString{NullString: sql.NullString{Valid: false}}
 	user.PasswordResetExpiry = WrappedNullTime{NullTime: sql.NullTime{Valid: false}}
 	SaveUser(*user)
+}
+
+func GetUserByPasswordResetToken(questionableToken string) (*User, error) {
+	user := getUserByCondition("password_reset_token = ?", questionableToken)
+	if user == nil {
+		return nil, errors.New("password reset token does not exist")
+	}
+	return user, nil
 }
