@@ -117,10 +117,23 @@ func Verify(action string, clientToken string, fullRemoteAddress string) error {
 			log.Fields{
 				"priority":        "high",
 				"action":          action,
-				"reporter_action": response.Action,
+				"response_action": response.Action,
 				"ip":              pureIp,
 				"context":         "captcha"},
 		).Errorf("Turnstile's response contained unexpected hostname: '%s'", response.Hostname)
+		return ErrInvalid
+	}
+
+	if utils.IsProd() && response.Action != action {
+		log.WithFields(
+			log.Fields{
+				"priority":        "high",
+				"action":          action,
+				"response_action": response.Action,
+				"expected_action": action,
+				"ip":              pureIp,
+				"context":         "captcha"},
+		).Errorf("Turnstile's response wasn't sent for correct action: %s != %s", response.Action, action)
 		return ErrInvalid
 	}
 
