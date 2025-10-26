@@ -137,7 +137,7 @@ func Verify(action string, clientToken string, fullRemoteAddress string) error {
 		return ErrInvalid
 	}
 
-	log.Debugf("Captcha passed.")
+	log.Debugf("Captcha passed for action %s.", action)
 	return nil
 }
 
