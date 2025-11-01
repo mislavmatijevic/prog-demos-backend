@@ -18,12 +18,12 @@ var client *github.Client = nil
 func initializeGithubIntegration() {
 	itr, err := ghinstallation.NewKeyFromFile(http.DefaultTransport, 2196689, 92362358, GITHUB_ISSUES_APP_PRIVATE_KEY_FILE)
 	if err != nil {
-		log.Warn("Failed to read the file")
-	} else {
-		log.Infof("Loaded GitHub secret.")
+		log.Warnf("Failed to read the GitHub client private key file from %s.", GITHUB_ISSUES_APP_PRIVATE_KEY_FILE)
+		return
 	}
 
 	client = github.NewClient(&http.Client{Transport: itr})
+	log.Infof("Created GitHub client.")
 
 	return
 }
