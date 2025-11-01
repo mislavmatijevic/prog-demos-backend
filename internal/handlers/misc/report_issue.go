@@ -15,7 +15,7 @@ import (
 type reportIssueBody struct {
 	Title           string `json:"title"`
 	Description     string `json:"description"`
-	IncludeUsername bool   `json:"include_username"`
+	IncludeUsername bool   `json:"includeUsername"`
 }
 
 type reportIssueResponse struct {
