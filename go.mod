@@ -3,9 +3,11 @@ module github.com/mislavmatijevic/prog-demos-backend
 go 1.25.0
 
 require (
+	github.com/bradleyfalzon/ghinstallation/v2 v2.17.0
 	github.com/go-chi/chi/v5 v5.2.3
 	github.com/go-chi/cors v1.2.2
 	github.com/go-chi/jwtauth v1.2.0
+	github.com/google/go-github v17.0.0+incompatible
 	github.com/joho/godotenv v1.5.1
 	github.com/lestrrat-go/jwx v1.2.31
 	github.com/sirupsen/logrus v1.9.3
@@ -23,6 +25,9 @@ require (
 
 require (
 	github.com/goccy/go-json v0.10.5 // indirect
+	github.com/golang-jwt/jwt/v4 v4.5.2 // indirect
+	github.com/google/go-github/v75 v75.0.0 // indirect
+	github.com/google/go-querystring v1.1.0 // indirect
 	github.com/jackc/pgpassfile v1.0.0 // indirect
 	github.com/jackc/pgservicefile v0.0.0-20240606120523-5a60cdf6a761 // indirect
 	github.com/jackc/pgx/v5 v5.7.6 // indirect

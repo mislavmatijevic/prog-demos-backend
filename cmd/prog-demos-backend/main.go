@@ -13,6 +13,7 @@ import (
 	"github.com/mislavmatijevic/prog-demos-backend/internal/authentication"
 	"github.com/mislavmatijevic/prog-demos-backend/internal/database"
 	"github.com/mislavmatijevic/prog-demos-backend/internal/handlers"
+	"github.com/mislavmatijevic/prog-demos-backend/internal/integrations"
 	"github.com/mislavmatijevic/prog-demos-backend/internal/mailing"
 	"github.com/mislavmatijevic/prog-demos-backend/internal/monitoring/loki"
 	"github.com/mislavmatijevic/prog-demos-backend/internal/utils"
@@ -34,6 +35,7 @@ func main() {
 	authentication.Initialize()
 	mailing.Initialize()
 	taskexecution.Initialize()
+	integrations.Initialize()
 
 	port := os.Getenv("PORT")
 	if port == "" {
