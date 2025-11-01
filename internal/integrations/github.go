@@ -2,6 +2,8 @@ package integrations
 
 import (
 	"context"
+	"encoding/json"
+	"errors"
 	"net/http"
 
 	"github.com/bradleyfalzon/ghinstallation/v2"
@@ -26,7 +28,12 @@ func initializeGithubIntegration() {
 	return
 }
 
-func CreateGithubIssue(title string, description string) {
+func CreateGithubIssue(title string, description string) (string, error) {
+	if client == nil {
+		log.Info("Skipping creating issue since GitHub client is not initialized.")
+		return "", errors.New("GitHub client not initialized")
+	}
+
 	newIssueRequest := github.IssueRequest{
 		Title:    github.String(title),
 		Body:     github.String(description),
@@ -37,6 +44,11 @@ func CreateGithubIssue(title string, description string) {
 
 	issue, response, err := client.Issues.Create(context.Background(), "mislavmatijevic", "prog-demos-frontend", &newIssueRequest)
 	if err != nil {
-		log.WithError(err).WithFields(log.Fields{"priority": "high", "context": "github_integration", "issue": issue, "response": response}).Panic("Failed to create issue")
+		issueBytes, err := json.Marshal(issue)
+		responseBytes, err := json.Marshal(response)
+		log.WithError(err).WithFields(log.Fields{"priority": "high", "context": "github_integration", "issue": string(issueBytes), "response": string(responseBytes)}).Error("Failed to create issue")
+		return "", err
 	}
+
+	return *issue.HTMLURL, nil
 }
