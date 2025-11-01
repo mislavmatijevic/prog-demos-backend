@@ -31,7 +31,14 @@ jobs:
                       [[ $? != 0 ]] && echo "Failed to write to .env!" && exit 1
                       echo "Changed .env"
 
-                      if docker compose -f down; then
+                      cat > prog-demos-bug-reporter.pem << EOF
+                      ${{ secrets.ISSUES_APP_PEM }}
+                      EOF
+
+                      [[ $? != 0 ]] && echo "Failed to write to GitHub Issues App PEM file!" && exit 1
+                      echo "Changed GitHub Issues App PEM secret key."
+
+                      if sudo docker compose -f down; then
                         echo "Stopped backend-related Docker containers."
                       else
                         echo "Failed to stop backend-related Docker containers, but proceeding regardless."
