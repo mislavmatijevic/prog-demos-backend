@@ -22,6 +22,7 @@ WORKDIR /app
 
 COPY --from=builder /app/prog-demos-backend ./
 COPY .env ./
+COPY prog-demos-bug-reporter.pem ./
 COPY ./internal/mailing/templates/ ./internal/mailing/templates/
 
 CMD ["./prog-demos-backend"]
