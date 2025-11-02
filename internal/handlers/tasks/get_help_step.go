@@ -14,6 +14,10 @@ type helpStepResponse struct {
 	Success  bool                  `json:"success"`
 	HelpStep database.TaskHelpStep `json:"helpStep"`
 }
+type helpStepCountResponse struct {
+	Success   bool  `json:"success"`
+	HelpSteps int64 `json:"helpSteps"`
+}
 
 func getHelpStep(w http.ResponseWriter, r *http.Request) {
 	var originalHelpStep = chi.URLParam(r, "helpStep")
@@ -46,6 +50,29 @@ func getHelpStep(w http.ResponseWriter, r *http.Request) {
 	var res = helpStepResponse{
 		Success:  true,
 		HelpStep: *foundHelpStep,
+	}
+
+	api.RespondOk(w, res)
+}
+
+func getHelpStepCount(w http.ResponseWriter, r *http.Request) {
+	var originalTaskId = chi.URLParam(r, "taskId")
+	taskId, err := strconv.Atoi(originalTaskId)
+	if err != nil {
+		api.RequestErrorHandlerGenericMsg(w, err)
+		return
+	}
+
+	if taskId <= 0 {
+		api.RequestErrorHandlerCustomMsg(w, "Task ID is not valid.")
+		return
+	}
+
+	helpStepCount := database.GetHelpStepCountByTaskId(taskId)
+
+	var res = helpStepCountResponse{
+		Success:   true,
+		HelpSteps: helpStepCount,
 	}
 
 	api.RespondOk(w, res)
