@@ -1,5 +1,11 @@
 package database
 
+import (
+	"errors"
+
+	log "github.com/sirupsen/logrus"
+)
+
 func SaveHelpStep(helpStep *TaskHelpStep) error {
 	result := Instance.db.Save(helpStep)
 	return result.Error
@@ -22,3 +28,22 @@ func GetHelpStepCountByTaskId(taskId int) int64 {
 	Instance.db.Model(&TaskHelpStep{}).Where("id_task = ?", taskId).Count(&count)
 	return count
 }
+
+func SetUnlockedHelpStepsForTaskByUser(userId int, taskId int, stepId int) error {
+	var helpStep TaskHelpStep
+
+	Instance.db.Where("step = ?", stepId).Where("id_task = ?", taskId).Find(&helpStep)
+
+	if helpStep.ID == 0 {
+		log.WithFields(log.Fields{"priority": "low", "taskId": taskId, "stepId": stepId}).Warn("Can't find TaskHelpStep for parameters.")
+		return errors.New("Help step not found")
+	}
+
+	var userUnlockedHelpStep TaskHelpStepUnlocked
+	userUnlockedHelpStep.TaskHelpStep = &helpStep
+	userUnlockedHelpStep.UserID = userId
+
+	result := Instance.db.Save(&userUnlockedHelpStep)
+	return result.Error
+}
+

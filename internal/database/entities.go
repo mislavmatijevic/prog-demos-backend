@@ -94,6 +94,14 @@ type TaskHelpStep struct {
 	HelperText WrappedNullString `gorm:"size:1024" json:"helperText,omitempty"`
 }
 
+type TaskHelpStepUnlocked struct {
+	UserID         int           `gorm:"primaryKey;not null;column:id_user" json:"-"`
+	TaskHelpStepID int           `gorm:"primaryKey;not null;column:id_task_help_step"`
+	User           *User         `gorm:"primaryKey;foreignKey:UserID"`
+	TaskHelpStep   *TaskHelpStep `gorm:"primaryKey;foreignKey:TaskHelpStepID"`
+	DateUnlocked   time.Time     `gorm:"default:current_timestamp" json:"-"`
+}
+
 type TaskTest struct {
 	ID             int               `gorm:"primaryKey" json:"id"`
 	IDTask         int               `gorm:"not null" json:"idTask"`

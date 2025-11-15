@@ -4,10 +4,13 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/mislavmatijevic/prog-demos-backend/internal/authentication"
 	"github.com/mislavmatijevic/prog-demos-backend/internal/database"
 	"github.com/mislavmatijevic/prog-demos-backend/internal/handlers/api"
+	log "github.com/sirupsen/logrus"
 )
 
 type helpStepResponse struct {
@@ -76,4 +79,39 @@ func getHelpStepCount(w http.ResponseWriter, r *http.Request) {
 	}
 
 	api.RespondOk(w, res)
+}
+
+func setHelpStepUnlocked(w http.ResponseWriter, r *http.Request) {
+	var originalHelpStep = chi.URLParam(r, "helpStep")
+	helpStepId, err := strconv.Atoi(originalHelpStep)
+	if err != nil {
+		api.RequestErrorHandlerGenericMsg(w, err)
+		return
+	}
+
+	var originalTaskId = chi.URLParam(r, "taskId")
+	taskId, err := strconv.Atoi(originalTaskId)
+	if err != nil {
+		api.RequestErrorHandlerGenericMsg(w, err)
+		return
+	}
+
+	userId, err := authentication.GetUserIdFromRequest(r)
+	if err != nil || userId == 0 {
+		api.InternalErrorHandlerCustomMsg(w, "Couldn't get user from JWT token.")
+		log.WithError(err).WithFields(log.Fields{"priority": "medium", "context": "task_execution", "task_id": taskId}).Error("Couldn't get user from JWT token during task execution.")
+		return
+	}
+
+	err = database.SetUnlockedHelpStepsForTaskByUser(userId, taskId, helpStepId)
+	if err != nil {
+		if strings.Contains(err.Error(), "duplicate key value violates unique constraint") {
+			api.RequestErrorHandlerCustomMsg(w, "This help step was already unlocked.")
+		} else {
+			api.InternalErrorHandlerGenericMsg(w, err)
+		}
+		return
+	}
+
+	api.RespondOkWithDefaultBody(w)
 }
