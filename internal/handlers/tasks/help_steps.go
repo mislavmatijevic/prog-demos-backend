@@ -114,8 +114,11 @@ func setHelpStepUnlocked(w http.ResponseWriter, r *http.Request) {
 
 	err = database.SetUnlockedHelpStepsForTaskByUser(userId, taskId, helpStepId)
 	if err != nil {
+		log.Info(err.Error())
 		if strings.Contains(err.Error(), "duplicate key value violates unique constraint") {
-			api.RequestErrorHandlerCustomMsg(w, "This help step was already unlocked.")
+			api.RequestErrorHandlerCustomMsg(w, fmt.Sprintf("Help step %d was already unlocked for task %d.", helpStepId, taskId))
+		} else if strings.Contains(err.Error(), "Help step not found") {
+			api.NotFoundHandlerCustomMsg(w, fmt.Sprintf("Help step %d not found for task with ID %d.", helpStepId, taskId))
 		} else {
 			api.InternalErrorHandlerGenericMsg(w, err)
 		}
