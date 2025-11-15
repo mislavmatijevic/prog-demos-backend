@@ -94,7 +94,7 @@ type TaskHelpStep struct {
 	HelperText WrappedNullString `gorm:"size:1024" json:"helperText,omitempty"`
 }
 
-type TaskHelpStepUnlocked struct {
+type TaskUnlockedHelpStep struct {
 	UserID         int           `gorm:"primaryKey;not null;column:id_user" json:"-"`
 	TaskHelpStepID int           `gorm:"primaryKey;not null;column:id_task_help_step"`
 	User           *User         `gorm:"primaryKey;foreignKey:UserID"`

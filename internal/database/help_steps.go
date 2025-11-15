@@ -39,7 +39,7 @@ func SetUnlockedHelpStepsForTaskByUser(userId int, taskId int, stepId int) error
 		return errors.New("Help step not found")
 	}
 
-	var userUnlockedHelpStep TaskHelpStepUnlocked
+	var userUnlockedHelpStep TaskUnlockedHelpStep
 	userUnlockedHelpStep.TaskHelpStep = &helpStep
 	userUnlockedHelpStep.UserID = userId
 
