@@ -3,6 +3,7 @@ package lizard
 import (
 	"math"
 	"os"
+	"strings"
 	"testing"
 )
 
@@ -61,6 +62,20 @@ func TestCalculateScore_GivenBetterAndWorseCodeForSimpleTask_ScoreComparisonRepo
 
 	if worseScore.HasBetterScoreThan(betterScore) {
 		t.Fatalf("Score %v reported as better than %v!", worseScore.TotalScore, betterScore.TotalScore)
+	}
+}
+
+func TestCalculateScore_GivenCodeWithSomeCrazyDefines_SucceedAtScoringCode(t *testing.T) {
+	var code = "#include <iostream>\n#define pocni_program int main() {\n#define objavi_broj int\n#define unesi_broj cin >>\n#define ako_je if (\n#define ispisi cout <<\n#define onda ) {\n#define inace } else {\n#define zavrsi_program return 0\n\nusing namespace std;\n\npocni_program\n    objavi_broj N;\n\n    unesi_broj N;\n\n    ako_je N > 20 onda\n        ispisi N - 1;\n    inace\n        ispisi N + 1;\n    }\n\n    zavrsi_program;\n}\n"
+	cppFile, _ := os.CreateTemp("", "solution_*.cpp")
+	cppFile.Write([]byte(code))
+
+	var score, err = CalculateScore(cppFile, 4)
+
+	os.Remove(cppFile.Name())
+	if strings.Compare(err.Error(), ERR_SCORE_CALCULATION_FAILED) != 0 {
+		t.Logf("Score reported: %v", score)
+		t.Fatalf("Score cannot be calculated for code which uses #defines for syntax!")
 	}
 }
 

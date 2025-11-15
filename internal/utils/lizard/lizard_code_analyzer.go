@@ -1,6 +1,7 @@
 package lizard
 
 import (
+	"errors"
 	"fmt"
 	"math"
 	"os"
@@ -19,6 +20,8 @@ const awardPerTaskComplexityPoint = 20
 const impactOfTokenCountOnFinalScore = 0.6
 const impactOfCcnOnTokenCount = 0.95
 const finalScoreComplexityDivider = 2.5
+
+const ERR_SCORE_CALCULATION_FAILED = "score parameters failed to result with actual score"
 
 type CodeScore struct {
 	Tokens     int `json:"tokens"`
@@ -64,6 +67,10 @@ func CalculateScore(fileWithCode *os.File, taskComplexity int) (*CodeScore, erro
 	var totalCcn = averageCcnPerFunction * functionCount
 
 	var score = calculateBasicScore(totalTokens, totalCcn) * 50
+	if math.IsNaN(score) || score == 0.0 {
+		return nil, errors.New(ERR_SCORE_CALCULATION_FAILED)
+	}
+
 	log.Debugf("Original score: %v", score)
 	score = awardManyFunctions(score, functionCount)
 	score = awardForComplexity(score, taskComplexity)

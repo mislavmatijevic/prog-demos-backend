@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/mislavmatijevic/prog-demos-backend/internal/authentication"
@@ -200,7 +201,7 @@ func executeTask(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		execution.SetTaskExecutionStatusFailed()
 		log.WithError(err).WithFields(log.Fields{"priority": "medium", "context": "task_execution", "task_id": taskId}).Error("Could not calculate score after task execution.")
-		api.InternalErrorHandlerCustomMsg(w, fmt.Sprintf("Could not calculate score: %v", err))
+		correctlyRespondForScoreCalculationFail(w, err)
 		return
 	}
 
@@ -237,4 +238,12 @@ func getRequestBody(r *http.Request) (*taskExecutionRequest, error) {
 		return nil, errors.New("body is not in correct format")
 	}
 	return &requestBody, nil
+}
+
+func correctlyRespondForScoreCalculationFail(w http.ResponseWriter, err error) {
+	if (strings.Compare(err.Error(), lizard.ERR_SCORE_CALCULATION_FAILED)) == 0 {
+		api.RequestErrorHandlerCustomMsg(w, "Score calculation failed due to code not appearing to be correctly syntaxed")
+	} else {
+		api.InternalErrorHandlerCustomMsg(w, fmt.Sprintf("Could not calculate score: %v", err))
+	}
 }
