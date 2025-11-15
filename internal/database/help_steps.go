@@ -47,3 +47,14 @@ func SetUnlockedHelpStepsForTaskByUser(userId int, taskId int, stepId int) error
 	return result.Error
 }
 
+func GetUnlockedHelpStepsForTaskByUser(userId int, taskId int) ([]TaskUnlockedHelpStep, error) {
+	var userUnlockedHelpStep []TaskUnlockedHelpStep
+
+	result := Instance.db.
+		Joins("JOIN task_help_steps ON task_help_steps.id = task_unlocked_help_steps.id_task_help_step").
+		Where("task_unlocked_help_steps.id_user = ? AND task_help_steps.id_task = ?", userId, taskId).
+		Preload("TaskHelpStep").
+		Find(&userUnlockedHelpStep)
+
+	return userUnlockedHelpStep, result.Error
+}

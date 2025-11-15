@@ -20,6 +20,7 @@ func HandleTasks(r *chi.Mux) {
 			protectedRouter.Use(chimiddle.ThrottleBacklog(2, 20, 60*time.Second))
 
 			protectedRouter.Post("/{taskId}/run", executeTask)
+			protectedRouter.Get("/{taskId}/help/available", getUnlockedHelpStepsPerTask)
 			protectedRouter.Post("/{taskId}/help/{helpStep}/unlock", setHelpStepUnlocked)
 		})
 

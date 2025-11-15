@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/mislavmatijevic/prog-demos-backend/internal/authentication"
@@ -20,6 +21,14 @@ type helpStepResponse struct {
 type helpStepCountResponse struct {
 	Success   bool  `json:"success"`
 	HelpSteps int64 `json:"helpSteps"`
+}
+type unlockedHelpStepObject struct {
+	Step         int       `json:"step"`
+	DateUnlocked time.Time `json:"dateUnlocked"`
+}
+type unlockedHelpStepsResponse struct {
+	Success   bool                     `json:"success"`
+	HelpSteps []unlockedHelpStepObject `json:"unlockedHelpSteps"`
 }
 
 func getHelpStep(w http.ResponseWriter, r *http.Request) {
@@ -114,4 +123,39 @@ func setHelpStepUnlocked(w http.ResponseWriter, r *http.Request) {
 	}
 
 	api.RespondOkWithDefaultBody(w)
+}
+
+func getUnlockedHelpStepsPerTask(w http.ResponseWriter, r *http.Request) {
+	var originalTaskId = chi.URLParam(r, "taskId")
+	taskId, err := strconv.Atoi(originalTaskId)
+	if err != nil {
+		api.RequestErrorHandlerGenericMsg(w, err)
+		return
+	}
+
+	userId, err := authentication.GetUserIdFromRequest(r)
+	if err != nil || userId == 0 {
+		api.InternalErrorHandlerCustomMsg(w, "Couldn't get user from JWT token.")
+		log.WithError(err).WithFields(log.Fields{"priority": "medium", "context": "task_execution", "task_id": taskId}).Error("Couldn't get user from JWT token during task execution.")
+		return
+	}
+
+	unlockedHelpSteps, err := database.GetUnlockedHelpStepsForTaskByUser(userId, taskId)
+	if err != nil || unlockedHelpSteps == nil {
+		api.InternalErrorHandlerGenericMsg(w, err)
+		return
+	}
+	if unlockedHelpSteps == nil || len(unlockedHelpSteps) == 0 {
+		api.NotFoundHandlerCustomMsg(w, fmt.Sprintf("No help steps unlocked for task %d.", taskId))
+		return
+	}
+
+	unlockedHelpStepsResponse := unlockedHelpStepsResponse{}
+	for _, unlockedHelpStepEntity := range unlockedHelpSteps {
+		unlockedHelpStepObject := unlockedHelpStepObject{}
+		unlockedHelpStepObject.Step = unlockedHelpStepEntity.TaskHelpStep.Step
+		unlockedHelpStepObject.DateUnlocked = unlockedHelpStepEntity.DateUnlocked
+		unlockedHelpStepsResponse.HelpSteps = append(unlockedHelpStepsResponse.HelpSteps, unlockedHelpStepObject)
+	}
+	api.RespondOk(w, unlockedHelpStepsResponse)
 }
