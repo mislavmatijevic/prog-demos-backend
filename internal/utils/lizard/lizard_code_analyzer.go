@@ -147,13 +147,11 @@ func getFieldValueFromLizardOutput(output string, fieldIndex int) (float64, erro
 
 	if len(lines) > 1 {
 		fields := strings.Fields(lines[len(lines)-2])
-		log.Debug(fields)
 		if len(fields) == 8 {
 			fieldValue, err := strconv.ParseFloat(fields[fieldIndex], 32)
 			if err != nil {
 				return 0, err
 			}
-			log.Debugf("value found: %v", fieldValue)
 			return float64(fieldValue), nil
 		} else {
 			return 0, fmt.Errorf("lizard's last line has unexpected format: %s", fields)
