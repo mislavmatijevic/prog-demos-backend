@@ -73,7 +73,7 @@ func TestCalculateScore_GivenCodeWithSomeCrazyDefines_SucceedAtScoringCode(t *te
 	var score, err = CalculateScore(cppFile, 4)
 
 	os.Remove(cppFile.Name())
-	if strings.Compare(err.Error(), ERR_SCORE_CALCULATION_FAILED) != 0 {
+	if strings.Compare(err.Error(), ERR_MSG_SCORE_CALCULATION_FAILED) != 0 {
 		t.Logf("Score reported: %v", score)
 		t.Fatalf("Score cannot be calculated for code which uses #defines for syntax!")
 	}

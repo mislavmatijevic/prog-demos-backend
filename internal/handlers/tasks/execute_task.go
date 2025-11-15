@@ -29,6 +29,7 @@ const (
 	EXEC_RUNTIME_ERROR
 	EXEC_ERR_ILLEGAL_OPERATION
 	EXEC_ERR_FILE_SIZE_EXCEEDED
+	EXEC_ERR_SCORE_CALCULATION_FAILED
 )
 
 func (execErrCode ExecutionErrorCode) String() string {
@@ -41,6 +42,7 @@ func (execErrCode ExecutionErrorCode) String() string {
 		"Run of compiled code inside task-runner failed.",
 		"Attempted interaction with the system.",
 		"The size of generated file(s) exceeded the allowed limits.",
+		"Score parameters failed to result with actual score due to syntax checking fail.",
 	}[execErrCode-1]
 }
 
@@ -101,17 +103,17 @@ func executeTask(w http.ResponseWriter, r *http.Request) {
 		switch err.Error() {
 		case taskexecution.ErrUserHasRunningTasks.Error():
 			api.TooEarlyErrorHandlerCustomMsg(w, err.Error())
+			return // Skip setting task execution status failed since task execution didn't even get created.
 		case taskexecution.ErrTaskExecutionStartErr.Error():
 			log.WithError(err).WithFields(log.Fields{"priority": "medium", "context": "task_execution", "task_id": taskId}).Error("Failed to start task execution.")
 			api.InternalErrorHandlerGenericMsg(w, err)
 		case taskexecution.ErrTempFileCreationErr.Error():
-			execution.SetTaskExecutionStatusFailed()
 			api.RequestErrorHandlerGenericMsg(w, err)
 		case taskexecution.ErrNoTests.Error():
-			execution.SetTaskExecutionStatusFailed()
 			log.WithError(err).WithFields(log.Fields{"priority": "medium", "context": "task_execution", "task_id": taskId}).Error("No tests defined for task!")
 			api.InternalErrorHandlerCustomMsg(w, err.Error())
 		}
+		execution.SetTaskExecutionStatusFailed()
 		return
 	}
 
@@ -122,8 +124,7 @@ func executeTask(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if len(reportedErrors) != 0 {
-		execution.SetTaskExecutionStatusFailed()
-		sendTaskExecutionFailedResponse(w, EXEC_ERR_BAD_SYNTAX, reportedErrors)
+		sendTaskExecutionFailedResponse(w, EXEC_ERR_BAD_SYNTAX, reportedErrors, execution)
 		return
 	}
 
@@ -141,21 +142,19 @@ func executeTask(w http.ResponseWriter, r *http.Request) {
 
 	err = container.RunTests()
 	if err != nil {
-		execution.SetTaskExecutionStatusFailed()
-
 		switch err.Error() {
 		case taskexecution.ErrContainerTimeoutMark.Error():
-			sendTaskExecutionFailedResponse(w, EXEC_ERR_TIMEOUT, nil)
+			sendTaskExecutionFailedResponse(w, EXEC_ERR_TIMEOUT, nil, execution)
 		case taskexecution.ErrContainerForcefullyKilledMark.Error():
-			sendTaskExecutionFailedResponse(w, EXEC_ERR_KILLED, nil)
+			sendTaskExecutionFailedResponse(w, EXEC_ERR_KILLED, nil, execution)
 		case taskexecution.ErrIllegalOperation.Error():
 			log.WithError(err).WithFields(log.Fields{"priority": "medium", "context": "task_execution", "task_id": taskId}).Error("System interaction detected - possible shell use attempt.")
-			sendTaskExecutionFailedResponse(w, EXEC_ERR_ILLEGAL_OPERATION, err.Error())
+			sendTaskExecutionFailedResponse(w, EXEC_ERR_ILLEGAL_OPERATION, err.Error(), execution)
 		case taskexecution.ErrFileSizeExceeded.Error():
-			sendTaskExecutionFailedResponse(w, EXEC_ERR_FILE_SIZE_EXCEEDED, err.Error())
+			sendTaskExecutionFailedResponse(w, EXEC_ERR_FILE_SIZE_EXCEEDED, err.Error(), execution)
 		case taskexecution.ErrRunFailed.Error():
 			log.WithError(err).WithFields(log.Fields{"priority": "medium", "context": "task_execution", "task_id": taskId}).Error("Task runner failed at executing compiled software!")
-			sendTaskExecutionFailedResponse(w, EXEC_RUNTIME_ERROR, err.Error())
+			sendTaskExecutionFailedResponse(w, EXEC_RUNTIME_ERROR, err.Error(), execution)
 		default:
 			log.WithError(err).WithFields(log.Fields{"priority": "high", "context": "task_execution", "task_id": taskId}).Error("Task runner failed to run in Docker!")
 			handleTestExecutionInternalFail(w, err, execution)
@@ -166,27 +165,23 @@ func executeTask(w http.ResponseWriter, r *http.Request) {
 
 	testDataMismatchReason, err := container.CheckOutputs()
 	if err != nil {
-		execution.SetTaskExecutionStatusFailed()
 		log.WithError(err).WithFields(log.Fields{"priority": "high", "context": "task_execution", "task_id": taskId}).Error("Couldn't read output file!")
 		handleTestExecutionInternalFail(w, err, execution)
 		return
 	}
 	if testDataMismatchReason != nil {
-		execution.SetTaskExecutionStatusFailed()
-		sendTaskExecutionFailedResponse(w, EXEC_ERR_TEST_FAILED, testDataMismatchReason)
+		sendTaskExecutionFailedResponse(w, EXEC_ERR_TEST_FAILED, testDataMismatchReason, execution)
 		return
 	}
 
 	artefactMismatchReason, err := container.CheckArtefacts()
 	if err != nil {
-		execution.SetTaskExecutionStatusFailed()
 		log.WithError(err).WithFields(log.Fields{"priority": "high", "context": "task_execution", "task_id": taskId}).Error("Artefact SHA256 comparison failed!")
 		handleTestExecutionInternalFail(w, err, execution)
 		return
 	}
 	if artefactMismatchReason != nil {
-		execution.SetTaskExecutionStatusFailed()
-		sendTaskExecutionFailedResponse(w, EXEC_ERR_ARTEFACT_CONTENT_MISMATCH, artefactMismatchReason)
+		sendTaskExecutionFailedResponse(w, EXEC_ERR_ARTEFACT_CONTENT_MISMATCH, artefactMismatchReason, execution)
 		return
 	}
 
@@ -199,9 +194,12 @@ func executeTask(w http.ResponseWriter, r *http.Request) {
 
 	score, err := lizard.CalculateScore(execution.File, numbericComplexity)
 	if err != nil {
-		execution.SetTaskExecutionStatusFailed()
 		log.WithError(err).WithFields(log.Fields{"priority": "medium", "context": "task_execution", "task_id": taskId}).Error("Could not calculate score after task execution.")
-		correctlyRespondForScoreCalculationFail(w, err)
+		if (strings.Compare(err.Error(), lizard.ERR_MSG_SCORE_CALCULATION_FAILED)) == 0 {
+			sendTaskExecutionFailedResponse(w, EXEC_ERR_SCORE_CALCULATION_FAILED, nil, execution)
+		} else {
+			handleTestExecutionInternalFail(w, err, execution)
+		}
 		return
 	}
 
@@ -217,14 +215,15 @@ func executeTask(w http.ResponseWriter, r *http.Request) {
 	api.RespondOk(w, successResponse)
 }
 
-func sendTaskExecutionFailedResponse(w http.ResponseWriter, execErrCode ExecutionErrorCode, reasonFailed interface{}) {
+func sendTaskExecutionFailedResponse(w http.ResponseWriter, execErrCode ExecutionErrorCode, reasonFailed interface{}, execution *taskexecution.TaskExecutionData) {
 	var errorResponse = taskExecutionFailedResponse{Success: false, ErrorCode: execErrCode.EnumIndex(), Message: execErrCode.String(), ReasonFailed: reasonFailed}
 	api.RespondWithStatus(w, errorResponse, http.StatusUnprocessableEntity)
+	execution.SetTaskExecutionStatusFailed()
 }
 
-func handleTestExecutionInternalFail(w http.ResponseWriter, err error, data *taskexecution.TaskExecutionData) {
+func handleTestExecutionInternalFail(w http.ResponseWriter, err error, execution *taskexecution.TaskExecutionData) {
 	api.InternalErrorHandlerGenericMsg(w, err)
-	data.SetTaskExecutionStatusFailed()
+	execution.SetTaskExecutionStatusFailed()
 }
 
 func getRequestBody(r *http.Request) (*taskExecutionRequest, error) {
@@ -238,12 +237,4 @@ func getRequestBody(r *http.Request) (*taskExecutionRequest, error) {
 		return nil, errors.New("body is not in correct format")
 	}
 	return &requestBody, nil
-}
-
-func correctlyRespondForScoreCalculationFail(w http.ResponseWriter, err error) {
-	if (strings.Compare(err.Error(), lizard.ERR_SCORE_CALCULATION_FAILED)) == 0 {
-		api.RequestErrorHandlerCustomMsg(w, "Score calculation failed due to code not appearing to be correctly syntaxed")
-	} else {
-		api.InternalErrorHandlerCustomMsg(w, fmt.Sprintf("Could not calculate score: %v", err))
-	}
 }

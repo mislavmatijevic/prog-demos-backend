@@ -21,7 +21,7 @@ const impactOfTokenCountOnFinalScore = 0.6
 const impactOfCcnOnTokenCount = 0.95
 const finalScoreComplexityDivider = 2.5
 
-const ERR_SCORE_CALCULATION_FAILED = "score parameters failed to result with actual score"
+const ERR_MSG_SCORE_CALCULATION_FAILED = "score parameters failed to result with actual score"
 
 type CodeScore struct {
 	Tokens     int `json:"tokens"`
@@ -68,7 +68,7 @@ func CalculateScore(fileWithCode *os.File, taskComplexity int) (*CodeScore, erro
 
 	var score = calculateBasicScore(totalTokens, totalCcn) * 50
 	if math.IsNaN(score) || score == 0.0 {
-		return nil, errors.New(ERR_SCORE_CALCULATION_FAILED)
+		return nil, errors.New(ERR_MSG_SCORE_CALCULATION_FAILED)
 	}
 
 	log.Debugf("Original score: %v", score)
