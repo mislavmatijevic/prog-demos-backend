@@ -38,8 +38,8 @@ func (execErrCode ExecutionErrorCode) String() string {
 		"Execution took too long.",
 		"Execution was forcefully killed. Most probably a memory leak.",
 		"Artefact files did not contain expected contents.",
-		"Attempted interaction with the system.",
 		"Run of compiled code inside task-runner failed.",
+		"Attempted interaction with the system.",
 		"The size of generated file(s) exceeded the allowed limits.",
 	}[execErrCode-1]
 }
