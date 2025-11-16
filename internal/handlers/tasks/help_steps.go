@@ -22,13 +22,13 @@ type helpStepCountResponse struct {
 	Success   bool  `json:"success"`
 	HelpSteps int64 `json:"helpSteps"`
 }
-type unlockedHelpStepObject struct {
-	Step         int       `json:"step"`
-	DateUnlocked time.Time `json:"dateUnlocked"`
+type availableHelpStepObject struct {
+	Step              int       `json:"step"`
+	DateMadeAvailable time.Time `json:"dateMadeAvailable"`
 }
-type unlockedHelpStepsResponse struct {
-	Success   bool                     `json:"success"`
-	HelpSteps []unlockedHelpStepObject `json:"unlockedHelpSteps"`
+type availableResponse struct {
+	Success   bool                      `json:"success"`
+	HelpSteps []availableHelpStepObject `json:"availableHelpSteps"`
 }
 
 func getHelpStep(w http.ResponseWriter, r *http.Request) {
@@ -90,7 +90,7 @@ func getHelpStepCount(w http.ResponseWriter, r *http.Request) {
 	api.RespondOk(w, res)
 }
 
-func setHelpStepUnlocked(w http.ResponseWriter, r *http.Request) {
+func setHelpStepAvailable(w http.ResponseWriter, r *http.Request) {
 	var originalHelpStep = chi.URLParam(r, "helpStep")
 	helpStepId, err := strconv.Atoi(originalHelpStep)
 	if err != nil {
@@ -112,11 +112,11 @@ func setHelpStepUnlocked(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = database.SetUnlockedHelpStepsForTaskByUser(userId, taskId, helpStepId)
+	err = database.MakeHelpStepAvailableForUser(userId, taskId, helpStepId)
 	if err != nil {
 		log.Info(err.Error())
 		if strings.Contains(err.Error(), "duplicate key value violates unique constraint") {
-			api.RequestErrorHandlerCustomMsg(w, fmt.Sprintf("Help step %d was already unlocked for task %d.", helpStepId, taskId))
+			api.RequestErrorHandlerCustomMsg(w, fmt.Sprintf("Help step %d was already made available for task %d.", helpStepId, taskId))
 		} else if strings.Contains(err.Error(), "Help step not found") {
 			api.NotFoundHandlerCustomMsg(w, fmt.Sprintf("Help step %d not found for task with ID %d.", helpStepId, taskId))
 		} else {
@@ -128,7 +128,7 @@ func setHelpStepUnlocked(w http.ResponseWriter, r *http.Request) {
 	api.RespondOkWithDefaultBody(w)
 }
 
-func getUnlockedHelpStepsPerTask(w http.ResponseWriter, r *http.Request) {
+func getAvailableHelpStepsPerTask(w http.ResponseWriter, r *http.Request) {
 	var originalTaskId = chi.URLParam(r, "taskId")
 	taskId, err := strconv.Atoi(originalTaskId)
 	if err != nil {
@@ -143,22 +143,22 @@ func getUnlockedHelpStepsPerTask(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	unlockedHelpSteps, err := database.GetUnlockedHelpStepsForTaskByUser(userId, taskId)
-	if err != nil || unlockedHelpSteps == nil {
+	availableHelpSteps, err := database.GetAvailableHelpStepsForTaskByUser(userId, taskId)
+	if err != nil || availableHelpSteps == nil {
 		api.InternalErrorHandlerGenericMsg(w, err)
 		return
 	}
-	if unlockedHelpSteps == nil || len(unlockedHelpSteps) == 0 {
-		api.NotFoundHandlerCustomMsg(w, fmt.Sprintf("No help steps unlocked for task %d.", taskId))
+	if availableHelpSteps == nil || len(availableHelpSteps) == 0 {
+		api.NotFoundHandlerCustomMsg(w, fmt.Sprintf("No help steps available for task %d.", taskId))
 		return
 	}
 
-	unlockedHelpStepsResponse := unlockedHelpStepsResponse{}
-	for _, unlockedHelpStepEntity := range unlockedHelpSteps {
-		unlockedHelpStepObject := unlockedHelpStepObject{}
-		unlockedHelpStepObject.Step = unlockedHelpStepEntity.TaskHelpStep.Step
-		unlockedHelpStepObject.DateUnlocked = unlockedHelpStepEntity.DateUnlocked
-		unlockedHelpStepsResponse.HelpSteps = append(unlockedHelpStepsResponse.HelpSteps, unlockedHelpStepObject)
+	availableHelpStepsResponse := availableResponse{}
+	for _, availableHelpStepEntity := range availableHelpSteps {
+		availableHelpStepObject := availableHelpStepObject{}
+		availableHelpStepObject.Step = availableHelpStepEntity.TaskHelpStep.Step
+		availableHelpStepObject.DateMadeAvailable = availableHelpStepEntity.AvailableSince
+		availableHelpStepsResponse.HelpSteps = append(availableHelpStepsResponse.HelpSteps, availableHelpStepObject)
 	}
-	api.RespondOk(w, unlockedHelpStepsResponse)
+	api.RespondOk(w, availableHelpStepsResponse)
 }

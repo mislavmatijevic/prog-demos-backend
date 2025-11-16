@@ -43,7 +43,7 @@ func Initialize() {
 		&TaskExecution{},
 		&TaskHelpStep{},
 		&News{},
-		&TaskUnlockedHelpStep{},
+		&TaskAvailableHelpStep{},
 	)
 
 	if err != nil {

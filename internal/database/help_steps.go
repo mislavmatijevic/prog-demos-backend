@@ -29,7 +29,7 @@ func GetHelpStepCountByTaskId(taskId int) int64 {
 	return count
 }
 
-func SetUnlockedHelpStepsForTaskByUser(userId int, taskId int, stepId int) error {
+func MakeHelpStepAvailableForUser(userId int, taskId int, stepId int) error {
 	var helpStep TaskHelpStep
 
 	Instance.db.Where("step = ?", stepId).Where("id_task = ?", taskId).Find(&helpStep)
@@ -39,22 +39,22 @@ func SetUnlockedHelpStepsForTaskByUser(userId int, taskId int, stepId int) error
 		return errors.New("Help step not found")
 	}
 
-	var userUnlockedHelpStep TaskUnlockedHelpStep
-	userUnlockedHelpStep.TaskHelpStep = &helpStep
-	userUnlockedHelpStep.UserID = userId
+	var availableHelpStep TaskAvailableHelpStep
+	availableHelpStep.TaskHelpStep = &helpStep
+	availableHelpStep.UserID = userId
 
-	result := Instance.db.Save(&userUnlockedHelpStep)
+	result := Instance.db.Save(&availableHelpStep)
 	return result.Error
 }
 
-func GetUnlockedHelpStepsForTaskByUser(userId int, taskId int) ([]TaskUnlockedHelpStep, error) {
-	var userUnlockedHelpStep []TaskUnlockedHelpStep
+func GetAvailableHelpStepsForTaskByUser(userId int, taskId int) ([]TaskAvailableHelpStep, error) {
+	var userAvailableHelpSteps []TaskAvailableHelpStep
 
 	result := Instance.db.
-		Joins("JOIN task_help_steps ON task_help_steps.id = task_unlocked_help_steps.id_task_help_step").
-		Where("task_unlocked_help_steps.id_user = ? AND task_help_steps.id_task = ?", userId, taskId).
+		Joins("JOIN task_help_steps ON task_help_steps.id = task_available_help_steps.id_task_help_step").
+		Where("task_available_help_steps.id_user = ? AND task_help_steps.id_task = ?", userId, taskId).
 		Preload("TaskHelpStep").
-		Find(&userUnlockedHelpStep)
+		Find(&userAvailableHelpSteps)
 
-	return userUnlockedHelpStep, result.Error
+	return userAvailableHelpSteps, result.Error
 }
