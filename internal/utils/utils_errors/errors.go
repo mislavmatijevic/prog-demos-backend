@@ -1,4 +1,4 @@
-package auth
+package utils_errors
 
 import (
 	"net/http"
@@ -8,10 +8,10 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-type authErrorCode int
+type ErrorCode int
 
 const (
-	NO_ERROR authErrorCode = iota
+	NO_ERROR ErrorCode = iota
 	ERR_INFO_INVALID
 	ERR_USERNAME_TAKEN
 	ERR_CAPTCHA_FAILED
@@ -20,7 +20,7 @@ const (
 	ERR_TOKEN_EXPIRED
 )
 
-func (execErrCode authErrorCode) String() string {
+func (execErrCode ErrorCode) String() string {
 	return [...]string{
 		"given information is not valid for registration",
 		"username or email already taken",
@@ -31,7 +31,7 @@ func (execErrCode authErrorCode) String() string {
 	}[execErrCode-1]
 }
 
-func (execErrCode authErrorCode) EnumIndex() int {
+func (execErrCode ErrorCode) EnumIndex() int {
 	return int(execErrCode)
 }
 
@@ -41,19 +41,19 @@ type errorResponse struct {
 	ErrorCode int    `json:"errorCode"`
 }
 
-func handleCaptchaError(w http.ResponseWriter, err error) {
+func HandleCaptchaError(w http.ResponseWriter, err error) {
 	switch err.Error() {
 	case captcha.ErrFailedToProcess.Error():
 		api.InternalErrorHandlerCustomMsg(w, "Error while trying to process captcha token.")
 	case captcha.ErrInvalid.Error():
-		respondForErrorCode(w, ERR_CAPTCHA_FAILED)
+		RespondForErrorCode(w, ERR_CAPTCHA_FAILED)
 	default:
 		log.WithError(err).WithFields(log.Fields{"priority": "high", "context": "captcha", "full_error": err.Error()})
 		api.InternalErrorHandlerCustomMsg(w, "Unknown captcha error.")
 	}
 }
 
-func respondForErrorCode(w http.ResponseWriter, errorCode authErrorCode) {
+func RespondForErrorCode(w http.ResponseWriter, errorCode ErrorCode) {
 	var res = errorResponse{
 		Success:   false,
 		Message:   errorCode.String(),

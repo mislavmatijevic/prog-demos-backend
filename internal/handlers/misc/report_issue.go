@@ -9,6 +9,8 @@ import (
 	"github.com/mislavmatijevic/prog-demos-backend/internal/database"
 	"github.com/mislavmatijevic/prog-demos-backend/internal/handlers/api"
 	"github.com/mislavmatijevic/prog-demos-backend/internal/integrations"
+	"github.com/mislavmatijevic/prog-demos-backend/internal/utils/security/captcha"
+	"github.com/mislavmatijevic/prog-demos-backend/internal/utils/utils_errors"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -16,6 +18,7 @@ type reportIssueBody struct {
 	Title           string `json:"title"`
 	Description     string `json:"description"`
 	IncludeUsername bool   `json:"includeUsername"`
+	CaptchaToken    string `json:"captchaToken"`
 }
 
 type reportIssueResponse struct {
@@ -27,6 +30,12 @@ func reportIssue(w http.ResponseWriter, r *http.Request) {
 	var issueRequest reportIssueBody
 	if err := json.NewDecoder(r.Body).Decode(&issueRequest); err != nil {
 		api.RequestErrorHandlerGenericMsg(w, err)
+		return
+	}
+
+	err := captcha.Verify("report-issue", issueRequest.CaptchaToken, r.RemoteAddr)
+	if err != nil {
+		utils_errors.HandleCaptchaError(w, err)
 		return
 	}
 

@@ -7,6 +7,15 @@ import (
 	"github.com/mislavmatijevic/prog-demos-backend/internal/monitoring"
 )
 
+func RespondOkWithDefaultBody(w http.ResponseWriter) {
+	res := defaultResponseBody{
+		Success: true,
+		Message: "Request succeeded",
+	}
+
+	RespondOk(w, res)
+}
+
 func RespondOk(w http.ResponseWriter, res interface{}) {
 	RespondWithStatus(w, res, http.StatusOK)
 }

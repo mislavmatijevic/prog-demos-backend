@@ -1,6 +1,7 @@
 package lizard
 
 import (
+	"errors"
 	"fmt"
 	"math"
 	"os"
@@ -19,6 +20,8 @@ const awardPerTaskComplexityPoint = 20
 const impactOfTokenCountOnFinalScore = 0.6
 const impactOfCcnOnTokenCount = 0.95
 const finalScoreComplexityDivider = 2.5
+
+const ERR_MSG_SCORE_CALCULATION_FAILED = "score parameters failed to result with actual score"
 
 type CodeScore struct {
 	Tokens     int `json:"tokens"`
@@ -64,6 +67,10 @@ func CalculateScore(fileWithCode *os.File, taskComplexity int) (*CodeScore, erro
 	var totalCcn = averageCcnPerFunction * functionCount
 
 	var score = calculateBasicScore(totalTokens, totalCcn) * 50
+	if math.IsNaN(score) || score == 0.0 {
+		return nil, errors.New(ERR_MSG_SCORE_CALCULATION_FAILED)
+	}
+
 	log.Debugf("Original score: %v", score)
 	score = awardManyFunctions(score, functionCount)
 	score = awardForComplexity(score, taskComplexity)
@@ -140,13 +147,11 @@ func getFieldValueFromLizardOutput(output string, fieldIndex int) (float64, erro
 
 	if len(lines) > 1 {
 		fields := strings.Fields(lines[len(lines)-2])
-		log.Debug(fields)
 		if len(fields) == 8 {
 			fieldValue, err := strconv.ParseFloat(fields[fieldIndex], 32)
 			if err != nil {
 				return 0, err
 			}
-			log.Debugf("value found: %v", fieldValue)
 			return float64(fieldValue), nil
 		} else {
 			return 0, fmt.Errorf("lizard's last line has unexpected format: %s", fields)

@@ -10,6 +10,7 @@ import (
 	"github.com/mislavmatijevic/prog-demos-backend/internal/handlers/api"
 	"github.com/mislavmatijevic/prog-demos-backend/internal/utils"
 	"github.com/mislavmatijevic/prog-demos-backend/internal/utils/security/captcha"
+	"github.com/mislavmatijevic/prog-demos-backend/internal/utils/utils_errors"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -34,7 +35,7 @@ func loginUser(w http.ResponseWriter, r *http.Request) {
 
 	err := captcha.Verify("login", loginBody.CaptchaToken, r.RemoteAddr)
 	if err != nil {
-		handleCaptchaError(w, err)
+		utils_errors.HandleCaptchaError(w, err)
 		return
 	}
 

@@ -51,7 +51,7 @@ func AttachTokenToRequest(next http.Handler) http.Handler {
 
 func RequireAccessToken(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		err := CheckJwtTokenSignature(r)
+		err := ValidateJwtToken(r)
 
 		if err != nil {
 			err = jwtauth.ErrorReason(err)
@@ -72,7 +72,7 @@ func RequireAccessToken(next http.Handler) http.Handler {
 	})
 }
 
-func CheckJwtTokenSignature(r *http.Request) error {
+func ValidateJwtToken(r *http.Request) error {
 	var tokenAttachedToRequest = r.Context().Value(jwtauth.TokenCtxKey)
 	if tokenAttachedToRequest == nil {
 		return jwtauth.ErrNoTokenFound
@@ -80,7 +80,8 @@ func CheckJwtTokenSignature(r *http.Request) error {
 
 	err := jwt.Validate(tokenAttachedToRequest.(jwt.Token))
 
-	if err != nil && jwtauth.ErrorReason(err) == jwtauth.ErrExpired {
+	isExpiredTokenOnDevEnv := !utils.IsProd() && err != nil && jwtauth.ErrorReason(err) == jwtauth.ErrExpired
+	if isExpiredTokenOnDevEnv {
 		return nil
 	}
 

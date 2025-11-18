@@ -12,6 +12,7 @@ import (
 	"github.com/mislavmatijevic/prog-demos-backend/internal/mailing"
 	"github.com/mislavmatijevic/prog-demos-backend/internal/utils"
 	"github.com/mislavmatijevic/prog-demos-backend/internal/utils/security/captcha"
+	"github.com/mislavmatijevic/prog-demos-backend/internal/utils/utils_errors"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -36,14 +37,14 @@ func registerUser(w http.ResponseWriter, r *http.Request) {
 
 	err := captcha.Verify("register", userReqBody.CaptchaToken, r.RemoteAddr)
 	if err != nil {
-		handleCaptchaError(w, err)
+		utils_errors.HandleCaptchaError(w, err)
 		return
 	}
 
 	username, email := strings.TrimSpace(userReqBody.Username), strings.TrimSpace(userReqBody.Email)
 	var infoIsValid bool = checkIfUserInfoValid(username, email, userReqBody.Password)
 	if !infoIsValid {
-		respondForErrorCode(w, ERR_INFO_INVALID)
+		utils_errors.RespondForErrorCode(w, utils_errors.ERR_INFO_INVALID)
 		return
 	}
 
@@ -59,7 +60,7 @@ func registerUser(w http.ResponseWriter, r *http.Request) {
 	newUser, err := database.RegisterNewUser(user)
 	if err != nil {
 		if err.Error() == "user already exists" {
-			respondForErrorCode(w, ERR_USERNAME_TAKEN)
+			utils_errors.RespondForErrorCode(w, utils_errors.ERR_USERNAME_TAKEN)
 		} else {
 			api.RequestErrorHandlerCustomMsg(w, err.Error())
 		}

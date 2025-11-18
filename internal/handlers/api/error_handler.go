@@ -4,22 +4,22 @@ import (
 	"net/http"
 )
 
-type errorResponse struct {
+type defaultResponseBody struct {
 	Success bool   `json:"success"`
 	Message string `json:"message"`
 }
 
-func (e errorResponse) Error() string {
+func (e defaultResponseBody) Error() string {
 	return e.Message
 }
 
 func writeError(w http.ResponseWriter, message string, code int) {
-	resp := errorResponse{
+	res := defaultResponseBody{
 		Success: false,
 		Message: message,
 	}
 
-	RespondWithStatus(w, resp, code)
+	RespondWithStatus(w, res, code)
 }
 
 var (

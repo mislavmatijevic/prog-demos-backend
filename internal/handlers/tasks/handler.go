@@ -13,12 +13,15 @@ func HandleTasks(r *chi.Mux) {
 		router.Get("/", getAllTasksPerTopics)
 		router.Get("/{taskIdentifier}", getSingleTask)
 		router.Get("/{taskId}/help/{helpStep}", getHelpStep)
+		router.Get("/{taskId}/help", getHelpStepCount)
 
 		router.Group(func(protectedRouter chi.Router) {
 			protectedRouter.Use(authentication.RequireAccessToken)
 			protectedRouter.Use(chimiddle.ThrottleBacklog(2, 20, 60*time.Second))
 
 			protectedRouter.Post("/{taskId}/run", executeTask)
+			protectedRouter.Get("/{taskId}/help/available", getAvailableHelpStepsPerTask)
+			protectedRouter.Post("/{taskId}/help/{helpStep}/available", setHelpStepAvailable)
 		})
 
 		router.Group(func(adminRouter chi.Router) {

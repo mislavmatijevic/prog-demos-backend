@@ -10,6 +10,7 @@ import (
 	"github.com/mislavmatijevic/prog-demos-backend/internal/handlers/api"
 	"github.com/mislavmatijevic/prog-demos-backend/internal/utils"
 	"github.com/mislavmatijevic/prog-demos-backend/internal/utils/security/captcha"
+	"github.com/mislavmatijevic/prog-demos-backend/internal/utils/utils_errors"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -39,13 +40,13 @@ func checkPasswordResetToken(w http.ResponseWriter, r *http.Request) {
 
 	err = captcha.Verify("password-reset", checkPasswordResetTokenBody.CaptchaToken, r.RemoteAddr)
 	if err != nil {
-		handleCaptchaError(w, err)
+		utils_errors.HandleCaptchaError(w, err)
 		return
 	}
 
 	user, errCode := checkIfTokenValid(checkPasswordResetTokenBody.ResetToken)
-	if errCode != NO_ERROR {
-		respondForErrorCode(w, errCode)
+	if errCode != utils_errors.NO_ERROR {
+		utils_errors.RespondForErrorCode(w, errCode)
 		return
 	}
 
@@ -62,14 +63,14 @@ func resetPassword(w http.ResponseWriter, r *http.Request) {
 	}
 
 	user, errCode := checkIfTokenValid(resetPasswordBody.ResetToken)
-	if errCode != NO_ERROR {
-		respondForErrorCode(w, errCode)
+	if errCode != utils_errors.NO_ERROR {
+		utils_errors.RespondForErrorCode(w, errCode)
 		return
 	}
 
 	err = captcha.Verify("password-reset", resetPasswordBody.CaptchaToken, r.RemoteAddr)
 	if err != nil {
-		handleCaptchaError(w, err)
+		utils_errors.HandleCaptchaError(w, err)
 		return
 	}
 
@@ -100,21 +101,21 @@ func resetPassword(w http.ResponseWriter, r *http.Request) {
 	api.RespondWithStatus(w, res, http.StatusOK)
 }
 
-func checkIfTokenValid(resetToken string) (*database.User, authErrorCode) {
+func checkIfTokenValid(resetToken string) (*database.User, utils_errors.ErrorCode) {
 	isTokenSet, trimmedToken := utils.GetTrimmedStringWithValue(resetToken)
 	if !isTokenSet || len(trimmedToken) != 128 {
-		return nil, ERR_TOKEN_NOT_VALID
+		return nil, utils_errors.ERR_TOKEN_NOT_VALID
 	}
 
 	user, err := database.GetUserByPasswordResetToken(trimmedToken)
 	if err != nil {
-		return nil, ERR_TOKEN_NOT_FOUND
+		return nil, utils_errors.ERR_TOKEN_NOT_FOUND
 	}
 
 	if !user.PasswordResetExpiry.Valid || time.Now().After(user.PasswordResetExpiry.Time) {
 		database.RemovePasswordReset(user)
-		return nil, ERR_TOKEN_EXPIRED
+		return nil, utils_errors.ERR_TOKEN_EXPIRED
 	}
 
-	return user, NO_ERROR
+	return user, utils_errors.NO_ERROR
 }

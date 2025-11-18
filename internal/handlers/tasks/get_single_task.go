@@ -33,7 +33,7 @@ func getSingleTask(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := authentication.CheckJwtTokenSignature(r); err == nil {
+	if err := authentication.ValidateJwtToken(r); err == nil {
 		fillTaskWithPersonalizedInfo(r, task)
 	}
 
