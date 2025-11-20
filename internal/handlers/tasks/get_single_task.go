@@ -6,6 +6,7 @@ import (
 	"strconv"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/jwtauth"
 	"github.com/mislavmatijevic/prog-demos-backend/internal/authentication"
 	"github.com/mislavmatijevic/prog-demos-backend/internal/database"
 	"github.com/mislavmatijevic/prog-demos-backend/internal/handlers/api"
@@ -35,6 +36,9 @@ func getSingleTask(w http.ResponseWriter, r *http.Request) {
 
 	if err := authentication.ValidateJwtToken(r); err == nil {
 		fillTaskWithPersonalizedInfo(r, task)
+	} else if err != jwtauth.ErrNoTokenFound {
+		authentication.RespondBasedOnValidationError(err, w)
+		return
 	}
 
 	var res = taskResponse{

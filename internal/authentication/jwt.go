@@ -54,22 +54,26 @@ func RequireAccessToken(next http.Handler) http.Handler {
 		err := ValidateJwtToken(r)
 
 		if err != nil {
-			err = jwtauth.ErrorReason(err)
-			switch err {
-			case jwtauth.ErrNoTokenFound:
-				api.AuthorizationMissingGenericMsg(w)
-				return
-			case jwtauth.ErrUnauthorized:
-				api.AuthorizationInvalidGenericMsg(w)
-				return
-			case jwtauth.ErrExpired:
-				api.AuthorizationExpiredGenericMsg(w)
-				return
-			}
+			RespondBasedOnValidationError(err, w)
+			return
 		}
 
 		next.ServeHTTP(w, r)
 	})
+}
+
+func RespondBasedOnValidationError(err error, w http.ResponseWriter) {
+	if err != nil {
+		err = jwtauth.ErrorReason(err)
+		switch err {
+		case jwtauth.ErrNoTokenFound:
+			api.AuthorizationMissingGenericMsg(w)
+		case jwtauth.ErrUnauthorized:
+			api.AuthorizationInvalidGenericMsg(w)
+		case jwtauth.ErrExpired:
+			api.AuthorizationExpiredGenericMsg(w)
+		}
+	}
 }
 
 func ValidateJwtToken(r *http.Request) error {
@@ -80,7 +84,7 @@ func ValidateJwtToken(r *http.Request) error {
 
 	err := jwt.Validate(tokenAttachedToRequest.(jwt.Token))
 
-	isExpiredTokenOnDevEnv := !utils.IsProd() && err != nil && jwtauth.ErrorReason(err) == jwtauth.ErrExpired
+	isExpiredTokenOnDevEnv := utils.IsProd() && err != nil && jwtauth.ErrorReason(err) == jwtauth.ErrExpired
 	if isExpiredTokenOnDevEnv {
 		return nil
 	}
