@@ -6,6 +6,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	chimiddle "github.com/go-chi/chi/v5/middleware"
 	"github.com/mislavmatijevic/prog-demos-backend/internal/authentication"
+	"github.com/mislavmatijevic/prog-demos-backend/internal/utils/taskexecution"
 )
 
 func HandleTasks(r *chi.Mux) {
@@ -17,7 +18,7 @@ func HandleTasks(r *chi.Mux) {
 
 		router.Group(func(protectedRouter chi.Router) {
 			protectedRouter.Use(authentication.RequireAccessToken)
-			protectedRouter.Use(chimiddle.ThrottleBacklog(2, 20, 60*time.Second))
+			protectedRouter.Use(chimiddle.ThrottleBacklog(taskexecution.TASK_RUNNER_MAX_PARALLEL_AVAILABLE, 20, 60*time.Second))
 
 			protectedRouter.Post("/{taskId}/run", executeTask)
 			protectedRouter.Get("/{taskId}/help/available", getAvailableHelpStepsPerTask)

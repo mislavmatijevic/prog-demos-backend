@@ -13,7 +13,7 @@ artefactsFilenamePrefix="$ARTEFACTS_FILENAME_PREFIX"
 
 clang++ -O0 "$solutionFile" -o "$outputFile" 2> "$errorFile"
 
-ulimit -u 1 -f 2
+ulimit -u 10 -f 10 -v 10000
 
 if [ $? -ne 0 ]; then
     cat "$errorFile"

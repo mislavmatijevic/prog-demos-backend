@@ -3,6 +3,7 @@ package tasks
 import (
 	"net/http"
 
+	"github.com/go-chi/jwtauth"
 	"github.com/mislavmatijevic/prog-demos-backend/internal/authentication"
 	"github.com/mislavmatijevic/prog-demos-backend/internal/database"
 	"github.com/mislavmatijevic/prog-demos-backend/internal/handlers/api"
@@ -19,6 +20,9 @@ func getAllTasksPerTopics(w http.ResponseWriter, r *http.Request) {
 
 	if err := authentication.ValidateJwtToken(r); err == nil {
 		fillBasicTasksWithPersonalizedInfo(r, topics)
+	} else if err != jwtauth.ErrNoTokenFound {
+		authentication.RespondBasedOnValidationError(err, w)
+		return
 	}
 
 	var res = tasksResponse{

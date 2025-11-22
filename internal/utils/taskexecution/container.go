@@ -23,12 +23,10 @@ var (
 )
 
 const (
-	CONTAINER_TIMEOUT_MARK           = "timeout"
-	CONTAINER_FORCEFULLY_KILLED_MARK = "forcefully killed"
-	STDIN_FILENAME_PREFIX            = "stdin_"
-	STDOUT_FILENAME_PREFIX           = "stdout_"
-	ARTEFACTS_FILENAME_PREFIX        = "artefacts_"
-	ERROR_FILENAME                   = "error.txt"
+	STDIN_FILENAME_PREFIX     = "stdin_"
+	STDOUT_FILENAME_PREFIX    = "stdout_"
+	ARTEFACTS_FILENAME_PREFIX = "artefacts_"
+	ERROR_FILENAME            = "error.txt"
 )
 
 type TestDataMismatchReason struct {
@@ -66,23 +64,19 @@ func (container *TaskExecutionContainer) runDockerRunnerImage() error {
 		return err
 	}
 
-	if utils.IsProd() {
-		volumeName = TASKS_VOLUME_NAME
-	} else {
-		volumeName = filepath.Dir(tempDir)
-	}
-
-	sourceCodeFolderInContainer := filepath.Join(MOUNTED_TEMP_TASKS_DIRECTORY, filepath.Base(tempDir))
+	volumeName = TASK_RUNNER_MOUNT_NAME
+	sourceCodeFolderInContainer := filepath.Join(TASK_RUNNER_TEMP_TASKS_DIRECTORY, filepath.Base(tempDir))
+	cpusForContainer := TASK_RUNNER_MAX_CPUS_AVAILABLE / float64(TASK_RUNNER_MAX_PARALLEL_AVAILABLE)
 
 	var name = fmt.Sprintf("--name %s", container.name)
-	var volumeAttachment = fmt.Sprintf("-v %s:%s", volumeName, MOUNTED_TEMP_TASKS_DIRECTORY)
+	var volumeAttachment = fmt.Sprintf("-v %s:%s", volumeName, TASK_RUNNER_TEMP_TASKS_DIRECTORY)
 	var envFolder = fmt.Sprintf("-e SOURCE_CODE_FOLDER=%s", sourceCodeFolderInContainer)
 	var envFile = fmt.Sprintf("-e SOURCE_FILE_NAME=%s", CPP_FILE_NAME)
 	var envPrefixStdin = fmt.Sprintf("-e STDIN_FILENAME_PREFIX=%s", STDIN_FILENAME_PREFIX)
 	var envPrefixStdout = fmt.Sprintf("-e STDOUT_FILENAME_PREFIX=%s", STDOUT_FILENAME_PREFIX)
 	var envPrefixArtefacts = fmt.Sprintf("-e ARTEFACTS_FILENAME_PREFIX=%s", ARTEFACTS_FILENAME_PREFIX)
 	var envErrorFilename = fmt.Sprintf("-e ERROR_FILENAME=%s", ERROR_FILENAME)
-	var containerOptions = "--memory 150m --cpus 1"
+	var containerOptions = fmt.Sprintf("--memory %vm --cpus %v", TASK_RUNNER_MAX_RAM_MB_AVAILABLE, cpusForContainer)
 	var securityOptions = "--rm --security-opt no-new-privileges --network none"
 
 	var dockerRunArguments = strings.Join([]string{dockerPath,
@@ -108,7 +102,7 @@ func (container *TaskExecutionContainer) runDockerRunnerImage() error {
 		if strings.Contains(stringOutput, "Unable to find image 'task-runner:latest'") {
 			log.WithError(err).WithFields(log.Fields{"priority": "high", "context": "task_execution"}).Error("Failed to build Docker container!")
 		} else if strings.Contains(stringOutput, "Killed") {
-			return errors.New(CONTAINER_FORCEFULLY_KILLED_MARK)
+			return ErrContainerForcefullyKilledMark
 		} else {
 			log.WithFields(log.Fields{"unexpected_output": stringOutput, "context": "task_execution"}).Warning("Unexpected output from task-runner container!")
 		}

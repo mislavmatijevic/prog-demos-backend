@@ -105,12 +105,13 @@ func executeTask(w http.ResponseWriter, r *http.Request) {
 			api.TooEarlyErrorHandlerCustomMsg(w, err.Error())
 			return // Skip setting task execution status failed since task execution didn't even get created.
 		case taskexecution.ErrTaskExecutionStartErr.Error():
-			log.WithError(err).WithFields(log.Fields{"priority": "medium", "context": "task_execution", "task_id": taskId}).Error("Failed to start task execution.")
+			log.WithError(err).WithFields(log.Fields{"priority": "medium", "context": "task_execution", "task_id": taskId, "user_id": userId}).Error("Failed to start task execution.")
 			api.InternalErrorHandlerGenericMsg(w, err)
 		case taskexecution.ErrTempFileCreationErr.Error():
-			api.RequestErrorHandlerGenericMsg(w, err)
+			log.WithError(err).WithFields(log.Fields{"priority": "medium", "context": "task_execution", "task_id": taskId, "user_id": userId}).Error("Failed to create temp file for execution.")
+			api.InternalErrorHandlerGenericMsg(w, err)
 		case taskexecution.ErrNoTests.Error():
-			log.WithError(err).WithFields(log.Fields{"priority": "medium", "context": "task_execution", "task_id": taskId}).Error("No tests defined for task!")
+			log.WithError(err).WithFields(log.Fields{"priority": "medium", "context": "task_execution", "task_id": taskId, "user_id": userId}).Error("No tests defined for task!")
 			api.InternalErrorHandlerCustomMsg(w, err.Error())
 		}
 		execution.SetTaskExecutionStatusFailed()
@@ -132,7 +133,7 @@ func executeTask(w http.ResponseWriter, r *http.Request) {
 		err := execution.CreateInputFile(test)
 		if err != nil {
 			execution.SetTaskExecutionStatusFailed()
-			log.WithError(err).WithFields(log.Fields{"priority": "high", "context": "task_execution", "task_id": taskId}).Error("Couldn't store temp files during testing!")
+			log.WithError(err).WithFields(log.Fields{"priority": "high", "context": "task_execution", "task_id": taskId, "user_id": userId}).Error("Couldn't store temp files during testing!")
 			handleTestExecutionInternalFail(w, err, execution)
 			return
 		}
@@ -146,17 +147,18 @@ func executeTask(w http.ResponseWriter, r *http.Request) {
 		case taskexecution.ErrContainerTimeoutMark.Error():
 			sendTaskExecutionFailedResponse(w, EXEC_ERR_TIMEOUT, nil, execution)
 		case taskexecution.ErrContainerForcefullyKilledMark.Error():
+			log.WithError(err).WithFields(log.Fields{"priority": "medium", "context": "task_execution", "task_id": taskId, "user_id": userId}).Error("Container forcefully killed.")
 			sendTaskExecutionFailedResponse(w, EXEC_ERR_KILLED, nil, execution)
 		case taskexecution.ErrIllegalOperation.Error():
-			log.WithError(err).WithFields(log.Fields{"priority": "medium", "context": "task_execution", "task_id": taskId}).Error("System interaction detected - possible shell use attempt.")
+			log.WithError(err).WithFields(log.Fields{"priority": "medium", "context": "task_execution", "task_id": taskId, "user_id": userId}).Error("System interaction detected - possible shell use attempt.")
 			sendTaskExecutionFailedResponse(w, EXEC_ERR_ILLEGAL_OPERATION, err.Error(), execution)
 		case taskexecution.ErrFileSizeExceeded.Error():
 			sendTaskExecutionFailedResponse(w, EXEC_ERR_FILE_SIZE_EXCEEDED, err.Error(), execution)
 		case taskexecution.ErrRunFailed.Error():
-			log.WithError(err).WithFields(log.Fields{"priority": "medium", "context": "task_execution", "task_id": taskId}).Error("Task runner failed at executing compiled software!")
+			log.WithError(err).WithFields(log.Fields{"priority": "medium", "context": "task_execution", "task_id": taskId, "user_id": userId}).Error("Task runner failed at executing compiled software!")
 			sendTaskExecutionFailedResponse(w, EXEC_RUNTIME_ERROR, err.Error(), execution)
 		default:
-			log.WithError(err).WithFields(log.Fields{"priority": "high", "context": "task_execution", "task_id": taskId}).Error("Task runner failed to run in Docker!")
+			log.WithError(err).WithFields(log.Fields{"priority": "high", "context": "task_execution", "task_id": taskId, "user_id": userId}).Error("Task runner failed to run in Docker!")
 			handleTestExecutionInternalFail(w, err, execution)
 		}
 
@@ -165,7 +167,7 @@ func executeTask(w http.ResponseWriter, r *http.Request) {
 
 	testDataMismatchReason, err := container.CheckOutputs()
 	if err != nil {
-		log.WithError(err).WithFields(log.Fields{"priority": "high", "context": "task_execution", "task_id": taskId}).Error("Couldn't read output file!")
+		log.WithError(err).WithFields(log.Fields{"priority": "high", "context": "task_execution", "task_id": taskId, "user_id": userId}).Error("Couldn't read output file!")
 		handleTestExecutionInternalFail(w, err, execution)
 		return
 	}
@@ -176,7 +178,7 @@ func executeTask(w http.ResponseWriter, r *http.Request) {
 
 	artefactMismatchReason, err := container.CheckArtefacts()
 	if err != nil {
-		log.WithError(err).WithFields(log.Fields{"priority": "high", "context": "task_execution", "task_id": taskId}).Error("Artefact SHA256 comparison failed!")
+		log.WithError(err).WithFields(log.Fields{"priority": "high", "context": "task_execution", "task_id": taskId, "user_id": userId}).Error("Artefact SHA256 comparison failed!")
 		handleTestExecutionInternalFail(w, err, execution)
 		return
 	}
@@ -189,12 +191,12 @@ func executeTask(w http.ResponseWriter, r *http.Request) {
 	numbericComplexity, err := strconv.Atoi(solvedTask.BasicTask.Complexity)
 	if err != nil {
 		numbericComplexity = 0
-		log.WithFields(log.Fields{"priority": "medium", "context": "task_execution", "task_id": taskId}).Error("Task complexity could not be converted to integer!")
+		log.WithFields(log.Fields{"priority": "medium", "context": "task_execution", "task_id": taskId, "user_id": userId}).Error("Task complexity could not be converted to integer!")
 	}
 
 	score, err := lizard.CalculateScore(execution.File, numbericComplexity)
 	if err != nil {
-		log.WithError(err).WithFields(log.Fields{"priority": "medium", "context": "task_execution", "task_id": taskId}).Error("Could not calculate score after task execution.")
+		log.WithError(err).WithFields(log.Fields{"priority": "medium", "context": "task_execution", "task_id": taskId, "user_id": userId}).Error("Could not calculate score after task execution.")
 		if (strings.Compare(err.Error(), lizard.ERR_MSG_SCORE_CALCULATION_FAILED)) == 0 {
 			sendTaskExecutionFailedResponse(w, EXEC_ERR_SCORE_CALCULATION_FAILED, nil, execution)
 		} else {

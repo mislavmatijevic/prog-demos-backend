@@ -39,12 +39,12 @@ var (
 		writeError(w, "Valid authorization header missing.", http.StatusUnauthorized)
 	}
 	AuthorizationExpiredGenericMsg = func(w http.ResponseWriter) {
-		writeError(w, "Authorization token expired.", http.StatusForbidden)
+		writeError(w, "Authorization token expired.", http.StatusUnauthorized)
 	}
 	AuthorizationInvalidGenericMsg = func(w http.ResponseWriter) {
-		writeError(w, "Authorization token is invalid.", http.StatusForbidden)
+		writeError(w, "Authorization token is invalid.", http.StatusUnauthorized)
 	}
-	AuthorizationInvalidCustomMsg = func(w http.ResponseWriter, errorMessage string) {
+	RefreshTokenFailedCustomMsg = func(w http.ResponseWriter, errorMessage string) {
 		writeError(w, errorMessage, http.StatusForbidden)
 	}
 	RefreshTokenExpiredGenericMsg = func(w http.ResponseWriter) {

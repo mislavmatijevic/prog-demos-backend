@@ -1,7 +1,6 @@
 package taskexecution
 
 import (
-	"errors"
 	"strings"
 
 	"github.com/mislavmatijevic/prog-demos-backend/internal/database"
@@ -27,7 +26,7 @@ func (container *TaskExecutionContainer) RunTests() error {
 			log.WithError(err).WithFields(log.Fields{"priority": "medium", "context": "task_execution"}).Error("Could not delete temp container after task execution timeout!")
 		}
 
-		return errors.New(CONTAINER_TIMEOUT_MARK)
+		return ErrContainerTimeoutMark
 	case err := <-errChan:
 		if err == nil {
 			err = container.checkForErrors()
