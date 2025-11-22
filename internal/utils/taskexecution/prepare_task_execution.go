@@ -8,12 +8,13 @@ import (
 	"time"
 
 	"github.com/mislavmatijevic/prog-demos-backend/internal/database"
+	log "github.com/sirupsen/logrus"
 )
 
 var (
 	ErrUserHasRunningTasks   = errors.New("user has running task")
 	ErrTaskExecutionStartErr = errors.New("couldn't mark execution as started")
-	ErrTempFileCreationErr   = errors.New("couldn't mark execution as started")
+	ErrTempFileCreationErr   = errors.New("couldn't create temp file")
 	ErrNoTests               = errors.New("no tests")
 )
 
@@ -34,11 +35,13 @@ func PrepareTaskExecution(requestInfo TaskExecutionRequestInfo) (*TaskExecutionD
 
 	newData.InitializedTaskExecution, err = markTaskExecutionStartForUserId(requestInfo.TaskId, requestInfo.UserId, requestInfo.Code)
 	if err != nil {
+		log.WithError(err).Debug("Failed to mark task execution as started.")
 		return newData, ErrTaskExecutionStartErr
 	}
 
 	newData.File, err = createCppFileInNewTempDirectory(requestInfo.Code)
 	if err != nil {
+		log.WithError(err).Debug("Failed to create temp file.")
 		return newData, ErrTempFileCreationErr
 	}
 	newData.tempFolderPath = path.Dir(newData.File.Name())

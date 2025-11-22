@@ -23,12 +23,7 @@ var (
 )
 
 const (
-	CONTAINER_TIMEOUT_MARK           = "timeout"
-	CONTAINER_FORCEFULLY_KILLED_MARK = "forcefully killed"
-	STDIN_FILENAME_PREFIX            = "stdin_"
-	STDOUT_FILENAME_PREFIX           = "stdout_"
-	ARTEFACTS_FILENAME_PREFIX        = "artefacts_"
-	ERROR_FILENAME                   = "error.txt"
+	STDIN_FILENAME_PREFIX     = "stdin_"
 )
 
 type TestDataMismatchReason struct {
@@ -108,7 +103,7 @@ func (container *TaskExecutionContainer) runDockerRunnerImage() error {
 		if strings.Contains(stringOutput, "Unable to find image 'task-runner:latest'") {
 			log.WithError(err).WithFields(log.Fields{"priority": "high", "context": "task_execution"}).Error("Failed to build Docker container!")
 		} else if strings.Contains(stringOutput, "Killed") {
-			return errors.New(CONTAINER_FORCEFULLY_KILLED_MARK)
+			return ErrContainerForcefullyKilledMark
 		} else {
 			log.WithFields(log.Fields{"unexpected_output": stringOutput, "context": "task_execution"}).Warning("Unexpected output from task-runner container!")
 		}

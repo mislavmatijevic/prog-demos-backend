@@ -109,6 +109,7 @@ func executeTask(w http.ResponseWriter, r *http.Request) {
 			api.InternalErrorHandlerGenericMsg(w, err)
 		case taskexecution.ErrTempFileCreationErr.Error():
 			log.WithError(err).WithFields(log.Fields{"priority": "medium", "context": "task_execution", "task_id": taskId, "user_id": userId}).Error("Failed to create temp file for execution.")
+			api.InternalErrorHandlerGenericMsg(w, err)
 		case taskexecution.ErrNoTests.Error():
 			log.WithError(err).WithFields(log.Fields{"priority": "medium", "context": "task_execution", "task_id": taskId, "user_id": userId}).Error("No tests defined for task!")
 			api.InternalErrorHandlerCustomMsg(w, err.Error())
@@ -146,6 +147,7 @@ func executeTask(w http.ResponseWriter, r *http.Request) {
 		case taskexecution.ErrContainerTimeoutMark.Error():
 			sendTaskExecutionFailedResponse(w, EXEC_ERR_TIMEOUT, nil, execution)
 		case taskexecution.ErrContainerForcefullyKilledMark.Error():
+			log.WithError(err).WithFields(log.Fields{"priority": "medium", "context": "task_execution", "task_id": taskId, "user_id": userId}).Error("Container forcefully killed.")
 			sendTaskExecutionFailedResponse(w, EXEC_ERR_KILLED, nil, execution)
 		case taskexecution.ErrIllegalOperation.Error():
 			log.WithError(err).WithFields(log.Fields{"priority": "medium", "context": "task_execution", "task_id": taskId, "user_id": userId}).Error("System interaction detected - possible shell use attempt.")
