@@ -32,13 +32,13 @@ func refreshAccess(w http.ResponseWriter, r *http.Request) {
 
 	previousAccessTokenValue, refreshTokenValue, isValid := validateRequestFormat(refreshBody)
 	if !isValid {
-		api.RequestErrorHandlerCustomMsg(w, "Valid token pair could not be extracted from your request.")
+		api.AuthorizationInvalidCustomMsg(w, "Valid token pair could not be extracted from your request.")
 		return
 	}
 
 	refreshToken, isRefreshTokenExpired := findCurrentRefreshToken(refreshTokenValue)
 	if refreshToken == nil {
-		api.RequestErrorHandlerCustomMsg(w, "Refresh token does not exist.")
+		api.AuthorizationInvalidCustomMsg(w, "Refresh token does not exist.")
 		return
 	}
 	if isRefreshTokenExpired {
@@ -48,7 +48,7 @@ func refreshAccess(w http.ResponseWriter, r *http.Request) {
 
 	err = authentication.ValidateTokenPairByUsers(previousAccessTokenValue, refreshToken)
 	if err != nil {
-		api.RequestErrorHandlerGenericMsg(w, err)
+		api.AuthorizationInvalidCustomMsg(w, err.Error())
 		return
 	}
 
