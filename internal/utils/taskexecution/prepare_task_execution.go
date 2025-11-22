@@ -73,7 +73,7 @@ func markTaskExecutionStartForUserId(taskId, userId int, code string) (*database
 }
 
 func createCppFileInNewTempDirectory(cppCode string) (*os.File, error) {
-	createdTempPath, err := os.MkdirTemp(LOCAL_TEMP_TASKS_DIRECTORY, "temp_cpp_solutions_*")
+	createdTempPath, err := os.MkdirTemp(BACKEND_TEMP_TASKS_DIRECTORY, "temp_cpp_solutions_*")
 	if err != nil {
 		return nil, err
 	}

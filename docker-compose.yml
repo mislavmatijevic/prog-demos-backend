@@ -32,12 +32,12 @@ services:
             DB_PASSWORD: ${DB_PASSWORD}
             DB_NAME: prog_demos
             PORT: 8080
-            TASKS_VOLUME_NAME: prog-demos-backend_tasks
+            TASK_RUNNER_MOUNT_NAME: prog-demos-backend_tasks
             PROD: ${IS_PROD}
             USE_LOKI: ${IS_PROD}
         volumes:
             - /var/run/docker.sock:/var/run/docker.sock
-            - tasks:${MOUNTED_TEMP_TASKS_DIRECTORY}
+            - tasks:${TASK_RUNNER_TEMP_TASKS_DIRECTORY}
         ports:
             - "127.0.0.1:8080:8080"
         networks:
