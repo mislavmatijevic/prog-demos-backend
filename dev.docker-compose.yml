@@ -1,5 +1,6 @@
 services:
     database:
+        restart: unless-stopped
         build:
             context: .
             dockerfile: ./Docker/db.Dockerfile
@@ -21,9 +22,9 @@ services:
             retries: 5
 
     pgadmin:
+        restart: unless-stopped
         image: dpage/pgadmin4
         container_name: pgadmin4_container-dev
-        restart: always
         environment:
             POSTGRES_USER: ${DB_USER}
             POSTGRES_PASSWORD: ${DB_PASSWORD}
@@ -38,6 +39,7 @@ services:
             - backend-network
 
     caddy:
+        restart: unless-stopped
         build:
             context: .
             dockerfile: ./Docker/caddy.Dockerfile
